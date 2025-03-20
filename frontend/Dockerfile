@@ -6,6 +6,7 @@ ENV PATH `/app/node_modules/.bin` to $PATH
 
 COPY package*.json ./
 
-RUN npm install
+# Due to compatibility issues with the React v19 should use the legacy-peer-deps flag
+RUN npm install --legacy-peer-deps
 
 COPY . .

@@ -80,7 +80,7 @@ dependencies = [
     { name = "sqlalchemy", extra = ["asyncio"] },
 ]
 
-[package.dev-dependencies]
+[package.optional-dependencies]
 test = [
     { name = "httpx" },
     { name = "pytest" },
@@ -94,19 +94,16 @@ requires-dist = [
     { name = "bcrypt", specifier = ">=4.3.0" },
     { name = "fastapi", extras = ["standard"], specifier = ">=0.115.11" },
     { name = "fastapi-mail", specifier = ">=1.4.2" },
+    { name = "httpx", marker = "extra == 'test'", specifier = ">=0.28.1" },
     { name = "itsdangerous", specifier = ">=2.2.0" },
     { name = "loguru", specifier = ">=0.7.3" },
     { name = "pydantic-settings", specifier = ">=2.8.1" },
     { name = "pyjwt", specifier = ">=2.10.1" },
+    { name = "pytest", marker = "extra == 'test'", specifier = ">=8.3.5" },
+    { name = "pytest-asyncio", marker = "extra == 'test'", specifier = ">=0.25.3" },
     { name = "sqlalchemy", extras = ["asyncio"], specifier = ">=2.0.39" },
 ]
-
-[package.metadata.requires-dev]
-test = [
-    { name = "httpx", specifier = ">=0.28.1" },
-    { name = "pytest", specifier = ">=8.3.5" },
-    { name = "pytest-asyncio", specifier = ">=0.26.0" },
-]
+provides-extras = ["test"]
 
 [[package]]
 name = "bcrypt"

@@ -8,6 +8,7 @@ dependencies = [
     "alembic>=1.15.1",
     "asyncpg>=0.30.0",
     "bcrypt>=4.3.0",
+    "dishka>=1.5.0",
     "fastapi-mail>=1.4.2",
     "fastapi[standard]>=0.115.11",
     "itsdangerous>=2.2.0",
@@ -19,6 +20,7 @@ dependencies = [
 
 [project.optional-dependencies]
 test = [
+    "faker>=37.1.0",
     "httpx>=0.28.1",
     "pytest>=8.3.5",
     "pytest-asyncio>=0.25.3",

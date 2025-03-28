@@ -71,7 +71,6 @@ dependencies = [
     { name = "alembic" },
     { name = "asyncpg" },
     { name = "bcrypt" },
-    { name = "dishka" },
     { name = "fastapi", extra = ["standard"] },
     { name = "fastapi-mail" },
     { name = "itsdangerous" },
@@ -94,7 +93,6 @@ requires-dist = [
     { name = "alembic", specifier = ">=1.15.1" },
     { name = "asyncpg", specifier = ">=0.30.0" },
     { name = "bcrypt", specifier = ">=4.3.0" },
-    { name = "dishka", specifier = ">=1.5.0" },
     { name = "faker", marker = "extra == 'test'", specifier = ">=37.1.0" },
     { name = "fastapi", extras = ["standard"], specifier = ">=0.115.11" },
     { name = "fastapi-mail", specifier = ">=1.4.2" },
@@ -196,15 +194,6 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/d8/53/6f443c9a4a8358a93a6792e2acffb9d9d5cb0a5cfd8802644b7b1c9a02e4/colorama-0.4.6.tar.gz", hash = "sha256:08695f5cb7ed6e0531a20572697297273c47b8cae5a63ffc6d6ed5c201be6e44", size = 27697 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/d1/d6/3965ed04c63042e047cb6a3e6ed1a63a35087b6a609aa3a15ed8ac56c221/colorama-0.4.6-py2.py3-none-any.whl", hash = "sha256:4f1d9991f5acc0ca119f9d443620b77f9d6b33703e51011c16baf57afb285fc6", size = 25335 },
-]
-
-[[package]]
-name = "dishka"
-version = "1.5.0"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/e2/25/218e2516746ea1c18dc0cee850023b77a4377cac69af64528e6e63541d60/dishka-1.5.0.tar.gz", hash = "sha256:1e47707f7b40c3a3ab3b736bd5b4ee958939d32ace6199809e4f75bb236c04a8", size = 63189 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/ca/56/34d046f01699c265ef9b4cbbd6256630c71023b7e5c30058e5ac430cacd1/dishka-1.5.0-py3-none-any.whl", hash = "sha256:cd8847ac675b4093fe42742d9cf42a49a38d8d1abca46fcc250cd2f2190a2f71", size = 87964 },
 ]
 
 [[package]]

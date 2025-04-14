@@ -1,8 +1,11 @@
+import logging
 from functools import lru_cache
 from pathlib import Path
 from typing import List
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+log = logging.getLogger(__name__)
 
 
 class Settings(BaseSettings):
@@ -22,6 +25,8 @@ class Settings(BaseSettings):
     DEBUG: bool
     DOMAIN: str
     ACCESS_TOKEN_EXPIRE_SECONDS: int
+
+    LOG_LEVEL: int = logging.WARNING
 
     # Email settings
     SMTP_USER: str

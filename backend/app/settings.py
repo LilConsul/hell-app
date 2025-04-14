@@ -32,15 +32,15 @@ class Settings(BaseSettings):
     EMAIL_FROM_NAME: str
 
     # MongoDB settings
-    MONGO_INITDB_ROOT_USERNAME: str
-    MONGO_INITDB_ROOT_PASSWORD: str
-    MONGO_INITDB_DATABASE: str
+    MONGO_USERNAME: str
+    MONGO_PASSWORD: str
+    MONGO_DATABASE: str
     MONGO_PORT: int
     MONGO_HOST: str
 
     @property
     def MONGODB_URL(self) -> str:
-        return f"mongodb://{self.MONGO_INITDB_ROOT_USERNAME}:{self.MONGO_INITDB_ROOT_PASSWORD}@{self.MONGO_HOST}:{self.MONGO_PORT}/{self.MONGO_INITDB_DATABASE}"
+        return f"mongodb://{self.MONGO_USERNAME}:{self.MONGO_PASSWORD}@{self.MONGO_HOST}:{self.MONGO_PORT}/{self.MONGO_DATABASE}?authSource=admin"
 
     # URL paths
     VERIFY_MAIL_PATH: str

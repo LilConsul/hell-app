@@ -6,13 +6,13 @@ from typing import List
 
 
 class Settings(BaseSettings):
-    # Redis settings
-    REDIS_PORT: int
-    REDIS_HOST: str
-
-    @property
-    def REDIS_URL(self) -> str:
-        return f"redis://{self.REDIS_HOST}:{self.REDIS_PORT}/0"
+    # # Redis settings
+    # REDIS_PORT: int
+    # REDIS_HOST: str
+    #
+    # @property
+    # def REDIS_URL(self) -> str:
+    #     return f"redis://{self.REDIS_HOST}:{self.REDIS_PORT}/0"
 
     # Security settings
     SECRET_KEY: str
@@ -31,16 +31,16 @@ class Settings(BaseSettings):
     SMTP_HOST: str
     EMAIL_FROM_NAME: str
 
-    # PostgreSQL settings
-    POSTGRES_PORT: int
-    POSTGRES_DB: str
-    POSTGRES_USER: str
-    POSTGRES_PASSWORD: str
-    POSTGRES_HOST: str
+    # MongoDB settings
+    MONGO_INITDB_ROOT_USERNAME: str
+    MONGO_INITDB_ROOT_PASSWORD: str
+    MONGO_INITDB_DATABASE: str
+    MONGO_PORT_INTERNAL: int
+    MONGO_HOST: str
 
     @property
-    def DATABASE_URL(self) -> str:
-        return f"postgresql+asyncpg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
+    def MONGODB_URL(self) -> str:
+        return f"mongodb://{self.MONGO_INITDB_ROOT_USERNAME}:{self.MONGO_INITDB_ROOT_PASSWORD}@{self.MONGO_HOST}:{self.MONGO_PORT_INTERNAL}/{self.MONGO_INITDB_DATABASE}"
 
     # URL paths
     VERIFY_MAIL_PATH: str

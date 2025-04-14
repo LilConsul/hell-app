@@ -1,8 +1,8 @@
 from functools import lru_cache
 from pathlib import Path
+from typing import List
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from typing import List
 
 
 class Settings(BaseSettings):
@@ -35,12 +35,12 @@ class Settings(BaseSettings):
     MONGO_INITDB_ROOT_USERNAME: str
     MONGO_INITDB_ROOT_PASSWORD: str
     MONGO_INITDB_DATABASE: str
-    MONGO_PORT_INTERNAL: int
+    MONGO_PORT: int
     MONGO_HOST: str
 
     @property
     def MONGODB_URL(self) -> str:
-        return f"mongodb://{self.MONGO_INITDB_ROOT_USERNAME}:{self.MONGO_INITDB_ROOT_PASSWORD}@{self.MONGO_HOST}:{self.MONGO_PORT_INTERNAL}/{self.MONGO_INITDB_DATABASE}"
+        return f"mongodb://{self.MONGO_INITDB_ROOT_USERNAME}:{self.MONGO_INITDB_ROOT_PASSWORD}@{self.MONGO_HOST}:{self.MONGO_PORT}/{self.MONGO_INITDB_DATABASE}"
 
     # URL paths
     VERIFY_MAIL_PATH: str

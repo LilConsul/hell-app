@@ -5,16 +5,14 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "alembic>=1.15.1",
-    "asyncpg>=0.30.0",
     "bcrypt>=4.3.0",
+    "beanie>=1.29.0",
     "fastapi-mail>=1.4.2",
+    "fastapi-users[beanie,oauth]>=14.0.1",
     "fastapi[standard]>=0.115.11",
     "itsdangerous>=2.2.0",
-    "loguru>=0.7.3",
     "pydantic-settings>=2.8.1",
     "pyjwt>=2.10.1",
-    "sqlalchemy[asyncio]>=2.0.39",
 ]
 
 [project.optional-dependencies]

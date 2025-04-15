@@ -8,7 +8,6 @@ dependencies = [
     "bcrypt>=4.3.0",
     "beanie>=1.29.0",
     "fastapi-mail>=1.4.2",
-    "fastapi-users[beanie,oauth]>=14.0.1",
     "fastapi[standard]>=0.115.11",
     "itsdangerous>=2.2.0",
     "pydantic-settings>=2.8.1",

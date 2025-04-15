@@ -1,6 +1,6 @@
 from functools import lru_cache
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -22,6 +22,14 @@ class Settings(BaseSettings):
     DEBUG: bool
     DOMAIN: str
     ACCESS_TOKEN_EXPIRE_SECONDS: int
+
+    # Cookie settings
+    COOKIE_SECURE: bool = True
+    COOKIE_DOMAIN: Optional[str] = None
+    # OAuth Settings
+    GOOGLE_CLIENT_ID: Optional[str] = None
+    GOOGLE_CLIENT_SECRET: Optional[str] = None
+    GOOGLE_REDIRECT_URI: Optional[str] = None
 
     # Email settings
     SMTP_USER: str

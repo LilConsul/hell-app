@@ -1,5 +1,5 @@
+from app.auth.models import User
 from app.settings import settings
-from app.users.models import User
 from beanie import init_beanie
 from motor.motor_asyncio import AsyncIOMotorClient
 

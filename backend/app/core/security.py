@@ -35,6 +35,15 @@ def create_access_token(subject: str, expires_delta: Optional[timedelta] = None)
     return encoded_jwt
 
 
+def decode_token(token: str) -> Dict[str, Any]:
+    """Decode JWT authentication token"""
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        return payload
+    except jwt.PyJWTError:
+        return None
+
+
 def create_verification_token(user_id: str) -> str:
     """Create URL-safe token for email verification"""
     data = {
@@ -51,13 +60,4 @@ def decode_verification_token(token: str, max_age=86400) -> Optional[Dict[str, A
         data = serializer.loads(token, max_age=max_age)  # Default max_age is 24 hours
         return data
     except Exception:
-        return None
-
-
-def decode_token(token: str) -> Dict[str, Any]:
-    """Decode JWT authentication token"""
-    try:
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
-        return payload
-    except jwt.PyJWTError:
         return None

@@ -12,7 +12,7 @@ from app.auth.schemas import (
     UserResponse,
 )
 from app.auth.service import AuthService
-from fastapi import APIRouter, Depends, Query, Response
+from fastapi import APIRouter, Body, Depends, Response
 
 router = APIRouter(tags=["auth"], prefix="/auth")
 
@@ -60,9 +60,9 @@ async def send_verification_token(
     return await auth_service.send_verification_token(email_request.email)
 
 
-@router.get("/verify", response_model=UserResponse)
+@router.post("/verify", response_model=UserResponse)
 async def verify_token(
-        token: str = Query(..., description="Email verification token"),
+        token: str = Body(..., description="Email verification token"),
         auth_service: AuthService = Depends(get_auth_service),
 ):
     """

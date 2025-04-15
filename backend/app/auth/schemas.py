@@ -14,6 +14,16 @@ class UserCreate(UserBase):
     last_name: Optional[str] = None
 
 
+class UserUpdate(BaseModel):
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+
+
+class UserUpdatePassword(BaseModel):
+    password: str = Field(..., min_length=8)
+    new_password: str = Field(..., min_length=8)
+
+
 class UserLogin(BaseModel):
     email: str
     password: str
@@ -47,6 +57,7 @@ class EmailRequest(BaseModel):
 
 class OAuthRequest(BaseModel):
     """Schema for OAuth authorization code flow"""
+
     code: str
     redirect_uri: str = None
     state: str = None
@@ -54,6 +65,7 @@ class OAuthRequest(BaseModel):
 
 class SocialAccount(BaseModel):
     """Schema for social account connection"""
+
     provider: str
     provider_user_id: str
     email: str

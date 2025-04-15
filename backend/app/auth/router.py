@@ -10,6 +10,8 @@ from app.auth.schemas import (
     UserCreate,
     UserLogin,
     UserResponse,
+    UserUpdate,
+    UserUpdatePassword,
 )
 from app.auth.service import AuthService
 from fastapi import APIRouter, Body, Depends, Response
@@ -20,8 +22,8 @@ router = APIRouter(tags=["auth"], prefix="/auth")
 # Authentication endpoints
 @router.post("/register", response_model=UserResponse)
 async def register(
-        user_data: UserCreate,
-        auth_service: AuthService = Depends(get_auth_service),
+    user_data: UserCreate,
+    auth_service: AuthService = Depends(get_auth_service),
 ):
     """Register a new user"""
     return await auth_service.register(user_data)
@@ -29,9 +31,9 @@ async def register(
 
 @router.post("/login", response_model=Token)
 async def login(
-        response: Response,
-        login_data: UserLogin,
-        auth_service: AuthService = Depends(get_auth_service),
+    response: Response,
+    login_data: UserLogin,
+    auth_service: AuthService = Depends(get_auth_service),
 ):
     """Login and get access token"""
     return await auth_service.login(login_data, response)
@@ -39,8 +41,8 @@ async def login(
 
 @router.post("/logout")
 async def logout(
-        response: Response,
-        auth_service: AuthService = Depends(get_auth_service),
+    response: Response,
+    auth_service: AuthService = Depends(get_auth_service),
 ):
     """Logout and clear cookies"""
     return await auth_service.logout(response)
@@ -49,8 +51,8 @@ async def logout(
 # Email verification endpoints
 @router.post("/send-verification")
 async def send_verification_token(
-        email_request: EmailRequest,
-        auth_service: AuthService = Depends(get_auth_service),
+    email_request: EmailRequest,
+    auth_service: AuthService = Depends(get_auth_service),
 ):
     """
     Send verification token (will print to console)
@@ -62,8 +64,8 @@ async def send_verification_token(
 
 @router.post("/verify", response_model=UserResponse)
 async def verify_token(
-        token: str = Body(..., description="Email verification token"),
-        auth_service: AuthService = Depends(get_auth_service),
+    token: str = Body(..., description="Email verification token"),
+    auth_service: AuthService = Depends(get_auth_service),
 ):
     """
     Verify a user's email with token
@@ -76,9 +78,9 @@ async def verify_token(
 # OAuth endpoints
 @router.post("/google", response_model=Token)
 async def google_login(
-        response: Response,
-        oauth_data: OAuthRequest,
-        oauth_service=Depends(get_oauth_service),
+    response: Response,
+    oauth_data: OAuthRequest,
+    oauth_service=Depends(get_oauth_service),
 ):
     """
     Process Google OAuth authentication
@@ -92,8 +94,37 @@ async def google_login(
 # User info endpoints
 @router.get("/me", response_model=UserResponse)
 async def get_user_info(
-        current_user_id: str = Depends(get_current_user_id),
-        auth_service: AuthService = Depends(get_auth_service),
+    user_id: str = Depends(get_current_user_id),
+    auth_service: AuthService = Depends(get_auth_service),
 ):
     """Get information about the currently logged in user"""
-    return await auth_service.get_user_info(current_user_id)
+    return await auth_service.get_user_info(user_id)
+
+
+@router.put("/me", response_model=UserResponse)
+async def update_user_info(
+    user_data: UserUpdate,
+    user_id: str = Depends(get_current_user_id),
+    auth_service: AuthService = Depends(get_auth_service),
+):
+    """Update information about the currently logged in user"""
+    return await auth_service.update_user_info(user_id, user_data)
+
+
+@router.delete("/me")
+async def delete_user_info(
+    user_id: str = Depends(get_current_user_id),
+    auth_service: AuthService = Depends(get_auth_service),
+):
+    """Delete the currently logged in user"""
+    return await auth_service.delete_user_info(user_id)
+
+
+@router.put("/me/change-password", response_model=UserResponse)
+async def change_password(
+    password_data: UserUpdatePassword,
+    user_id: str = Depends(get_current_user_id),
+    auth_service: AuthService = Depends(get_auth_service),
+):
+    """Change the password of the currently logged in user"""
+    return await auth_service.change_password(user_id, password_data.password, password_data.new_password)

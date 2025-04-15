@@ -2,7 +2,7 @@ from datetime import timedelta
 
 from app.auth.exceptions import AuthenticationError, BadRequestError, NotFoundError
 from app.auth.repository import UserRepository
-from app.auth.schemas import UserCreate, UserLogin, UserResponse
+from app.auth.schemas import UserCreate, UserLogin, UserResponse, UserUpdate
 from app.auth.security import (
     create_access_token,
     create_verification_token,
@@ -42,7 +42,9 @@ class AuthService:
             raise AuthenticationError("Invalid username or password")
 
         if not user.is_verified:
-            raise AuthenticationError("Email not verified. Please verify your email first.")
+            raise AuthenticationError(
+                "Email not verified. Please verify your email first."
+            )
 
         # Create access token and set as cookie
         access_token_expires = timedelta(seconds=settings.ACCESS_TOKEN_EXPIRE_SECONDS)
@@ -79,7 +81,9 @@ class AuthService:
         user = await self.user_repository.get_by_email(email)
         if not user:
             # Don't reveal that the user doesn't exist for security reasons
-            return {"message": "If a user with this email exists, a verification token has been sent"}
+            return {
+                "message": "If a user with this email exists, a verification token has been sent"
+            }
 
         # Create verification token
         verification_token = create_verification_token(user_id=user.id)
@@ -90,7 +94,9 @@ class AuthService:
         print(f"Verification token for user {email}: {verification_token}")
         print(f"Verification URL would be: /auth/verify?token={verification_token}")
 
-        return {"message": "If a user with this email exists, a verification token has been sent"}
+        return {
+            "message": "If a user with this email exists, a verification token has been sent"
+        }
 
     async def verify_token(self, token: str) -> UserResponse:
         token_data = decode_verification_token(token)
@@ -123,3 +129,44 @@ class AuthService:
             raise NotFoundError("User not found")
 
         return UserResponse.model_validate(user)
+
+    async def update_user_info(
+        self, user_id: str, user_data: UserUpdate
+    ) -> UserResponse:
+        user = await self.user_repository.get_by_id(user_id)
+
+        if not user:
+            raise NotFoundError("User not found")
+
+        if user_data.first_name is not None:
+            user.first_name = user_data.first_name
+        if user_data.last_name is not None:
+            user.last_name = user_data.last_name
+
+        updated_user = await self.user_repository.update_user(user)
+
+        return UserResponse.model_validate(updated_user)
+
+    async def delete_user_info(self, user_id: str) -> None:
+        user = await self.user_repository.get_by_id(user_id)
+
+        if not user:
+            raise NotFoundError("User not found")
+
+        await self.user_repository.delete_user(user)
+
+    async def change_password(
+        self, user_id: str, old_password: str, new_password: str
+    ) -> UserResponse:
+        user = await self.user_repository.get_by_id(user_id)
+
+        if not user:
+            raise NotFoundError("User not found")
+        if not verify_password(old_password, user.hashed_password):
+            raise AuthenticationError("Invalid password")
+
+        user.hashed_password = get_password_hash(new_password)
+
+        updated_user = await self.user_repository.update_user(user)
+
+        return UserResponse.model_validate(updated_user)

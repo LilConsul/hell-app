@@ -6,8 +6,10 @@ from app.auth.models import User
 class UserRepository:
     @staticmethod
     async def create(
-            email: str, hashed_password: str,
-            first_name: Optional[str] = None, last_name: Optional[str] = None
+        email: str,
+        hashed_password: str,
+        first_name: Optional[str] = None,
+        last_name: Optional[str] = None,
     ) -> User:
         user = User(
             email=email,
@@ -36,3 +38,7 @@ class UserRepository:
     async def update_user(user: User) -> User:
         await user.save()
         return user
+
+    @staticmethod
+    async def delete_user(user: User) -> None:
+        await user.delete()

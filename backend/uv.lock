@@ -51,6 +51,7 @@ dependencies = [
 test = [
     { name = "faker" },
     { name = "httpx" },
+    { name = "mongomock-motor" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
 ]
@@ -64,6 +65,7 @@ requires-dist = [
     { name = "fastapi-mail", specifier = ">=1.4.2" },
     { name = "httpx", marker = "extra == 'test'", specifier = ">=0.28.1" },
     { name = "itsdangerous", specifier = ">=2.2.0" },
+    { name = "mongomock-motor", marker = "extra == 'test'", specifier = ">=0.0.35" },
     { name = "pydantic-settings", specifier = ">=2.8.1" },
     { name = "pyjwt", specifier = ">=2.10.1" },
     { name = "pytest", marker = "extra == 'test'", specifier = ">=8.3.5" },
@@ -425,6 +427,32 @@ wheels = [
 ]
 
 [[package]]
+name = "mongomock"
+version = "4.3.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "packaging" },
+    { name = "pytz" },
+    { name = "sentinels" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/4d/a4/4a560a9f2a0bec43d5f63104f55bc48666d619ca74825c8ae156b08547cf/mongomock-4.3.0.tar.gz", hash = "sha256:32667b79066fabc12d4f17f16a8fd7361b5f4435208b3ba32c226e52212a8c30", size = 135862 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/94/4d/8bea712978e3aff017a2ab50f262c620e9239cc36f348aae45e48d6a4786/mongomock-4.3.0-py2.py3-none-any.whl", hash = "sha256:5ef86bd12fc8806c6e7af32f21266c61b6c4ba96096f85129852d1c4fec1327e", size = 64891 },
+]
+
+[[package]]
+name = "mongomock-motor"
+version = "0.0.35"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "mongomock" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/b7/e0/a74e64569d0fa8211ed69a86809b7f65898925a66f968cc8c51cd295a065/mongomock_motor-0.0.35.tar.gz", hash = "sha256:123aae6286013e0cfbcb3bd331120ef5cd01b26719d1bea561759fb415ffa091", size = 4982 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/f2/f6/a8f89e149b58195dbe562b1c214c4bd1573415a09486e4b41aff59b7df07/mongomock_motor-0.0.35-py3-none-any.whl", hash = "sha256:ea18d51887c77fc4e3c0491c33fdc4c0963308319168658d0fe907227b46e9d3", size = 5928 },
+]
+
+[[package]]
 name = "motor"
 version = "3.7.0"
 source = { registry = "https://pypi.org/simple" }
@@ -599,6 +627,15 @@ wheels = [
 ]
 
 [[package]]
+name = "pytz"
+version = "2025.2"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/f8/bf/abbd3cdfb8fbc7fb3d4d38d320f2441b1e7cbe29be4f23797b4a2b5d8aac/pytz-2025.2.tar.gz", hash = "sha256:360b9e3dbb49a209c21ad61809c7fb453643e048b38924c765813546746e81c3", size = 320884 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/81/c4/34e93fe5f5429d7570ec1fa436f1986fb1f00c3e0f43a589fe2bbcd22c3f/pytz-2025.2-py2.py3-none-any.whl", hash = "sha256:5ddf76296dd8c44c26eb8f4b6f35488f3ccbf6fbbd7adee0b7262d43f0ec2f00", size = 509225 },
+]
+
+[[package]]
 name = "pyyaml"
 version = "6.0.2"
 source = { registry = "https://pypi.org/simple" }
@@ -641,6 +678,12 @@ sdist = { url = "https://files.pythonhosted.org/packages/5b/8a/71cfbf6bf6257ea78
 wheels = [
     { url = "https://files.pythonhosted.org/packages/7e/1b/1c2f43af46456050b27810a7a013af8a7e12bc545a0cdc00eb0df55eb769/rich_toolkit-0.13.2-py3-none-any.whl", hash = "sha256:f3f6c583e5283298a2f7dbd3c65aca18b7f818ad96174113ab5bec0b0e35ed61", size = 13566 },
 ]
+
+[[package]]
+name = "sentinels"
+version = "1.0.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/ac/b7/1af07a98390aba07da31807f3723e7bbd003d6441b4b3d67b20d97702b23/sentinels-1.0.0.tar.gz", hash = "sha256:7be0704d7fe1925e397e92d18669ace2f619c92b5d4eb21a89f31e026f9ff4b1", size = 4074 }
 
 [[package]]
 name = "shellingham"

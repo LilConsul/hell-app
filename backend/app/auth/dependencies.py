@@ -1,8 +1,8 @@
+from app.auth.exceptions import AuthenticationError
 from app.auth.infrastructure import CookieTokenAuth, validate_token
 from app.auth.oauth_service import OAuthService
 from app.auth.repository import UserRepository
 from app.auth.service import AuthService
-from app.core.exceptions import AuthenticationError
 from fastapi import Depends
 
 

@@ -1,11 +1,9 @@
 from datetime import timedelta
-from typing import Optional
 
-from app.auth.models import User
+from app.auth.exceptions import AuthenticationError, BadRequestError, NotFoundError
 from app.auth.repository import UserRepository
 from app.auth.schemas import UserCreate, UserLogin, UserResponse
-from app.core.exceptions import AuthenticationError, BadRequestError, NotFoundError
-from app.core.security import (
+from app.auth.security import (
     create_access_token,
     create_verification_token,
     decode_verification_token,

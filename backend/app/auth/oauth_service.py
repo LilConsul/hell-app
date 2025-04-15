@@ -1,10 +1,9 @@
 from typing import Any, Dict
 
-import httpx
+from app.auth.exceptions import AuthenticationError
 from app.auth.repository import UserRepository
 from app.auth.schemas import OAuthRequest, SocialAccount
-from app.core.exceptions import AuthenticationError
-from app.core.security import create_access_token
+from app.auth.security import create_access_token
 from app.settings import settings
 from fastapi import Response
 

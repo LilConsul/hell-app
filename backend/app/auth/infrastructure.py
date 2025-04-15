@@ -1,7 +1,6 @@
 from typing import Dict, Optional
 
 import jwt
-from app.core.exceptions import AuthenticationError
 from app.settings import settings
 from fastapi import HTTPException, Request, status
 from fastapi.openapi.models import OAuthFlows as OAuthFlowsModel

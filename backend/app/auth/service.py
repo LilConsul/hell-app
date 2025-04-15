@@ -46,13 +46,11 @@ class AuthService:
                 "Email not verified. Please verify your email first."
             )
 
-        # Create access token and set as cookie
         access_token_expires = timedelta(seconds=settings.ACCESS_TOKEN_EXPIRE_SECONDS)
         access_token = create_access_token(
             subject=user.id, expires_delta=access_token_expires
         )
 
-        # Set cookie with httponly and secure flags
         response.set_cookie(
             key="access_token",
             value=access_token,
@@ -66,7 +64,6 @@ class AuthService:
         return {"access_token": access_token, "token_type": "bearer"}
 
     async def logout(self, response: Response) -> dict:
-        # Delete the cookie
         response.delete_cookie(
             key="access_token",
             httponly=True,
@@ -80,12 +77,10 @@ class AuthService:
     async def send_verification_token(self, email: str) -> dict:
         user = await self.user_repository.get_by_email(email)
         if not user:
-            # Don't reveal that the user doesn't exist for security reasons
             return {
                 "message": "If a user with this email exists, a verification token has been sent"
             }
 
-        # Create verification token
         verification_token = create_verification_token(user_id=user.id)
 
         # In a real app, you'd send this via email with a URL like:
@@ -120,6 +115,48 @@ class AuthService:
         user = await self.user_repository.set_verified(user)
 
         return UserResponse.model_validate(user)
+
+    async def send_password_reset_token(self, email: str) -> dict:
+        user = await self.user_repository.get_by_email(email)
+        if not user:
+            return {
+                "message": "If a user with this email exists, a password reset token has been sent"
+            }
+
+        password_reset_token = create_verification_token(user_id=user.id, token_type="password_reset")
+
+        # In a real app, you'd send this via email with a URL like:
+        # password_reset_url = f"{settings.frontend_url}/reset-password?token={password_reset_token}"
+        # But we'll just print it to console for this example
+        print(f"Password reset token for user {email}: {password_reset_token}")
+        print(f"Password reset URL would be: /auth/reset-password?token={password_reset_token}")
+
+        return {
+            "message": "If a user with this email exists, a password reset token has been sent"
+        }
+
+    async def reset_password(self, token: str, new_password: str) -> UserResponse:
+        token_data = decode_verification_token(token)
+        if not token_data:
+            raise AuthenticationError("Invalid or expired password reset token")
+
+        user_id = token_data.get("user_id")
+        token_type = token_data.get("type")
+
+        if token_type != "password_reset":
+            raise AuthenticationError("Invalid token type")
+
+        user = await self.user_repository.get_by_id(user_id)
+        if not user:
+            raise NotFoundError("User not found")
+
+        # Update user's password
+        hashed_password = get_password_hash(new_password)
+        user.hashed_password = hashed_password
+
+        updated_user = await self.user_repository.update_user(user)
+
+        return UserResponse.model_validate(updated_user)
 
     # User methods
     async def get_user_info(self, user_id: str) -> UserResponse:

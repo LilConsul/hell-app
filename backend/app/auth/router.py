@@ -12,6 +12,7 @@ from app.auth.schemas import (
     UserResponse,
     UserUpdate,
     UserUpdatePassword,
+    UserResetPassword,
 )
 from app.auth.service import AuthService
 from fastapi import APIRouter, Body, Depends, Response
@@ -73,6 +74,32 @@ async def verify_token(
     This endpoint would be accessed via a link in the verification email
     """
     return await auth_service.verify_token(token)
+
+
+@router.post("/send-password-reset")
+async def send_password_reset_token(
+    email_request: EmailRequest,
+    auth_service: AuthService = Depends(get_auth_service),
+):
+    """
+    Send password reset token (will print to console)
+
+    In a real application, this would send an email with a password reset link
+    """
+    return await auth_service.send_password_reset_token(email_request.email)
+
+
+@router.post("/reset-password")
+async def reset_password(
+    data: UserResetPassword,
+    auth_service: AuthService = Depends(get_auth_service),
+):
+    """
+    Reset password using the token
+
+    This endpoint would be accessed via a link in the password reset email
+    """
+    return await auth_service.reset_password(data.token, data.password)
 
 
 # OAuth endpoints

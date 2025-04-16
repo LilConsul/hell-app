@@ -26,10 +26,12 @@ class TestUserRepository:
         # Execute create method
         repo = UserRepository()
         user = await repo.create(
-            email=email,
-            hashed_password=hashed_password,
-            first_name=first_name,
-            last_name=last_name,
+            {
+                "email": email,
+                "hashed_password": hashed_password,
+                "first_name": first_name,
+                "last_name": last_name,
+            }
         )
 
         # Verify user was created correctly
@@ -54,7 +56,12 @@ class TestUserRepository:
         email = fake.email()
         hashed_password = get_password_hash("TestPassword123!")
         repo = UserRepository()
-        user = await repo.create(email=email, hashed_password=hashed_password)
+        user = await repo.create(
+            {
+                "email": email,
+                "hashed_password": hashed_password,
+            }
+        )
         user_id = user.id
 
         # Test get_by_id method
@@ -77,7 +84,12 @@ class TestUserRepository:
         email = fake.email()
         hashed_password = get_password_hash("TestPassword123!")
         repo = UserRepository()
-        user = await repo.create(email=email, hashed_password=hashed_password)
+        user = await repo.create(
+            {
+                "email": email,
+                "hashed_password": hashed_password,
+            }
+        )
 
         # Test get_by_email method
         fetched_user = await repo.get_by_email(email)
@@ -94,27 +106,6 @@ class TestUserRepository:
         # Clean up
         await user.delete()
 
-    async def test_set_verified(self, fake):
-        # Create an unverified test user
-        email = fake.email()
-        hashed_password = get_password_hash("TestPassword123!")
-        repo = UserRepository()
-        user = await repo.create(email=email, hashed_password=hashed_password)
-        assert user.is_verified is False
-
-        # Test set_verified method
-        verified_user = await repo.set_verified(user)
-
-        # Verify user was updated correctly
-        assert verified_user.is_verified is True
-
-        # Verify changes persisted to database
-        db_user = await User.find_one(User.email == email)
-        assert db_user.is_verified is True
-
-        # Clean up
-        await user.delete()
-
     async def test_update_user(self, fake):
         # Create a test user
         email = fake.email()
@@ -123,19 +114,25 @@ class TestUserRepository:
         last_name = fake.last_name()
         repo = UserRepository()
         user = await repo.create(
-            email=email,
-            hashed_password=hashed_password,
-            first_name=first_name,
-            last_name=last_name,
+            {
+                "email": email,
+                "hashed_password": hashed_password,
+                "first_name": first_name,
+                "last_name": last_name,
+            }
         )
 
         # Update the user
         new_first_name = fake.first_name()
         new_last_name = fake.last_name()
-        user.first_name = new_first_name
-        user.last_name = new_last_name
 
-        updated_user = await repo.update_user(user)
+        updated_user = await repo.update(
+            user.id,
+            {
+                "first_name": new_first_name,
+                "last_name": new_last_name,
+            },
+        )
 
         # Verify user was updated correctly
         assert updated_user.first_name == new_first_name
@@ -154,14 +151,19 @@ class TestUserRepository:
         email = fake.email()
         hashed_password = get_password_hash("TestPassword123!")
         repo = UserRepository()
-        user = await repo.create(email=email, hashed_password=hashed_password)
+        user = await repo.create(
+            {
+                "email": email,
+                "hashed_password": hashed_password,
+            }
+        )
         user_id = user.id
 
         # Verify user exists
         assert await User.find_one(User.id == user_id) is not None
 
         # Delete the user
-        await repo.delete_user(user)
+        await repo.delete(user.id)
 
         # Verify user no longer exists
         assert await User.find_one(User.id == user_id) is None
@@ -178,9 +180,9 @@ class TestAuthService:
         mock.get_by_email = AsyncMock()
         mock.get_by_id = AsyncMock()
         mock.create = AsyncMock()
-        mock.set_verified = AsyncMock()
-        mock.update_user = AsyncMock()
-        mock.delete_user = AsyncMock()
+        mock.update = AsyncMock()
+        mock.delete = AsyncMock()
+        mock.save = AsyncMock()
         return mock
 
     @pytest.fixture

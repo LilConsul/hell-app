@@ -24,12 +24,13 @@ class AuthService:
             raise BadRequestError(f"User with email {user_data.email} already exists")
 
         hashed_password = get_password_hash(user_data.password)
-        await self.user_repository.create(
-            email=user_data.email,
-            hashed_password=hashed_password,
-            first_name=user_data.first_name,
-            last_name=user_data.last_name,
-        )
+        user_dict = {
+            "email": user_data.email,
+            "hashed_password": hashed_password,
+            "first_name": user_data.first_name,
+            "last_name": user_data.last_name,
+        }
+        await self.user_repository.create(user_dict)
 
     async def login(self, login_data: UserLogin, response: Response) -> UserResponse:
         user = await self.user_repository.get_by_email(login_data.email)
@@ -104,7 +105,8 @@ class AuthService:
             raise AuthenticationError("User is already verified")
 
         # Mark user as verified
-        await self.user_repository.set_verified(user)
+        user.is_verified = True
+        await self.user_repository.save(user)
 
     async def send_password_reset_token(self, email: str) -> None:
         user = await self.user_repository.get_by_email(email)
@@ -141,8 +143,7 @@ class AuthService:
         # Update user's password
         hashed_password = get_password_hash(new_password)
         user.hashed_password = hashed_password
-
-        await self.user_repository.update_user(user)
+        await self.user_repository.save(user)
 
     # User methods
     async def get_user_info(self, user_id: str) -> UserResponse:
@@ -157,37 +158,32 @@ class AuthService:
         self, user_id: str, user_data: UserUpdate
     ) -> UserResponse:
         user = await self.user_repository.get_by_id(user_id)
-
         if not user:
             raise NotFoundError("User not found")
 
+        update_data = {}
         if user_data.first_name is not None:
-            user.first_name = user_data.first_name
+            update_data["first_name"] = user_data.first_name
         if user_data.last_name is not None:
-            user.last_name = user_data.last_name
+            update_data["last_name"] = user_data.last_name
 
-        updated_user = await self.user_repository.update_user(user)
-
+        updated_user = await self.user_repository.update(user_id, update_data)
         return UserResponse.model_validate(updated_user)
 
     async def delete_user_info(self, user_id: str) -> None:
-        user = await self.user_repository.get_by_id(user_id)
-
-        if not user:
+        success = await self.user_repository.delete(user_id)
+        if not success:
             raise NotFoundError("User not found")
-
-        await self.user_repository.delete_user(user)
 
     async def change_password(
         self, user_id: str, old_password: str, new_password: str
     ) -> None:
         user = await self.user_repository.get_by_id(user_id)
-
         if not user:
             raise NotFoundError("User not found")
         if not verify_password(old_password, user.hashed_password):
             raise AuthenticationError("Invalid password")
 
-        user.hashed_password = get_password_hash(new_password)
-
-        await self.user_repository.update_user(user)
+        await self.user_repository.update(
+            user_id, {"hashed_password": get_password_hash(new_password)}
+        )

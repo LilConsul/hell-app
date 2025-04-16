@@ -8,6 +8,7 @@ from app.settings import settings
 from fastapi import Response
 
 
+# TODO: Implement Google OAuth login flow
 class OAuthService:
     """Service to handle OAuth authentication with external providers"""
 

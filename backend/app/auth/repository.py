@@ -1,44 +1,15 @@
 from typing import Optional
 
 from app.auth.models import User
+from app.core.repository.base_repository import BaseRepository
 
 
-class UserRepository:
-    @staticmethod
-    async def create(
-        email: str,
-        hashed_password: str,
-        first_name: Optional[str] = None,
-        last_name: Optional[str] = None,
-    ) -> User:
-        user = User(
-            email=email,
-            hashed_password=hashed_password,
-            first_name=first_name,
-            last_name=last_name,
-        )
-        await user.insert()
-        return user
+class UserRepository(BaseRepository[User]):
+    """Repository for User model operations"""
 
-    @staticmethod
-    async def get_by_id(user_id: str) -> Optional[User]:
-        return await User.find_one(User.id == user_id)
+    def __init__(self):
+        super().__init__(User)
 
-    @staticmethod
-    async def get_by_email(email: str) -> Optional[User]:
+    async def get_by_email(self, email: str) -> Optional[User]:
+        """Get a user by email"""
         return await User.find_one(User.email == email)
-
-    @staticmethod
-    async def set_verified(user: User) -> User:
-        user.is_verified = True
-        await user.save()
-        return user
-
-    @staticmethod
-    async def update_user(user: User) -> User:
-        await user.save()
-        return user
-
-    @staticmethod
-    async def delete_user(user: User) -> None:
-        await user.delete()

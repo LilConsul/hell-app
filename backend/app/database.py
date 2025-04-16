@@ -8,7 +8,7 @@ async def init_db():
     client = AsyncIOMotorClient(settings.MONGODB_URL)
 
     await init_beanie(
-        database=client.db_name,
+        database=client[settings.MONGO_DATABASE],
         document_models=[
             User,
         ],

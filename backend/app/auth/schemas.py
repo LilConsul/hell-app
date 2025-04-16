@@ -1,7 +1,7 @@
-from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, EmailStr, Field, ConfigDict
+from app.schemas import BaseReturn
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 
 class UserBase(BaseModel):
@@ -38,18 +38,10 @@ class UserResponse(UserBase):
     id: str
     first_name: Optional[str] = None
     last_name: Optional[str] = None
-    is_verified: bool
-    created_at: datetime
-    updated_at: datetime
 
     model_config = ConfigDict(
         from_attributes=True,
     )
-
-
-class Token(BaseModel):
-    access_token: str
-    token_type: str = "bearer"
 
 
 class TokenPayload(BaseModel):
@@ -75,3 +67,9 @@ class SocialAccount(BaseModel):
     provider: str
     provider_user_id: str
     email: str
+
+
+class AuthReturn(BaseReturn):
+    """Schema for auth responses"""
+
+    data: UserResponse | None = None

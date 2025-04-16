@@ -52,12 +52,12 @@ def decode_token(token: str) -> Dict[str, Any]:
         return None
 
 
-def create_verification_token(user_id: str) -> str:
+def create_verification_token(user_id: str, token_type: str) -> str:
     """Create URL-safe token for email verification"""
     data = {
         "user_id": user_id,
         "created": datetime.now(timezone.utc).timestamp(),
-        "type": "verification",
+        "type": token_type,
     }
     return serializer.dumps(data)
 

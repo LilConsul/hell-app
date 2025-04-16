@@ -59,8 +59,6 @@ class SocialConnection(Document, TimestampMixin):
     # Change from string to Link for proper relationship
     user: Link[User]
     email: str
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    last_login: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     class Settings:
         name = "social_connections"

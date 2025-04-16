@@ -7,6 +7,7 @@ from app.auth.schemas import (
     AuthReturn,
     EmailRequest,
     OAuthRequest,
+    Token,
     UserCreate,
     UserLogin,
     UserResetPassword,
@@ -14,7 +15,7 @@ from app.auth.schemas import (
     UserUpdatePassword,
 )
 from app.auth.service import AuthService
-from fastapi import APIRouter, Body, Depends, Response
+from fastapi import APIRouter, Depends, Response
 
 router = APIRouter(tags=["auth"], prefix="/auth")
 
@@ -70,7 +71,7 @@ async def send_verification_token(
 
 @router.post("/verify", response_model=AuthReturn, response_model_exclude_none=True)
 async def verify_token(
-    token: str = Body(..., description="Email verification token"),
+    token: Token,
     auth_service: AuthService = Depends(get_auth_service),
 ):
     """
@@ -78,7 +79,7 @@ async def verify_token(
 
     This endpoint would be accessed via a link in the verification email
     """
-    await auth_service.verify_token(token)
+    await auth_service.verify_token(token.token)
     return {"message": "Email verified successfully"}
 
 

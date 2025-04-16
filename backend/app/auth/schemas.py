@@ -45,6 +45,10 @@ class UserResponse(UserBase):
     )
 
 
+class Token(BaseModel):
+    token: str
+
+
 class EmailRequest(BaseModel):
     email: EmailStr
 

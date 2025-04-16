@@ -75,7 +75,9 @@ class AuthService:
         if not user:
             raise BadRequestError(f"No user found with email {email}")
 
-        verification_token = create_verification_token(user_id=user.id, token_type="verification")
+        verification_token = create_verification_token(
+            user_id=user.id, token_type="verification"
+        )
 
         # In a real app, you'd send this via email with a URL like:
         # verification_url = f"{settings.frontend_url}/verify?token={verification_token}"

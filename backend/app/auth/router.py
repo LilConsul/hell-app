@@ -10,7 +10,6 @@ from app.auth.schemas import (
     UserCreate,
     UserLogin,
     UserResetPassword,
-    UserResponse,
     UserUpdate,
     UserUpdatePassword,
 )
@@ -21,7 +20,7 @@ router = APIRouter(tags=["auth"], prefix="/auth")
 
 
 # Authentication endpoints
-@router.post("/register", response_model=AuthReturn)
+@router.post("/register", response_model=AuthReturn, response_model_exclude_none=True)
 async def register(
     user_data: UserCreate,
     auth_service: AuthService = Depends(get_auth_service),
@@ -31,7 +30,7 @@ async def register(
     return {"message": "User registered successfully. Please verify your email."}
 
 
-@router.post("/login", response_model=AuthReturn)
+@router.post("/login", response_model=AuthReturn, response_model_exclude_none=True)
 async def login(
     response: Response,
     login_data: UserLogin,
@@ -42,7 +41,7 @@ async def login(
     return {"message": "Login successful", "data": user}
 
 
-@router.post("/logout", response_model=AuthReturn)
+@router.post("/logout", response_model=AuthReturn, response_model_exclude_none=True)
 async def logout(
     response: Response,
     auth_service: AuthService = Depends(get_auth_service),
@@ -53,7 +52,9 @@ async def logout(
 
 
 # Email verification endpoints
-@router.post("/send-verification", response_model=AuthReturn)
+@router.post(
+    "/send-verification", response_model=AuthReturn, response_model_exclude_none=True
+)
 async def send_verification_token(
     email_request: EmailRequest,
     auth_service: AuthService = Depends(get_auth_service),
@@ -67,7 +68,7 @@ async def send_verification_token(
     return {"message": "Verification email sent. Please check your inbox."}
 
 
-@router.post("/verify", response_model=AuthReturn)
+@router.post("/verify", response_model=AuthReturn, response_model_exclude_none=True)
 async def verify_token(
     token: str = Body(..., description="Email verification token"),
     auth_service: AuthService = Depends(get_auth_service),
@@ -81,7 +82,9 @@ async def verify_token(
     return {"message": "Email verified successfully"}
 
 
-@router.post("/send-password-reset", response_model=AuthReturn)
+@router.post(
+    "/send-password-reset", response_model=AuthReturn, response_model_exclude_none=True
+)
 async def send_password_reset_token(
     email_request: EmailRequest,
     auth_service: AuthService = Depends(get_auth_service),
@@ -95,7 +98,9 @@ async def send_password_reset_token(
     return {"message": "Password reset email sent. Please check your inbox."}
 
 
-@router.post("/reset-password", response_model=AuthReturn)
+@router.post(
+    "/reset-password", response_model=AuthReturn, response_model_exclude_none=True
+)
 async def reset_password(
     data: UserResetPassword,
     auth_service: AuthService = Depends(get_auth_service),
@@ -110,7 +115,7 @@ async def reset_password(
 
 
 # OAuth endpoints
-@router.post("/google", response_model=AuthReturn)
+@router.post("/google", response_model=AuthReturn, response_model_exclude_none=True)
 async def google_login(
     response: Response,
     oauth_data: OAuthRequest,
@@ -127,7 +132,7 @@ async def google_login(
 
 
 # User info endpoints
-@router.get("/me", response_model=AuthReturn)
+@router.get("/me", response_model=AuthReturn, response_model_exclude_none=True)
 async def get_user_info(
     user_id: str = Depends(get_current_user_id),
     auth_service: AuthService = Depends(get_auth_service),
@@ -137,7 +142,7 @@ async def get_user_info(
     return {"message": "User info retrieved successfully", "data": data}
 
 
-@router.put("/me", response_model=AuthReturn)
+@router.put("/me", response_model=AuthReturn, response_model_exclude_none=True)
 async def update_user_info(
     user_data: UserUpdate,
     user_id: str = Depends(get_current_user_id),
@@ -148,7 +153,7 @@ async def update_user_info(
     return {"message": "User info updated successfully", "data": data}
 
 
-@router.delete("/me", response_model=AuthReturn)
+@router.delete("/me", response_model=AuthReturn, response_model_exclude_none=True)
 async def delete_user_info(
     user_id: str = Depends(get_current_user_id),
     auth_service: AuthService = Depends(get_auth_service),
@@ -158,7 +163,9 @@ async def delete_user_info(
     return {"message": "User deleted successfully"}
 
 
-@router.put("/me/change-password", response_model=AuthReturn)
+@router.put(
+    "/me/change-password", response_model=AuthReturn, response_model_exclude_none=True
+)
 async def change_password(
     password_data: UserUpdatePassword,
     user_id: str = Depends(get_current_user_id),

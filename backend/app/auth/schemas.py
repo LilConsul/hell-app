@@ -38,15 +38,11 @@ class UserResponse(UserBase):
     id: str
     first_name: Optional[str] = None
     last_name: Optional[str] = None
+    role: str
 
     model_config = ConfigDict(
         from_attributes=True,
     )
-
-
-class TokenPayload(BaseModel):
-    sub: Optional[str] = None
-    exp: Optional[int] = None
 
 
 class EmailRequest(BaseModel):

@@ -1,20 +1,27 @@
 import uuid
 from datetime import datetime, timezone
+from enum import Enum
 from typing import List, Optional
 
+from app.database.mixins import TimestampMixin
 from beanie import BackLink, Document, Indexed, Link
-from pydantic import EmailStr, Field, ConfigDict
+from pydantic import ConfigDict, EmailStr, Field
 
 
-class User(Document):
+class UserRole(str, Enum):
+    STUDENT = "student"
+    TEACHER = "teacher"
+    ADMIN = "admin"
+
+
+class User(Document, TimestampMixin):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     email: Indexed(EmailStr, unique=True)
     hashed_password: str
     first_name: Optional[str] = None
     last_name: Optional[str] = None
     is_verified: bool = False
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    role: UserRole = UserRole.STUDENT
 
     # Add a back-reference to social connections
     social_connections: List[BackLink["SocialConnection"]] = Field(
@@ -36,6 +43,7 @@ class User(Document):
                 "first_name": "John",
                 "last_name": "Doe",
                 "is_verified": True,
+                "role": "student",
                 "created_at": "2023-01-01T00:00:00.000Z",
                 "updated_at": "2023-01-01T00:00:00.000Z",
             }
@@ -43,7 +51,7 @@ class User(Document):
     )
 
 
-class SocialConnection(Document):
+class SocialConnection(Document, TimestampMixin):
     """Model to track social login connections"""
 
     provider: str  # "google", "github", etc.

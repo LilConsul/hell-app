@@ -46,7 +46,7 @@ class AuthService:
 
         access_token_expires = timedelta(seconds=settings.ACCESS_TOKEN_EXPIRE_SECONDS)
         access_token = create_access_token(
-            subject=user.id, expires_delta=access_token_expires
+            subject=user.id, role=user.role, expires_delta=access_token_expires
         )
 
         response.set_cookie(

@@ -1,11 +1,10 @@
 import pytest
-from beanie import init_beanie
 from faker import Faker
 from httpx import ASGITransport, AsyncClient
 from mongomock_motor import AsyncMongoMockClient
-
-from app.auth.models import User
 from app.main import app
+from beanie import init_beanie
+from app.auth.models import User
 
 
 @pytest.fixture

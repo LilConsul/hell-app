@@ -1,9 +1,8 @@
 from datetime import datetime, timezone
 from typing import Any, Dict, Generic, List, Optional, Type, TypeVar
 
-from beanie import Document
-
 from app.core.repository.abstract_repository import AbstractRepository
+from beanie import Document
 
 T = TypeVar("T", bound=Document)
 

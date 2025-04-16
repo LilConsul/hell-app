@@ -18,7 +18,9 @@ class AbstractRepository(ABC, Generic[T]):
         pass
 
     @abstractmethod
-    async def get_by_field(self, field_name: str, field_value: Any) -> Optional[T]:
+    async def get_by_field(
+        self, field_name: str, field_value: Any
+    ) -> Optional[T]:
         """Get an entity by a specific field"""
         pass
 

@@ -3,10 +3,9 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import List, Optional
 
+from app.database.mixins import TimestampMixin
 from beanie import BackLink, Document, Indexed, Link
 from pydantic import ConfigDict, EmailStr, Field
-
-from app.database.mixins import TimestampMixin
 
 
 class UserRole(str, Enum):

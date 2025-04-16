@@ -2,7 +2,6 @@ from unittest.mock import patch
 
 import jwt
 import pytest
-
 from app.auth.models import User
 from app.auth.security import get_password_hash
 from app.settings import settings
@@ -240,7 +239,6 @@ class TestAuthRouter:
         # Verify user is now marked as verified
         updated_user = await User.find_one(User.id == user.id)
         assert updated_user.is_verified is True
-
     @patch("app.auth.service.create_verification_token")
     async def test_send_password_reset_token(
         self, mock_create_token, client, test_user

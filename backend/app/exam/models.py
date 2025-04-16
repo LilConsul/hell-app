@@ -4,7 +4,7 @@ from enum import Enum
 from typing import Any, Dict, List, Optional
 
 from beanie import BackLink, Document, Link
-from pydantic import ConfigDict, Field, BaseModel, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.auth.models import User
 from app.database.mixins import TimestampMixin
@@ -122,7 +122,7 @@ class Question(Document, TimestampMixin):
                 "created_at": "2025-04-16T11:01:29.000Z",
                 "updated_at": "2025-04-16T11:01:29.000Z",
             }
-        }
+        },
     )
 
 
@@ -164,7 +164,7 @@ class Collection(Document, TimestampMixin):
                 "created_at": "2025-04-16T11:01:29.000Z",
                 "updated_at": "2025-04-16T11:01:29.000Z",
             }
-        }
+        },
     )
 
 
@@ -223,7 +223,7 @@ class ExamInstance(Document, TimestampMixin):
                 "created_at": "2025-04-16T11:01:29.000Z",
                 "updated_at": "2025-04-16T11:01:29.000Z",
             }
-        }
+        },
     )
 
 
@@ -280,7 +280,7 @@ class StudentExam(Document, TimestampMixin):
                 "created_at": "2025-04-16T11:01:29.000Z",
                 "updated_at": "2025-04-16T11:01:29.000Z",
             }
-        }
+        },
     )
 
 
@@ -317,5 +317,5 @@ class StudentResponse(Document, TimestampMixin):
                 "created_at": "2025-04-16T11:01:29.000Z",
                 "updated_at": "2025-04-16T11:01:29.000Z",
             }
-        }
+        },
     )

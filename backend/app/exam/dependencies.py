@@ -1,6 +1,7 @@
 from fastapi import Depends
-from app.exam.models import Question, Collection
-from app.exam.repository import QuestionRepository, CollectionRepository
+
+from app.exam.models import Collection, Question
+from app.exam.repository import CollectionRepository, QuestionRepository
 from app.exam.teacher.services import CollectionService
 
 

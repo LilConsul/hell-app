@@ -19,7 +19,9 @@ async def create_collection(
     collection_service: CollectionService = Depends(get_collection_service),
 ):
     """Create a new question collection"""
-    collection_id = await collection_service.create_collection(collection_data, teacher_id)
+    collection_id = await collection_service.create_collection(
+        collection_data, teacher_id
+    )
     return {"id": collection_id, "message": "Collection created successfully"}
 
 

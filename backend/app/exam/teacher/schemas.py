@@ -1,9 +1,10 @@
-from typing import Optional, List
 from datetime import datetime
+from typing import List, Optional
+
 from fastapi import File
 from pydantic import BaseModel, ConfigDict
 
-from app.exam.models import ExamStatus, QuestionType, Question
+from app.exam.models import ExamStatus, Question, QuestionType
 
 
 class TimeStamp(BaseModel):

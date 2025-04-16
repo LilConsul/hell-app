@@ -1,6 +1,7 @@
+from beanie import Link
+
 from app.exam.repository import CollectionRepository, QuestionRepository
 from app.exam.teacher.schemas import CreateCollection, GetCollection, QuestionSchema
-from beanie import Link
 
 
 class CollectionService:

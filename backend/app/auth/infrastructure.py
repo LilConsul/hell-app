@@ -55,17 +55,3 @@ class CookieTokenAuth(OAuth2):
 
         return token
 
-
-# Authentication token validator function
-def validate_token(token: str) -> Optional[str]:
-    """Validate JWT token and return user_id if valid"""
-    try:
-        payload = jwt.decode(
-            token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
-        )
-        user_id: str = payload.get("sub")
-        if not user_id:
-            return None
-        return user_id
-    except jwt.PyJWTError:
-        return None

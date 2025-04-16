@@ -154,4 +154,6 @@ async def change_password(
     auth_service: AuthService = Depends(get_auth_service),
 ):
     """Change the password of the currently logged in user"""
-    return await auth_service.change_password(user_id, password_data.password, password_data.new_password)
+    return await auth_service.change_password(
+        user_id, password_data.password, password_data.new_password
+    )

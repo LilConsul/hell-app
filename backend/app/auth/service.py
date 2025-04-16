@@ -123,13 +123,17 @@ class AuthService:
                 "message": "If a user with this email exists, a password reset token has been sent"
             }
 
-        password_reset_token = create_verification_token(user_id=user.id, token_type="password_reset")
+        password_reset_token = create_verification_token(
+            user_id=user.id, token_type="password_reset"
+        )
 
         # In a real app, you'd send this via email with a URL like:
         # password_reset_url = f"{settings.frontend_url}/reset-password?token={password_reset_token}"
         # But we'll just print it to console for this example
         print(f"Password reset token for user {email}: {password_reset_token}")
-        print(f"Password reset URL would be: /auth/reset-password?token={password_reset_token}")
+        print(
+            f"Password reset URL would be: /auth/reset-password?token={password_reset_token}"
+        )
 
         return {
             "message": "If a user with this email exists, a password reset token has been sent"

@@ -9,5 +9,7 @@ async def init_db():
 
     await init_beanie(
         database=client.db_name,
-        document_models=[User, ]
+        document_models=[
+            User,
+        ],
     )

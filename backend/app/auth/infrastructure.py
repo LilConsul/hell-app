@@ -18,13 +18,13 @@ class CookieTokenAuth(OAuth2):
     """
 
     def __init__(
-            self,
-            token_url: str,
-            cookie_name: str = "access_token",
-            scheme_name: Optional[str] = None,
-            scopes: Optional[Dict[str, str]] = None,
-            description: Optional[str] = None,
-            auto_error: bool = True,
+        self,
+        token_url: str,
+        cookie_name: str = "access_token",
+        scheme_name: Optional[str] = None,
+        scopes: Optional[Dict[str, str]] = None,
+        description: Optional[str] = None,
+        auto_error: bool = True,
     ):
         if not scopes:
             scopes = {}
@@ -60,7 +60,9 @@ class CookieTokenAuth(OAuth2):
 def validate_token(token: str) -> Optional[str]:
     """Validate JWT token and return user_id if valid"""
     try:
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        payload = jwt.decode(
+            token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
+        )
         user_id: str = payload.get("sub")
         if not user_id:
             return None

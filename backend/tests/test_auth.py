@@ -1,4 +1,3 @@
-import pytest
 from httpx import AsyncClient
 from app.auth.schemas import UserCreate, UserLogin
 

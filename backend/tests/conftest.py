@@ -23,6 +23,4 @@ def fake():
 @pytest.fixture(autouse=True)
 async def my_fixture():
     client = AsyncMongoMockClient()
-    await init_beanie(
-        document_models=[User], database=client.get_database(name="db")
-    )
+    await init_beanie(document_models=[User], database=client.get_database(name="db"))

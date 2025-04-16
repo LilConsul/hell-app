@@ -1,7 +1,8 @@
+from beanie import Link
+
 from app.core.exceptions import ForbiddenError, NotFoundError
 from app.exam.repository import CollectionRepository, QuestionRepository
 from app.exam.teacher.schemas import CreateCollection, GetCollection, QuestionSchema
-from beanie import Link
 
 
 class CollectionService:
@@ -47,21 +48,14 @@ class CollectionService:
 
     async def get_collection(self, collection_id: str) -> GetCollection:
         """Get a collection by its ID."""
-        collection = await self.collection_repository.get_by_id(collection_id)
+        collection = await self.collection_repository.get_by_id(
+            collection_id, fetch_links=True
+        )
         if not collection:
             raise NotFoundError("Collection not found")
 
-        # Get the questions associated with the collection
-        # questions = await self.question_repository.get_all_by_collection_id(
-        #     collection_id
-        # )
-        questions = await self.collection_repository.get_all_questions_by_id(collection_id)
-
         # Create a dictionary with all the collection data
         collection_data = collection.model_dump()
-
-        # Replace the questions field with the actual question objects
-        collection_data["questions"] = questions
 
         # Return the validated model
         return GetCollection.model_validate(collection_data)

@@ -13,7 +13,7 @@ class AbstractRepository(ABC, Generic[T]):
         pass
 
     @abstractmethod
-    async def get_by_id(self, entity_id: str) -> Optional[T]:
+    async def get_by_id(self, entity_id: str, fetch_links: bool = False) -> Optional[T]:
         """Get an entity by its ID"""
         pass
 

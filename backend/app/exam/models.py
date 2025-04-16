@@ -3,10 +3,11 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
-from app.auth.models import User
-from app.database.mixins import TimestampMixin
 from beanie import BackLink, Document, Link
 from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+from app.auth.models import User
+from app.database.mixins import TimestampMixin
 
 
 class QuestionType(str, Enum):
@@ -87,11 +88,8 @@ class Question(Document, TimestampMixin):
     weight: int = 1
 
     # Relationship with collections that use this question
-    collection: List[BackLink["Collection"]] = Field(
-        default_factory=list,
-        json_schema_extra={
-            "original_field": "questions",
-        },
+    collection: BackLink["Collection"] = Field(
+        json_schema_extra={"original_field": "questions"},
     )
 
     class Settings:
@@ -132,7 +130,7 @@ class Collection(Document, TimestampMixin):
     status: ExamStatus = ExamStatus.DRAFT
 
     # List of question IDs - using Link for proper relationships
-    # questions: List[Link[Question]] = Field(default_factory=list)
+    questions: List[Link[Question]] = Field(default_factory=list)
 
     # Back reference to exam instances created from this collection
     # exam_instances: List[BackLink["ExamInstance"]] = Field(

@@ -1,8 +1,9 @@
+from fastapi import APIRouter, Depends, HTTPException, status
+
 from app.auth.dependencies import get_current_teacher_id
 from app.exam.teacher.dependencies import get_collection_service
 from app.exam.teacher.schemas import CreateCollection, GetCollection, QuestionSchema
 from app.exam.teacher.services import CollectionService
-from fastapi import APIRouter, Depends, HTTPException, status
 
 router = APIRouter(
     prefix="/teacher",

@@ -20,9 +20,11 @@ class BaseRepository(AbstractRepository[T], Generic[T]):
         await entity.create()
         return entity
 
-    async def get_by_id(self, entity_id: str) -> Optional[T]:
+    async def get_by_id(self, entity_id: str, fetch_links: bool = False) -> Optional[T]:
         """Get an entity by its ID"""
-        return await self.model_class.find_one({self.model_class.id: entity_id})
+        return await self.model_class.find_one(
+            {self.model_class.id: entity_id}, fetch_links=fetch_links
+        )
 
     async def get_by_field(self, field_name: str, field_value: Any) -> Optional[T]:
         return await self.model_class.find_one({field_name: field_value})

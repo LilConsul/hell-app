@@ -24,12 +24,12 @@ class User(Document, TimestampMixin):
     role: UserRole = UserRole.STUDENT
 
     # Add a back-reference to social connections
-    social_connections: List[BackLink["SocialConnection"]] = Field(
-        default_factory=list,
-        json_schema_extra={
-            "original_field": "user",
-        },
-    )
+    # social_connections: List[BackLink["SocialConnection"]] = Field(
+    #     default_factory=list,
+    #     json_schema_extra={
+    #         "original_field": "user",
+    #     },
+    # )
 
     class Settings:
         name = "users"

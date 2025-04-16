@@ -1,5 +1,7 @@
 from datetime import timedelta
 
+from fastapi import Response
+
 from app.auth.exceptions import AuthenticationError, BadRequestError, NotFoundError
 from app.auth.repository import UserRepository
 from app.auth.schemas import UserCreate, UserLogin, UserResponse, UserUpdate
@@ -11,7 +13,6 @@ from app.auth.security import (
     verify_password,
 )
 from app.settings import settings
-from fastapi import Response
 
 
 class AuthService:

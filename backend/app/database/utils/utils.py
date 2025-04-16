@@ -1,7 +1,9 @@
-from motor.motor_asyncio import AsyncIOMotorGridFSBucket, AsyncIOMotorDatabase
-from fastapi import UploadFile, Depends
-from .connection import get_database
 import io
+
+from fastapi import Depends, UploadFile
+from motor.motor_asyncio import AsyncIOMotorDatabase, AsyncIOMotorGridFSBucket
+
+from .connection import get_database
 
 
 class GridFSManager:

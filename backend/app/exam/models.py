@@ -1,13 +1,13 @@
 import uuid
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Dict, List, Optional, Any
+from typing import Any, Dict, List, Optional
 
-from app.database.mixins import TimestampMixin
 from beanie import BackLink, Document, Link
 from pydantic import ConfigDict, Field, field_validator
 
 from app.auth.models import User
+from app.database.mixins import TimestampMixin
 
 
 class QuestionType(str, Enum):
@@ -35,8 +35,8 @@ class PassFailStatus(str, Enum):
 
 
 class ImageModel(TimestampMixin):
-    file_id: Optional[str] = None   # GridFS file ID
-    url: Optional[str] = None       # External URL alternative
+    file_id: Optional[str] = None  # GridFS file ID
+    url: Optional[str] = None  # External URL alternative
     alt: Optional[str] = None
     caption: Optional[str] = None
     filename: Optional[str] = None

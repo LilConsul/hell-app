@@ -1,3 +1,5 @@
+from fastapi import APIRouter, Depends, Response
+
 from app.auth.dependencies import (
     get_auth_service,
     get_current_user_id,
@@ -15,7 +17,6 @@ from app.auth.schemas import (
     UserUpdatePassword,
 )
 from app.auth.service import AuthService
-from fastapi import APIRouter, Depends, Response
 
 router = APIRouter(tags=["auth"], prefix="/auth")
 

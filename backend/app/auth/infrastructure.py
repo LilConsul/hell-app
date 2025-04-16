@@ -1,11 +1,12 @@
 from typing import Dict, Optional
 
 import jwt
-from app.settings import settings
 from fastapi import HTTPException, Request, status
 from fastapi.openapi.models import OAuthFlows as OAuthFlowsModel
 from fastapi.security import OAuth2
 from fastapi.security.utils import get_authorization_scheme_param
+
+from app.settings import settings
 
 
 class CookieTokenAuth(OAuth2):
@@ -54,4 +55,3 @@ class CookieTokenAuth(OAuth2):
             )
 
         return token
-

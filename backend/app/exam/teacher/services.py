@@ -1,7 +1,7 @@
-from beanie import Link
-
+from app.core.exceptions import ForbiddenError, NotFoundError
 from app.exam.repository import CollectionRepository, QuestionRepository
 from app.exam.teacher.schemas import CreateCollection, GetCollection, QuestionSchema
+from beanie import Link
 
 
 class CollectionService:
@@ -18,6 +18,7 @@ class CollectionService:
     ) -> str:
         """Create a new collection, returning the collection ID."""
         collection_data = collection_data.model_dump()
+        # TODO: created_by is Link to User not str
         collection_data["created_by"] = user_id
 
         collection = await self.collection_repository.create(collection_data)
@@ -29,9 +30,11 @@ class CollectionService:
         """Add a question to a collection."""
         collection = await self.collection_repository.get_by_id(collection_id)
         if not collection:
-            raise ValueError("Collection not found")
+            raise NotFoundError("Collection not found")
         if collection.created_by != user_id:
-            raise ValueError("You do not own this collection, can't add question to it")
+            raise ForbiddenError(
+                "You do not own this collection, can't add question to it"
+            )
 
         # Create the question
         question_data = question_data.model_dump()
@@ -42,18 +45,17 @@ class CollectionService:
         collection.questions.append(Link(question))
         await self.collection_repository.save(collection)
 
-        return question.model_dump()
-
     async def get_collection(self, collection_id: str) -> GetCollection:
         """Get a collection by its ID."""
         collection = await self.collection_repository.get_by_id(collection_id)
         if not collection:
-            raise ValueError("Collection not found")
+            raise NotFoundError("Collection not found")
 
         # Get the questions associated with the collection
-        questions = await self.question_repository.get_all_by_collection_id(
-            collection_id
-        )
+        # questions = await self.question_repository.get_all_by_collection_id(
+        #     collection_id
+        # )
+        questions = await self.collection_repository.get_all_questions_by_id(collection_id)
 
         # Create a dictionary with all the collection data
         collection_data = collection.model_dump()

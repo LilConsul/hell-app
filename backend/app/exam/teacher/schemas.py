@@ -1,10 +1,9 @@
 from datetime import datetime
 from typing import List, Optional
 
+from app.exam.models import ExamStatus, Question, QuestionType
 from fastapi import File
 from pydantic import BaseModel, ConfigDict
-
-from app.exam.models import ExamStatus, Question, QuestionType
 
 
 class TimeStamp(BaseModel):
@@ -16,14 +15,6 @@ class CreateCollection(BaseModel):
     title: str
     description: Optional[str] = None
     status: ExamStatus = ExamStatus.DRAFT
-
-    model_config = ConfigDict(arbitrary_types_allowed=True)
-
-
-class GetCollection(CreateCollection, TimeStamp):
-    id: str
-    created_by: str
-    questions: List[Question]
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
@@ -43,5 +34,13 @@ class QuestionSchema(BaseModel):
 
     # Optional: for images
     images: List[File] | None = None
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+
+class GetCollection(CreateCollection, TimeStamp):
+    id: str
+    created_by: str
+    questions: List[QuestionSchema]
 
     model_config = ConfigDict(arbitrary_types_allowed=True)

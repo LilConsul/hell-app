@@ -1,13 +1,12 @@
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from fastapi import Response
-
-from app.auth.exceptions import AuthenticationError, BadRequestError, NotFoundError
 from app.auth.models import User
 from app.auth.schemas import UserCreate, UserLogin, UserUpdate
 from app.auth.security import get_password_hash
 from app.auth.service import AuthService
+from app.core.exceptions import AuthenticationError, BadRequestError, NotFoundError
+from fastapi import Response
 
 
 class TestAuthService:

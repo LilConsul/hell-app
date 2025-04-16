@@ -3,16 +3,15 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
-from beanie import BackLink, Document, Link
-from pydantic import BaseModel, ConfigDict, Field, field_validator
-
 from app.auth.models import User
 from app.database.mixins import TimestampMixin
+from beanie import BackLink, Document, Link
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class QuestionType(str, Enum):
     MCQ = "mcq"
-    TRUEFALSE = "truefalse"
+    SINGLECHOICE = "singlechoice"
     SHORTANSWER = "shortanswer"
 
 
@@ -82,14 +81,13 @@ class Question(Document, TimestampMixin):
     type: QuestionType
     created_by: Link[User]  # Reference to the user, must be teacher
     has_katex: bool = False
-    images: List[ImageModel] = Field(default_factory=list)
+    # images: List[ImageModel] = Field(default_factory=list)
     options: List[QuestionOption] = Field(default_factory=list)
     correct_input_answer: Optional[str] = None  # For short answer questions
-    correct_choice_answer: Optional[str] = None  # ID of correct option for MCQ
     weight: int = 1
 
     # Relationship with collections that use this question
-    collections: List[BackLink["Collection"]] = Field(
+    collection: List[BackLink["Collection"]] = Field(
         default_factory=list,
         json_schema_extra={
             "original_field": "questions",
@@ -130,19 +128,19 @@ class Collection(Document, TimestampMixin):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     title: str
     description: Optional[str] = None
-    created_by: Link[User]  # Reference to user
+    created_by: Link[User]  # Reference to the user, must be teacher
     status: ExamStatus = ExamStatus.DRAFT
 
     # List of question IDs - using Link for proper relationships
-    questions: List[Link[Question]] = Field(default_factory=list)
+    # questions: List[Link[Question]] = Field(default_factory=list)
 
     # Back reference to exam instances created from this collection
-    exam_instances: List[BackLink["ExamInstance"]] = Field(
-        default_factory=list,
-        json_schema_extra={
-            "original_field": "collection_id",
-        },
-    )
+    # exam_instances: List[BackLink["ExamInstance"]] = Field(
+    #     default_factory=list,
+    #     json_schema_extra={
+    #         "original_field": "collection_id",
+    #     },
+    # )
 
     class Settings:
         name = "collections"

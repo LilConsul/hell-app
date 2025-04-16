@@ -4,7 +4,7 @@ from enum import Enum
 from typing import Any, Dict, List, Optional
 
 from beanie import BackLink, Document, Link
-from pydantic import ConfigDict, Field, field_validator
+from pydantic import ConfigDict, Field, BaseModel, field_validator
 
 from app.auth.models import User
 from app.database.mixins import TimestampMixin
@@ -34,23 +34,24 @@ class PassFailStatus(str, Enum):
     FAIL = "fail"
 
 
-class ImageModel(TimestampMixin):
+class ImageModel(BaseModel, TimestampMixin):
     file_id: Optional[str] = None  # GridFS file ID
-    url: Optional[str] = None  # External URL alternative
     alt: Optional[str] = None
     caption: Optional[str] = None
     filename: Optional[str] = None
     content_type: Optional[str] = None
     size: Optional[int] = None
 
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
-class QuestionOption:
+
+class QuestionOption(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     text: str
     is_correct: bool = False
 
 
-class SecuritySettings:
+class SecuritySettings(BaseModel):
     prevent_tab_switching: bool = False
     tab_switch_limit: Optional[int] = None
     require_webcam: bool = False
@@ -58,19 +59,19 @@ class SecuritySettings:
     gaze_threshold: Optional[int] = None
 
 
-class NotificationSettings:
+class NotificationSettings(BaseModel):
     reminder_enabled: bool = True
     reminders: List[str] = ["24h", "1h"]
 
 
-class StudentAssignment:
+class StudentAssignment(BaseModel):
     student_id: Link[User]
     email: str
     notified: bool = False
     notification_timestamp: Optional[datetime] = None
 
 
-class SecurityEvent:
+class SecurityEvent(BaseModel):
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     details: Dict[str, Any] = Field(default_factory=dict)
 
@@ -95,12 +96,6 @@ class Question(Document, TimestampMixin):
         },
     )
 
-    @field_validator("created_by")
-    def validate_teacher(cls, v):
-        if not hasattr(v, "role") or v.role != "teacher":
-            raise ValueError("Only teachers can create questions")
-        return v
-
     class Settings:
         name = "questions"
         use_state_management = True
@@ -110,6 +105,7 @@ class Question(Document, TimestampMixin):
         ]
 
     model_config = ConfigDict(
+        arbitrary_types_allowed=True,
         json_schema_extra={
             "example": {
                 "id": "550e8400-e29b-41d4-a716-446655440000",
@@ -157,6 +153,7 @@ class Collection(Document, TimestampMixin):
         ]
 
     model_config = ConfigDict(
+        arbitrary_types_allowed=True,
         json_schema_extra={
             "example": {
                 "id": "550e8400-e29b-41d4-a716-446655440002",
@@ -209,6 +206,7 @@ class ExamInstance(Document, TimestampMixin):
         ]
 
     model_config = ConfigDict(
+        arbitrary_types_allowed=True,
         json_schema_extra={
             "example": {
                 "id": "550e8400-e29b-41d4-a716-446655440003",
@@ -267,6 +265,7 @@ class StudentExam(Document, TimestampMixin):
         ]
 
     model_config = ConfigDict(
+        arbitrary_types_allowed=True,
         json_schema_extra={
             "example": {
                 "id": "550e8400-e29b-41d4-a716-446655440004",
@@ -305,6 +304,7 @@ class StudentResponse(Document, TimestampMixin):
         ]
 
     model_config = ConfigDict(
+        arbitrary_types_allowed=True,
         json_schema_extra={
             "example": {
                 "id": "550e8400-e29b-41d4-a716-446655440006",

@@ -1,6 +1,6 @@
 from app.auth.exceptions import AuthenticationError, ForbiddenError
 from app.auth.infrastructure import CookieTokenAuth
-from app.auth.models import UserRole
+from app.auth.models import User, UserRole
 from app.auth.oauth_service import OAuthService
 from app.auth.repository import UserRepository
 from app.auth.security import decode_token
@@ -10,7 +10,7 @@ from fastapi import Depends
 
 # Repositories
 def get_user_repository() -> UserRepository:
-    return UserRepository()
+    return UserRepository(User)
 
 
 # Services

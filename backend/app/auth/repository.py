@@ -7,9 +7,6 @@ from app.core.repository.base_repository import BaseRepository
 class UserRepository(BaseRepository[User]):
     """Repository for User model operations"""
 
-    def __init__(self):
-        super().__init__(User)
-
     async def get_by_email(self, email: str) -> Optional[User]:
         """Get a user by email"""
         return await User.find_one(User.email == email)

@@ -30,12 +30,16 @@ class BaseRepository(AbstractRepository[T], Generic[T]):
         return await self.model_class.find_one({field_name: field_value})
 
     async def get_all(
-        self, filter_criteria: Optional[Dict[str, Any]] = None
+        self,
+        filter_criteria: Optional[Dict[str, Any]] = None,
+        fetch_links: bool = False,
     ) -> List[T]:
         """Get all entities, optionally filtered"""
         if filter_criteria:
-            return await self.model_class.find(filter_criteria).to_list()
-        return await self.model_class.find_all().to_list()
+            return await self.model_class.find(
+                filter_criteria, fetch_links=fetch_links
+            ).to_list()
+        return await self.model_class.find_all(fetch_links=fetch_links).to_list()
 
     async def update(self, entity_id: str, data: Dict[str, Any]) -> Optional[T]:
         """Update an entity"""

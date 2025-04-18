@@ -1,41 +1,62 @@
 from datetime import datetime
-from typing import List, Optional
+from typing import List
 
-from fastapi import File
 from pydantic import BaseModel, ConfigDict
 
 from app.auth.schemas import UserResponse
-from app.exam.models import ExamStatus, Question, QuestionType
+from app.exam.models import ExamStatus, QuestionType
 
 
 class TimeStamp(BaseModel):
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
+    created_at: datetime
+    updated_at: datetime
+
+
+class QuestionOptionSchema(BaseModel):
+    id: str | None = None
+    text: str
+    is_correct: bool = False
+
+
+class QuestionSchema(BaseModel):
+    id: str | None = None
+    question_text: str
+    type: QuestionType
+    has_katex: bool = False
+    options: List[QuestionOptionSchema] | None = []  # For mcq or one choice questions
+    correct_input_answer: str | None = None  # For short answer questions
+    weight: int = 1
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+
+class CreateQuestionSchema(QuestionSchema):
+    id: None
+
+
+class UpdateQuestionSchema(CreateQuestionSchema):
+    question_text: str | None = None
+    type: QuestionType | None = None
+    has_katex: bool | None = None
+    options: List[QuestionOptionSchema] | None = None  # For mcq or one choice questions
+    correct_input_answer: str | None = None  # For short answer questions
+    weight: int | None = None
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
 class CreateCollection(BaseModel):
     title: str
-    description: Optional[str] = None
+    description: str | None = None
     status: ExamStatus = ExamStatus.DRAFT
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
-class QuestionSchema(BaseModel):
-    type: QuestionType
-    # Can be one of the following:
-    question_text: str | None = None
-    options: List[str] | None = None
-
-    # Corresponding to the question type
-    correct_input_answer: str | None = None
-    correct_choice_answer: List[str] | None = None
-
-    has_katex: bool = False
-    weight: int = 1
-
-    # Optional: for images
-    # images: List[File] | None = None
+class UpdateCollection(BaseModel):
+    title: str | None = None
+    description: str | None = None
+    status: ExamStatus | None = None
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
@@ -46,3 +67,7 @@ class GetCollection(CreateCollection, TimeStamp):
     questions: List[QuestionSchema]
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
+
+
+class JustCollection(GetCollection):
+    questions: None = None

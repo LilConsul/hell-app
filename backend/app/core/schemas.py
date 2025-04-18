@@ -1,8 +1,10 @@
-from typing import Any
+from typing import TypeVar, Generic
 
 from pydantic import BaseModel
 
+T = TypeVar("T")
 
-class BaseReturn(BaseModel):
+
+class BaseReturn(BaseModel, Generic[T]):
     message: str
-    data: Any | None = None
+    data: T | None = None

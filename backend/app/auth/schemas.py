@@ -1,8 +1,15 @@
+from enum import Enum
 from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 from app.core.schemas import BaseReturn
+
+
+class UserRole(str, Enum):
+    STUDENT = "student"
+    TEACHER = "teacher"
+    ADMIN = "admin"
 
 
 class UserBase(BaseModel):
@@ -31,7 +38,7 @@ class UserResetPassword(BaseModel):
 
 
 class UserLogin(BaseModel):
-    email: str
+    email: EmailStr
     password: str
 
 
@@ -39,7 +46,7 @@ class UserResponse(UserBase):
     id: str
     first_name: Optional[str] = None
     last_name: Optional[str] = None
-    role: str
+    role: UserRole
 
     model_config = ConfigDict(
         from_attributes=True,

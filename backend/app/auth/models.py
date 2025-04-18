@@ -1,17 +1,11 @@
 import uuid
-from enum import Enum
-from typing import List, Optional
+from typing import Optional
 
-from beanie import BackLink, Document, Indexed, Link
+from beanie import Document, Indexed, Link
 from pydantic import ConfigDict, EmailStr, Field
 
+from app.auth.schemas import UserRole
 from app.database.mixins import TimestampMixin
-
-
-class UserRole(str, Enum):
-    STUDENT = "student"
-    TEACHER = "teacher"
-    ADMIN = "admin"
 
 
 class User(Document, TimestampMixin):

@@ -165,3 +165,23 @@ class CollectionService:
             )
             for collection in collections
         ]
+
+    async def delete_question(self, question_id: str, user_id: str) -> None:
+        """Delete an existing question by its ID."""
+        question = await self.question_repository.get_by_id(
+            question_id, fetch_links=True
+        )
+        if not question:
+            raise NotFoundError("Question not found")
+
+        if question.created_by.id != user_id:
+            raise ForbiddenError("You do not own this question")
+
+        collections = await self.collection_repository.get_all()
+        for collection in collections:
+            if question in collection.questions:
+                collection.questions.remove(question)
+                await self.collection_repository.save(collection)
+
+        # Delete the question
+        await self.question_repository.delete(question_id)

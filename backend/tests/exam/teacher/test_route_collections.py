@@ -84,7 +84,7 @@ class TestTeacherRouter:
 
     async def test_unauthorized_access(self, client):
         """Test unauthorized access to teacher endpoints"""
-        response = await client.get("/v1/exam/teacher/collections")
+        response = await client.get("/v1/exam/teacher/collections/")
         assert response.status_code == 401
 
     async def test_create_collection(self, client, auth_headers):
@@ -95,7 +95,7 @@ class TestTeacherRouter:
             "status": "draft",
         }
         response = await client.post(
-            "/v1/exam/teacher/collections",
+            "/v1/exam/teacher/collections/",
             json=collection_data,
             headers=auth_headers,
         )
@@ -129,7 +129,7 @@ class TestTeacherRouter:
         ]
 
         response = await client.get(
-            "/v1/exam/teacher/collections", headers=auth_headers
+            "/v1/exam/teacher/collections/", headers=auth_headers
         )
         assert response.status_code == 200
         assert response.json()["message"] == "Collections retrieved successfully"
@@ -229,3 +229,17 @@ class TestTeacherRouter:
         )
         assert response.status_code == 200
         assert response.json()["message"] == "Question updated successfully"
+
+    @patch("app.exam.teacher.services.CollectionService.delete_question")
+    async def test_delete_question(
+        self, mock_service, client, auth_headers, test_collection, test_question
+    ):
+        """Test deleting a question"""
+        response = await client.delete(
+            f"/v1/exam/teacher/collections/{test_collection.id}/questions/{test_question.id}",
+            headers=auth_headers,
+        )
+        assert response.status_code == 200
+        assert response.json()["message"] == "Question deleted successfully"
+        assert response.json()["data"]["collection_id"] == test_collection.id
+        assert response.json()["data"]["question_id"] == test_question.id

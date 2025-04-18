@@ -8,7 +8,7 @@ export default function Home() {
     <div className="flex flex-col min-h-screen">
       <Navbar />
 
-      <main className="flex-1">
+      <main className="flex-1 pt-16">
         <section className="py-20 text-center">
           <div className="container px-4 sm:px-6 mx-auto max-w-6xl">
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tighter max-w-3xl mx-auto">
@@ -20,13 +20,16 @@ export default function Home() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center mt-10">
               <Link to="/register">
-                <Button size="lg" className="px-8">
+                <Button size="lg" className="w-[148px] px-8">
                   Get Started
                 </Button>
               </Link>
-              <Button size="lg" variant="outline" className="px-8">
-                Request Demo
-              </Button>
+              {/* Add request Demo, or remove button*/}
+              <Link to="/request">
+                <Button size="lg" variant="outline" className="w-[148px] px-8">
+                  Request Demo
+                </Button>
+              </Link>
             </div>
           </div>
         </section>

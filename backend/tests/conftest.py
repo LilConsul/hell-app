@@ -1,10 +1,18 @@
 import pytest
+from beanie import init_beanie
 from faker import Faker
 from httpx import ASGITransport, AsyncClient
 from mongomock_motor import AsyncMongoMockClient
-from app.main import app
-from beanie import init_beanie
+
 from app.auth.models import User
+from app.exam.models import (
+    Collection,
+    ExamInstance,
+    Question,
+    StudentExam,
+    StudentResponse,
+)
+from app.main import app
 
 
 @pytest.fixture
@@ -24,5 +32,13 @@ def fake():
 async def my_fixture():
     client = AsyncMongoMockClient()
     await init_beanie(
-        document_models=[User], database=client.get_database(name="db")
+        document_models=[
+            User,
+            Collection,
+            Question,
+            ExamInstance,
+            StudentExam,
+            StudentResponse,
+        ],
+        database=client.get_database(name="db"),
     )

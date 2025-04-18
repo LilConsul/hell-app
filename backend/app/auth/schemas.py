@@ -1,7 +1,15 @@
-from datetime import datetime
+from enum import Enum
 from typing import Optional
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
+
+from app.core.schemas import BaseReturn
+
+
+class UserRole(str, Enum):
+    STUDENT = "student"
+    TEACHER = "teacher"
+    ADMIN = "admin"
 
 
 class UserBase(BaseModel):
@@ -30,7 +38,7 @@ class UserResetPassword(BaseModel):
 
 
 class UserLogin(BaseModel):
-    email: str
+    email: EmailStr
     password: str
 
 
@@ -38,22 +46,15 @@ class UserResponse(UserBase):
     id: str
     first_name: Optional[str] = None
     last_name: Optional[str] = None
-    is_verified: bool
-    created_at: datetime
-    updated_at: datetime
+    role: UserRole
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(
+        from_attributes=True,
+    )
 
 
 class Token(BaseModel):
-    access_token: str
-    token_type: str = "bearer"
-
-
-class TokenPayload(BaseModel):
-    sub: Optional[str] = None
-    exp: Optional[int] = None
+    token: str
 
 
 class EmailRequest(BaseModel):
@@ -74,3 +75,9 @@ class SocialAccount(BaseModel):
     provider: str
     provider_user_id: str
     email: str
+
+
+class AuthReturn(BaseReturn):
+    """Schema for auth responses"""
+
+    data: UserResponse | None = None

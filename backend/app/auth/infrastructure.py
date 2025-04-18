@@ -1,7 +1,5 @@
 from typing import Dict, Optional
 
-import jwt
-from app.settings import settings
 from fastapi import HTTPException, Request, status
 from fastapi.openapi.models import OAuthFlows as OAuthFlowsModel
 from fastapi.security import OAuth2
@@ -18,13 +16,13 @@ class CookieTokenAuth(OAuth2):
     """
 
     def __init__(
-            self,
-            token_url: str,
-            cookie_name: str = "access_token",
-            scheme_name: Optional[str] = None,
-            scopes: Optional[Dict[str, str]] = None,
-            description: Optional[str] = None,
-            auto_error: bool = True,
+        self,
+        token_url: str,
+        cookie_name: str = "access_token",
+        scheme_name: Optional[str] = None,
+        scopes: Optional[Dict[str, str]] = None,
+        description: Optional[str] = None,
+        auto_error: bool = True,
     ):
         if not scopes:
             scopes = {}
@@ -54,16 +52,3 @@ class CookieTokenAuth(OAuth2):
             )
 
         return token
-
-
-# Authentication token validator function
-def validate_token(token: str) -> Optional[str]:
-    """Validate JWT token and return user_id if valid"""
-    try:
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
-        user_id: str = payload.get("sub")
-        if not user_id:
-            return None
-        return user_id
-    except jwt.PyJWTError:
-        return None

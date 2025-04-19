@@ -18,12 +18,10 @@ export default function Home() {
               Create, manage, and monitor online exams with confidence. Our platform ensures academic integrity through
               cutting-edge anti-cheat measures.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center mt-10">
-              <Link to="/register">
-                <Button size="lg" className="w-[148px] px-8">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center mt-10 items-center">
+                <Button size="lg" className="w-[148px] px-8" onClick={() => window.openRegisterModal()}>
                   Get Started
                 </Button>
-              </Link>
               {/* Add request Demo, or remove button*/}
               <Link to="/request">
                 <Button size="lg" variant="outline" className="w-[148px] px-8">

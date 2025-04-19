@@ -1,11 +1,12 @@
+import { AuthModals } from "@/components/auth-modals"
 import { Button } from "@/components/ui/button"
 import { Shield } from "lucide-react"
 import { Link } from "react-router-dom"
 
 export function Navbar() {
   return (
-    <header className="border-b fixed top-0 left-0 right-0 z-10 bg-white/80 backdrop-blur-sm">
-      <div className="container flex h-16 items-center justify-between px-4 sm:px-6">
+    <header className="border-b fixed top-0 left-0 right-0 z-10 bg-white/80 backdrop-blur-sm ">
+      <div className="max-w-screen-2xl mx-auto flex h-16 items-center justify-between px-4 sm:px-6">
         <div className="flex items-center gap-2">
           <Link to="/" className="flex items-center gap-2 font-semibold">
             <Shield className="h-5 w-5" />
@@ -27,16 +28,15 @@ export function Navbar() {
           </nav>
         </div>
         <div className="flex items-center gap-2">
-          <Link to="/login">
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" onClick={() => window.openLoginModal()}>
               Login
             </Button>
-          </Link>
-          <Link to="/register">
-            <Button size="sm">Register</Button>
-          </Link>
+            <Button size="sm" onClick={() => window.openRegisterModal()}>
+              Register
+            </Button>
         </div>
       </div>
+      <AuthModals />
     </header>
   )
 }

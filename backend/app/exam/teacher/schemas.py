@@ -35,11 +35,18 @@ class QuestionSchema(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
-class CreateQuestionSchema(QuestionSchema):
-    id: None
+class CreateQuestionSchema(BaseModel):
+    question_text: str
+    type: QuestionType
+    has_katex: bool = False
+    options: List[QuestionOptionSchema] | None = []  # For mcq or one choice questions
+    correct_input_answer: str | None = None  # For short answer questions
+    weight: int = 1
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
-class UpdateQuestionSchema(CreateQuestionSchema):
+class UpdateQuestionSchema(BaseModel):
     question_text: str | None = None
     type: QuestionType | None = None
     has_katex: bool | None = None

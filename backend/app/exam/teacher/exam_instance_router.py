@@ -49,16 +49,6 @@ async def get_exam_instance(
     return BaseReturn(message="Exam instance retrieved successfully", data=instance)
 
 
-@router.delete("/{instance_id}", response_model=BaseReturn[str])
-async def delete_exam_instance(
-    instance_id: str,
-    user_id: str = Depends(get_current_teacher_id),
-    instance_service: ExamInstanceService = Depends(get_exam_instance_service),
-):
-    await instance_service.delete_exam_instance(user_id, instance_id)
-    return BaseReturn(message="Exam instance deleted successfully", data=instance_id)
-
-
 @router.put("/{instance_id}", response_model=BaseReturn[str])
 async def update_exam_instance(
     instance_id: str,
@@ -68,3 +58,13 @@ async def update_exam_instance(
 ):
     await instance_service.update_exam_instance(user_id, instance_id, instance_data)
     return BaseReturn(message="Exam instance updated successfully", data=instance_id)
+
+
+@router.delete("/{instance_id}", response_model=BaseReturn[str])
+async def delete_exam_instance(
+    instance_id: str,
+    user_id: str = Depends(get_current_teacher_id),
+    instance_service: ExamInstanceService = Depends(get_exam_instance_service),
+):
+    await instance_service.delete_exam_instance(user_id, instance_id)
+    return BaseReturn(message="Exam instance deleted successfully", data=instance_id)

@@ -3,7 +3,11 @@ from typing import List
 
 from app.core.exceptions import ForbiddenError, NotFoundError
 from app.exam.models import ExamStatus
-from app.exam.repository import CollectionRepository, QuestionRepository
+from app.exam.repository import (
+    CollectionRepository,
+    QuestionRepository,
+    ExamInstanceRepository,
+)
 from app.exam.teacher.schemas import (
     CreateCollection,
     GetCollection,
@@ -185,3 +189,13 @@ class CollectionService:
 
         # Delete the question
         await self.question_repository.delete(question_id)
+
+
+class ExamInstanceService:
+    def __init__(
+        self,
+        exam_instance_repository: ExamInstanceRepository,
+        collection_repository: CollectionRepository,
+    ):
+        self.exam_instance_repository = exam_instance_repository
+        self.collection_repository = collection_repository

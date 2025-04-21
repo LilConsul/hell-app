@@ -52,11 +52,16 @@ class QuestionOption(BaseModel):
 
 
 class SecuritySettings(BaseModel):
+    # Allow students to check their answers after submission
+    allow_review: bool = True
+
+    # Browser security settings
     prevent_tab_switching: bool = False
     tab_switch_limit: Optional[int] = None
-    require_webcam: bool = False
-    monitor_gaze: bool = False
-    gaze_threshold: Optional[int] = None
+
+    # Gaze tracking, requires webcam access
+    gaze_tracking: bool = False
+    gaze_limit: Optional[int] = None
 
 
 class NotificationSettings(BaseModel):
@@ -67,6 +72,8 @@ class NotificationSettings(BaseModel):
 class StudentAssignment(BaseModel):
     student_id: Link[User]
     email: str
+
+    # Notification settings for this student
     notified: bool = False
     notification_timestamp: Optional[datetime] = None
 
@@ -109,11 +116,11 @@ class Question(Document, TimestampMixin):
                 "type": "mcq",
                 "created_by": "550e8400-e29b-41d4-a716-446655440001",  # User ID
                 "has_katex": False,
-                "images": [],
                 "options": [
                     {"id": "opt1", "text": "Paris", "is_correct": True},
                     {"id": "opt2", "text": "London", "is_correct": False},
                 ],
+                "correct_input_answer": None,
                 "weight": 1,
                 "created_at": "2025-04-16T11:01:29.000Z",
                 "updated_at": "2025-04-16T11:01:29.000Z",
@@ -132,14 +139,6 @@ class Collection(Document, TimestampMixin):
     # List of question IDs - using Link for proper relationships
     questions: List[Link[Question]] = Field(default_factory=list)
 
-    # Back reference to exam instances created from this collection
-    # exam_instances: List[BackLink["ExamInstance"]] = Field(
-    #     default_factory=list,
-    #     json_schema_extra={
-    #         "original_field": "collection_id",
-    #     },
-    # )
-
     class Settings:
         name = "collections"
         use_state_management = True
@@ -157,6 +156,7 @@ class Collection(Document, TimestampMixin):
                 "description": "Test your knowledge of world capitals",
                 "created_by": "550e8400-e29b-41d4-a716-446655440001",  # User ID
                 "status": "draft",
+                "questions": [],
                 "created_at": "2025-04-16T11:01:29.000Z",
                 "updated_at": "2025-04-16T11:01:29.000Z",
             }
@@ -167,15 +167,13 @@ class Collection(Document, TimestampMixin):
 class ExamInstance(Document, TimestampMixin):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     collection_id: Link[Collection]
-    title: Optional[str] = None  # Optional override title
+    title: str  # Override title
     created_by: Link[User]  # Reference to user
     start_date: datetime
     end_date: datetime
     status: ExamStatus = ExamStatus.DRAFT
     max_attempts: int = 1
     passing_score: int = 50
-    randomize_questions: bool = False
-    allow_review: bool = True
     security_settings: SecuritySettings = Field(default_factory=SecuritySettings)
     notification_settings: NotificationSettings = Field(
         default_factory=NotificationSettings
@@ -183,12 +181,12 @@ class ExamInstance(Document, TimestampMixin):
     assigned_students: List[StudentAssignment] = Field(default_factory=list)
 
     # Back reference to student exams for this instance
-    student_exams: List[BackLink["StudentExam"]] = Field(
-        default_factory=list,
-        json_schema_extra={
-            "original_field": "exam_instance_id",
-        },
-    )
+    # student_exams: List[BackLink["StudentExam"]] = Field(
+    #     default_factory=list,
+    #     json_schema_extra={
+    #         "original_field": "exam_instance_id",
+    #     },
+    # )
 
     class Settings:
         name = "exam_instances"
@@ -214,8 +212,18 @@ class ExamInstance(Document, TimestampMixin):
                 "status": "published",
                 "max_attempts": 1,
                 "passing_score": 60,
-                "randomize_questions": True,
-                "allow_review": True,
+                "security_settings": {
+                    "allow_review": True,
+                    "prevent_tab_switching": False,
+                    "tab_switch_limit": None,
+                    "gaze_tracking": False,
+                    "gaze_limit": None,
+                },
+                "notification_settings": {
+                    "reminder_enabled": True,
+                    "reminders": ["24h", "1h"],
+                },
+                "assigned_students": [],
                 "created_at": "2025-04-16T11:01:29.000Z",
                 "updated_at": "2025-04-16T11:01:29.000Z",
             }
@@ -226,7 +234,7 @@ class ExamInstance(Document, TimestampMixin):
 class StudentExam(Document, TimestampMixin):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     exam_instance_id: Link[ExamInstance]
-    student_id: Link[User]  # Reference to user
+    student_id: Link[User]
     attempts: int = 1
     status: StudentExamStatus = StudentExamStatus.NOT_STARTED
     questions: List[Dict[str, Any]] = Field(
@@ -269,16 +277,20 @@ class StudentExam(Document, TimestampMixin):
                 "student_id": "550e8400-e29b-41d4-a716-446655440005",  # Another user ID
                 "attempts": 1,
                 "status": "submitted",
+                "questions": [],
+                "security_events": {},
                 "started_at": "2025-04-20T09:15:00.000Z",
                 "submitted_at": "2025-04-20T10:45:00.000Z",
                 "grade": 85.5,
                 "pass_fail": "pass",
+                "graded_at": "2025-04-20T11:00:00.000Z",
+                "last_auto_save": "2025-04-20T10:30:00.000Z",
+                "confirmation_email_sent": True,
                 "created_at": "2025-04-16T11:01:29.000Z",
                 "updated_at": "2025-04-16T11:01:29.000Z",
             }
         },
     )
-
 
 class StudentResponse(Document, TimestampMixin):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
@@ -307,6 +319,7 @@ class StudentResponse(Document, TimestampMixin):
                 "student_exam_id": "550e8400-e29b-41d4-a716-446655440004",
                 "question_id": "550e8400-e29b-41d4-a716-446655440000",
                 "selected_option_ids": ["opt1"],
+                "text_response": None,
                 "score": 1.0,
                 "is_flagged": False,
                 "submitted_at": "2025-04-20T10:20:00.000Z",

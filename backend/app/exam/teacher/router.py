@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends
 
 from app.auth.dependencies import get_current_teacher_id
 from app.exam.teacher.collections_router import router as collections_router
+from app.exam.teacher.exam_instance_router import router as exam_instance_router
 
 router = APIRouter(
     prefix="/teacher",
@@ -9,5 +10,5 @@ router = APIRouter(
     dependencies=[Depends(get_current_teacher_id)],
 )
 
-# Include the collections router
 router.include_router(collections_router)
+router.include_router(exam_instance_router)

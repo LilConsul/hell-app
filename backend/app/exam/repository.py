@@ -1,7 +1,7 @@
 from typing import List
 
 from app.core.repository.base_repository import BaseRepository
-from app.exam.models import Collection, Question, ExamStatus
+from app.exam.models import Collection, Question, ExamStatus, ExamInstance
 
 
 class CollectionRepository(BaseRepository[Collection]):
@@ -25,5 +25,11 @@ class CollectionRepository(BaseRepository[Collection]):
 
 class QuestionRepository(BaseRepository[Question]):
     """Repository for Question model operations"""
+
+    pass
+
+
+class ExamInstanceRepository(BaseRepository[ExamInstance]):
+    """Repository for ExamInstance model operations"""
 
     pass

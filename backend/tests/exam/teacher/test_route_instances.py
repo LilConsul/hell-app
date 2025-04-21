@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from unittest.mock import patch
 
 import jwt
@@ -63,7 +63,7 @@ class TestExamInstanceRouter:
     @pytest.fixture
     async def test_exam_instance(self, teacher_user, test_collection):
         """Create a test exam instance"""
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         instance = ExamInstance(
             title="Test Exam",
             start_date=now,
@@ -93,8 +93,8 @@ class TestExamInstanceRouter:
             {
                 "id": str(uuid.uuid4()),
                 "title": "Test Exam",
-                "start_date": datetime.utcnow(),
-                "end_date": datetime.utcnow() + timedelta(days=7),
+                "start_date": datetime.now(timezone.utc),
+                "end_date": datetime.now(timezone.utc) + timedelta(days=7),
                 "status": "draft",
                 "max_attempts": 1,
                 "passing_score": 50,
@@ -103,8 +103,8 @@ class TestExamInstanceRouter:
                 "collection_id": str(uuid.uuid4()),
                 "created_by": str(uuid.uuid4()),
                 "assigned_students": [{"student_id": str(uuid.uuid4())}],
-                "created_at": datetime.utcnow(),
-                "updated_at": datetime.utcnow(),
+                "created_at": datetime.now(timezone.utc),
+                "updated_at": datetime.now(timezone.utc),
             }
         ]
 
@@ -121,7 +121,7 @@ class TestExamInstanceRouter:
         """Test creating a new exam instance"""
         mock_service.return_value = str(uuid.uuid4())
 
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         instance_data = {
             "title": "New Exam",
             "start_date": now.isoformat(),

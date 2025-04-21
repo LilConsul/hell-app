@@ -8,7 +8,8 @@ from app.exam.models import (
     ExamStatus,
     QuestionType,
     NotificationSettings,
-    SecuritySettings, ExamInstance,
+    SecuritySettings,
+    ExamInstance,
 )
 
 
@@ -23,46 +24,46 @@ class QuestionOptionSchema(BaseModel):
     is_correct: bool = False
 
 
-class QuestionSchema(BaseModel):
+class QuestionBase(BaseModel):
+    question_text: str
+    type: QuestionType
+    has_katex: bool = False
+    weight: int = 1
+    options: List[QuestionOptionSchema] | None = []
+    correct_input_answer: str | None = None
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+
+class QuestionSchema(QuestionBase):
     id: str | None = None
-    question_text: str
-    type: QuestionType
-    has_katex: bool = False
-    options: List[QuestionOptionSchema] | None = []  # For mcq or one choice questions
-    correct_input_answer: str | None = None  # For short answer questions
-    weight: int = 1
-
-    model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
-class CreateQuestionSchema(BaseModel):
-    question_text: str
-    type: QuestionType
-    has_katex: bool = False
-    options: List[QuestionOptionSchema] | None = []  # For mcq or one choice questions
-    correct_input_answer: str | None = None  # For short answer questions
-    weight: int = 1
-
-    model_config = ConfigDict(arbitrary_types_allowed=True)
+class CreateQuestionSchema(QuestionBase):
+    pass
 
 
 class UpdateQuestionSchema(BaseModel):
     question_text: str | None = None
     type: QuestionType | None = None
     has_katex: bool | None = None
-    options: List[QuestionOptionSchema] | None = None  # For mcq or one choice questions
-    correct_input_answer: str | None = None  # For short answer questions
+    options: List[QuestionOptionSchema] | None = None
+    correct_input_answer: str | None = None
     weight: int | None = None
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
-class CreateCollection(BaseModel):
+class CollectionBase(BaseModel):
     title: str
     description: str | None = None
     status: ExamStatus = ExamStatus.DRAFT
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
+
+
+class CreateCollection(CollectionBase):
+    pass
 
 
 class UpdateCollection(BaseModel):
@@ -73,22 +74,21 @@ class UpdateCollection(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
-class GetCollection(CreateCollection, TimeStamp):
+class GetCollection(CollectionBase, TimeStamp):
     id: str
     created_by: UserResponse
     questions: List[QuestionSchema]
-
-    model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
 class JustCollection(GetCollection):
     questions: None = None
 
+
 class UserId(BaseModel):
     student_id: str
 
-class CreateExamInstanceSchema(BaseModel):
-    collection_id: str
+
+class ExamInstanceBase(BaseModel):
     title: str
     start_date: datetime
     end_date: datetime
@@ -97,9 +97,14 @@ class CreateExamInstanceSchema(BaseModel):
     passing_score: int = 50
     security_settings: SecuritySettings
     notification_settings: NotificationSettings
-    assigned_students: List[UserId] | None = None
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
+
+
+class CreateExamInstanceSchema(ExamInstanceBase):
+    collection_id: str
+    assigned_students: List[UserId] | None = None
+
 
 class UpdateExamInstanceSchema(BaseModel):
     title: str | None = None
@@ -114,8 +119,8 @@ class UpdateExamInstanceSchema(BaseModel):
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
+
 class GetExamInstance(ExamInstance):
     collection_id: str
     created_by: str
     assigned_students: List[UserId] | None = None
-

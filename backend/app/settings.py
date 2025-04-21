@@ -6,14 +6,6 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    # # Redis settings
-    # REDIS_PORT: int
-    # REDIS_HOST: str
-    #
-    # @property
-    # def REDIS_URL(self) -> str:
-    #     return f"redis://{self.REDIS_HOST}:{self.REDIS_PORT}/0"
-
     # Security settings
     SECRET_KEY: str
     ALGORITHM: str

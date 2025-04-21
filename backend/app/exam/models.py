@@ -71,7 +71,6 @@ class NotificationSettings(BaseModel):
 
 class StudentAssignment(BaseModel):
     student_id: Link[User]
-    email: str
 
     # Notification settings for this student
     notified: bool = False
@@ -167,13 +166,13 @@ class Collection(Document, TimestampMixin):
 class ExamInstance(Document, TimestampMixin):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     collection_id: Link[Collection]
-    title: str  # Override title
+    title: str              # Override title
     created_by: Link[User]  # Reference to user
     start_date: datetime
     end_date: datetime
     status: ExamStatus = ExamStatus.DRAFT
     max_attempts: int = 1
-    passing_score: int = 50
+    passing_score: int = 50 # Percentage
     security_settings: SecuritySettings = Field(default_factory=SecuritySettings)
     notification_settings: NotificationSettings = Field(
         default_factory=NotificationSettings
@@ -195,8 +194,8 @@ class ExamInstance(Document, TimestampMixin):
             "created_by",
             "collection_id",
             "status",
-            ("start_date", "end_date"),  # Compound index for date range queries
-            "assigned_students.student_id",  # Index for finding exams assigned to student
+            ("start_date", "end_date"),         # Compound index for date range queries
+            "assigned_students.student_id",     # Index for finding exams assigned to student
         ]
 
     model_config = ConfigDict(

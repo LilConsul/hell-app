@@ -2,7 +2,7 @@ import uuid
 from typing import List
 
 from app.core.exceptions import ForbiddenError, NotFoundError
-from app.exam.models import ExamStatus
+from app.exam.models import ExamStatus, ExamInstance
 from app.exam.repository import (
     CollectionRepository,
     QuestionRepository,
@@ -15,6 +15,9 @@ from app.exam.teacher.schemas import (
     UpdateCollection,
     JustCollection,
     UpdateQuestionSchema,
+    CreateExamInstanceSchema,
+    GetExamInstance,
+    UpdateExamInstanceSchema,
 )
 
 
@@ -199,3 +202,116 @@ class ExamInstanceService:
     ):
         self.exam_instance_repository = exam_instance_repository
         self.collection_repository = collection_repository
+
+    async def get_by_creator(self, user_id: str) -> List[GetExamInstance]:
+        """Get all exam instances created by a specific teacher."""
+        instances = await self.exam_instance_repository.get_all(
+            {"created_by._id": user_id}, fetch_links=True
+        )
+
+        return [await self._process_instance(instance) for instance in instances]
+
+    async def get_by_id(self, user_id: str, instance_id: str) -> GetExamInstance:
+        """Get an exam instance by its ID."""
+        instance = await self.exam_instance_repository.get_by_field(
+            "_id", instance_id, fetch_links=True
+        )
+
+        if not instance:
+            raise NotFoundError("Exam instance not found")
+
+        if not (user_id and instance.created_by.id == user_id):
+            raise ForbiddenError("You don't have access to this exam instance")
+
+        return await self._process_instance(instance)
+
+    async def _process_instance(self, instance) -> GetExamInstance:
+        data = instance.model_dump()
+
+        data["assigned_students"] = await self._process_assigned_students(
+            data.get("assigned_students", [])
+        )
+        data["collection_id"] = self._extract_id(data.get("collection_id"))
+        data["created_by"] = self._extract_id(data.get("created_by"))
+
+        return GetExamInstance.model_validate(data)
+
+    async def _process_assigned_students(self, students: list) -> list:
+        result = []
+        for student in students:
+            if "student_id" in student:
+                sid = await self._extract_student_id(student["student_id"])
+                result.append({"student_id": sid})
+        return result
+
+    @staticmethod
+    def _extract_id(obj):
+        if isinstance(obj, str):
+            return obj
+        if isinstance(obj, dict):
+            return obj.get("id") or obj.get("_id")
+        return str(obj)
+
+    @staticmethod
+    async def _extract_student_id(student_obj):
+        if hasattr(student_obj, "fetch"):
+            try:
+                return (await student_obj.fetch()).id
+            except Exception:
+                return str(student_obj)
+        if isinstance(student_obj, dict):
+            return student_obj.get("_id", str(student_obj))
+        return str(student_obj)
+
+    async def create_exam_instance(
+        self, user_id: str,instance_data: CreateExamInstanceSchema,
+    ) -> str:
+        """Create a new exam instance."""
+
+        collection = await self.collection_repository.get_by_id(
+            instance_data.collection_id, fetch_links=True
+        )
+        if not collection:
+            raise NotFoundError("Collection not found")
+
+        is_owner = user_id and collection.created_by.id == user_id
+        is_public = collection.status == ExamStatus.PUBLISHED
+
+        if not (is_owner or is_public):
+            raise ForbiddenError("You do not have access to this collection")
+
+        instance_data = instance_data.model_dump()
+        instance_data["created_by"] = user_id
+
+        exam_instance = await self.exam_instance_repository.create(instance_data)
+        return exam_instance.id
+
+    async def update_exam_instance(
+        self,
+        user_id: str,
+        instance_id: str,
+        instance_data: UpdateExamInstanceSchema,
+    ) -> None:
+        """Update an existing exam instance."""
+        instance = await self.exam_instance_repository.get_by_id(instance_id)
+        if not instance:
+            raise NotFoundError("Exam instance not found")
+
+        usr_obj = await instance.created_by.fetch()
+        if usr_obj.id != user_id:
+            raise ForbiddenError("You do not own this exam instance")
+
+        update_data = instance_data.model_dump(exclude_unset=True)
+        await self.exam_instance_repository.update(instance_id, update_data)
+
+    async def delete_exam_instance(self, user_id: str, instance_id: str) -> None:
+        """Delete an existing exam instance."""
+        instance = await self.exam_instance_repository.get_by_id(instance_id)
+        if not instance:
+            raise NotFoundError("Exam instance not found")
+
+        usr_obj = await instance.created_by.fetch()
+        if usr_obj.id != user_id:
+            raise ForbiddenError("You do not own this exam instance")
+
+        await self.exam_instance_repository.delete(instance_id)

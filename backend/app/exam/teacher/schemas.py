@@ -4,7 +4,12 @@ from typing import List
 from pydantic import BaseModel, ConfigDict
 
 from app.auth.schemas import UserResponse
-from app.exam.models import ExamStatus, QuestionType
+from app.exam.models import (
+    ExamStatus,
+    QuestionType,
+    NotificationSettings,
+    SecuritySettings, ExamInstance,
+)
 
 
 class TimeStamp(BaseModel):
@@ -71,3 +76,39 @@ class GetCollection(CreateCollection, TimeStamp):
 
 class JustCollection(GetCollection):
     questions: None = None
+
+class UserId(BaseModel):
+    student_id: str
+
+class CreateExamInstanceSchema(BaseModel):
+    collection_id: str
+    title: str
+    start_date: datetime
+    end_date: datetime
+    status: ExamStatus
+    max_attempts: int = 1
+    passing_score: int = 50
+    security_settings: SecuritySettings
+    notification_settings: NotificationSettings
+    assigned_students: List[UserId] | None = None
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+class UpdateExamInstanceSchema(BaseModel):
+    title: str | None = None
+    start_date: datetime | None = None
+    end_date: datetime | None = None
+    status: ExamStatus | None = None
+    max_attempts: int | None = None
+    passing_score: int | None = None
+    security_settings: SecuritySettings | None = None
+    notification_settings: NotificationSettings | None = None
+    assigned_students: List[UserId] | None = None
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+class GetExamInstance(ExamInstance):
+    collection_id: str
+    created_by: str
+    assigned_students: List[UserId] | None = None
+

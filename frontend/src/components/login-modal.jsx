@@ -1,6 +1,4 @@
-"use client"
-
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
@@ -19,11 +17,16 @@ import {
 } from "@/components/ui/form"
 
 const loginSchema = z.object({
-  email: z.string().email({ message: "Please enter a valid email address" }),
-  password: z.string().min(8, { message: "Password must be at least 8 characters" }),
+  email: z
+    .string()
+    .min(1, { message: "Email is required" })
+    .regex(/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/, { message: "Invalid email format." }),
+  password: z.string().min(1, { message: "Password is required" }),
 })
 
-export function LoginModal({ isOpen, onClose, onRegisterClick }) {
+export function LoginModal({ isOpen, onClose, onRegisterClick, onForgotPasswordClick }) {
+  const [serverError, setServerError] = useState(null)
+  
   const form = useForm({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -42,6 +45,7 @@ export function LoginModal({ isOpen, onClose, onRegisterClick }) {
     }
 
     document.addEventListener("keydown", handleEscape)
+
     if (isOpen) {
       document.body.style.overflow = "hidden"
     } else {
@@ -54,21 +58,51 @@ export function LoginModal({ isOpen, onClose, onRegisterClick }) {
     }
   }, [isOpen, onClose])
 
+  useEffect(() => {
+    if (isOpen) {
+      setServerError(null)
+    } else {
+      form.reset()
+      setServerError(null)
+    }
+  }, [isOpen, form])
+
   if (!isOpen) return null
 
   const onSubmit = async (data) => {
+    setServerError(null)
+    
     try {
-      console.log("Login form submitted:", data)
+      const response = await fetch('/api/v1/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: data.email,
+          password: data.password
+        }),
+        credentials: 'include'
+      })
       
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      const result = await response.json()
       
-      onClose()
+      if (!response.ok) {
+        setServerError(result.detail || "An error occurred during login");
+        return
+      }
+      
+      window.location.href = "/dashboard"
     } catch (error) {
       console.error("Login failed:", error)
-      form.setError("root", { 
-        message: "Invalid email or password" 
-      })
+      setServerError("An unexpected error occurred. Please try again.")
     }
+  }
+
+  const handleForgotPassword = (e) => {
+    e.preventDefault()
+    onClose()
+    onForgotPasswordClick()
   }
 
   return createPortal(
@@ -88,6 +122,12 @@ export function LoginModal({ isOpen, onClose, onRegisterClick }) {
             <h1 className="text-2xl font-bold">Welcome back</h1>
             <p className="text-sm text-muted-foreground">Enter your credentials to sign in to your account</p>
           </div>
+          
+          {serverError && (
+            <div className="p-3 bg-destructive/10 border border-destructive rounded text-sm text-destructive">
+              {serverError}
+            </div>
+          )}
           
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -112,7 +152,12 @@ export function LoginModal({ isOpen, onClose, onRegisterClick }) {
                   <FormItem>
                     <div className="flex items-center justify-between">
                       <FormLabel>Password</FormLabel>
-                      <Button variant="link" className="p-0 h-auto text-sm" onClick={onClose}>
+                      <Button 
+                        variant="link" 
+                        className="p-0 h-auto text-sm" 
+                        onClick={handleForgotPassword}
+                        type="button"
+                      >
                         Forgot password?
                       </Button>
                     </div>
@@ -124,10 +169,6 @@ export function LoginModal({ isOpen, onClose, onRegisterClick }) {
                 )}
               />
               
-              {form.formState.errors.root && (
-                <p className="text-destructive text-sm">{form.formState.errors.root.message}</p>
-              )}
-              
               <Button type="submit" className="w-full" disabled={isSubmitting}>
                 {isSubmitting ? "Signing in..." : "Sign in"}
               </Button>
@@ -137,12 +178,23 @@ export function LoginModal({ isOpen, onClose, onRegisterClick }) {
           <Separator />
           
           <div className="space-y-4">
-            <Button variant="outline" className="w-full">
+            <Button 
+              variant="outline" 
+              className="w-full" 
+              onClick={() => {
+                // TODO // 
+              }}
+            >
               Continue with Google
             </Button>
             <div className="text-center text-sm">
               Don&apos;t have an account?{" "}
-              <Button variant="link" className="p-0 h-auto" onClick={onRegisterClick}>
+              <Button 
+                variant="link" 
+                className="p-0 h-auto" 
+                onClick={onRegisterClick}
+                type="button"
+              >
                 Sign up
               </Button>
             </div>
@@ -153,4 +205,3 @@ export function LoginModal({ isOpen, onClose, onRegisterClick }) {
     document.body,
   )
 }
-

@@ -11,6 +11,7 @@ from app.auth.security import (
 )
 from app.celery.tasks.email_tasks.tasks import (
     user_password_reset_mail,
+    user_register_mail_event,
     user_verify_mail_event,
 )
 from app.core.exceptions import AuthenticationError, BadRequestError, NotFoundError
@@ -44,7 +45,6 @@ class AuthService:
         link = f"{settings.VERIFY_MAIL_URL}/{verification_token}"
         user_verify_mail_event.delay(
             user_data.email,
-            "Verify Your email",
             link,
         )
 
@@ -108,6 +108,8 @@ class AuthService:
         user.is_verified = True
         await self.user_repository.save(user)
 
+        user_register_mail_event.delay(user.email)
+
     async def send_password_reset_token(self, email: str) -> None:
         user = await self.user_repository.get_by_email(email)
         if not user:
@@ -120,7 +122,6 @@ class AuthService:
         link = f"{settings.PASSWORD_RESET_URL}/{password_reset_token}"
         user_password_reset_mail.delay(
             user.email,
-            "Reset Your Password",
             link,)
 
     async def reset_password(self, token: str, new_password: str) -> None:

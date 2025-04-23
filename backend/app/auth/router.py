@@ -9,7 +9,7 @@ from app.auth.schemas import (
     Token,
     UserCreate,
     UserLogin,
-    UserResetPassword
+    UserResetPassword,
 )
 from app.auth.service import AuthService
 from fastapi import APIRouter, Depends, Response
@@ -23,7 +23,7 @@ async def register(
     user_data: UserCreate,
     auth_service: AuthService = Depends(get_auth_service),
 ):
-    """Register a new user"""
+    """Register a new user and send verification email"""
     await auth_service.register(user_data)
     return {"message": "User registered successfully. Please verify your email."}
 
@@ -56,8 +56,6 @@ async def verify_token(
 ):
     """
     Verify a user's email with token
-
-    This endpoint would be accessed via a link in the verification email
     """
     await auth_service.verify_token(token.token)
     return {"message": "Email verified successfully"}
@@ -71,9 +69,7 @@ async def send_password_reset_token(
     auth_service: AuthService = Depends(get_auth_service),
 ):
     """
-    Send password reset token (will print to console)
-
-    In a real application, this would send an email with a password reset link
+    Send password reset token to user email
     """
     await auth_service.send_password_reset_token(email_request.email)
     return {"message": "Password reset email sent. Please check your inbox."}

@@ -1,11 +1,10 @@
 import uuid
 from typing import Optional
 
-from beanie import Document, Indexed, Link
-from pydantic import ConfigDict, EmailStr, Field
-
 from app.auth.schemas import UserRole
 from app.database.mixins import TimestampMixin
+from beanie import Document, Indexed, Link
+from pydantic import ConfigDict, EmailStr, Field
 
 
 class User(Document, TimestampMixin):
@@ -16,6 +15,7 @@ class User(Document, TimestampMixin):
     last_name: Optional[str] = None
     is_verified: bool = False
     role: UserRole = UserRole.STUDENT
+    receive_notifications: bool = True
 
     # Add a back-reference to social connections
     # social_connections: List[BackLink["SocialConnection"]] = Field(

@@ -1,9 +1,8 @@
 from datetime import datetime, timezone
 from typing import Any, Dict, Generic, List, Optional, Type, TypeVar
 
-from beanie import Document
-
 from app.core.repository.abstract_repository import AbstractRepository
+from beanie import Document
 
 T = TypeVar("T", bound=Document)
 
@@ -26,8 +25,12 @@ class BaseRepository(AbstractRepository[T], Generic[T]):
             {self.model_class.id: entity_id}, fetch_links=fetch_links
         )
 
-    async def get_by_field(self, field_name: str, field_value: Any, fetch_links = False) -> Optional[T]:
-        return await self.model_class.find_one({field_name: field_value}, fetch_links=fetch_links)
+    async def get_by_field(
+        self, field_name: str, field_value: Any, fetch_links=False
+    ) -> Optional[T]:
+        return await self.model_class.find_one(
+            {field_name: field_value}, fetch_links=fetch_links
+        )
 
     async def get_all(
         self,

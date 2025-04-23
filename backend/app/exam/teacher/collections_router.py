@@ -6,9 +6,9 @@ from app.exam.teacher.dependencies import get_collection_service
 from app.exam.teacher.schemas import (
     CreateCollection,
     GetCollection,
+    JustCollection,
     QuestionSchema,
     UpdateCollection,
-    JustCollection,
     UpdateQuestionSchema,
 )
 from app.exam.teacher.services import CollectionService

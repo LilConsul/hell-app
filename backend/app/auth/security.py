@@ -3,9 +3,8 @@ from typing import Any, Dict, Optional
 
 import bcrypt
 import jwt
-from itsdangerous import URLSafeTimedSerializer
-
 from app.settings import settings
+from itsdangerous import URLSafeTimedSerializer
 
 # Create serializer for URL-safe tokens (for email verification)
 serializer = URLSafeTimedSerializer(

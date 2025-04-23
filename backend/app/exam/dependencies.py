@@ -1,8 +1,8 @@
-from app.exam.models import Collection, Question, ExamInstance
+from app.exam.models import Collection, ExamInstance, Question
 from app.exam.repository import (
     CollectionRepository,
-    QuestionRepository,
     ExamInstanceRepository,
+    QuestionRepository,
 )
 
 

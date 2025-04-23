@@ -20,7 +20,9 @@ mail_config = ConnectionConfig(
 mail = FastMail(mail_config)
 
 
-def create_message(recipients: List[str], subject: str, body: Dict[str, Any] | None = None) -> MessageSchema:
+def create_message(
+    recipients: List[str], subject: str, body: Dict[str, Any] | None = None
+) -> MessageSchema:
     if body is None:
         body = {}
     message = MessageSchema(

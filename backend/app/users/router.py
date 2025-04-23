@@ -1,17 +1,14 @@
 from typing import List
 
-from fastapi import APIRouter, Depends
 from app.auth.dependencies import (
     get_current_teacher_id,
     get_current_user_id,
-    get_auth_service,
 )
 from app.auth.schemas import UserResponse
-from app.users.schemas import UserUpdatePassword, UserUpdate
-from app.auth.service import AuthService
 from app.core.schemas import BaseReturn
 from app.users.dependencies import get_user_service
-from app.users.schemas import StudentData
+from app.users.schemas import StudentData, UserUpdate, UserUpdatePassword
+from fastapi import APIRouter, Depends
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -20,11 +17,10 @@ router = APIRouter(prefix="/users", tags=["users"])
     "/me", response_model=BaseReturn[UserResponse], response_model_exclude_none=True
 )
 async def get_user_info(
-    user_id: str = Depends(get_current_user_id),
-    auth_service: AuthService = Depends(get_auth_service),
+    user_id: str = Depends(get_current_user_id), user_service=Depends(get_user_service)
 ):
     """Get information about the currently logged in user"""
-    data = await auth_service.get_user_info(user_id)
+    data = await user_service.get_user_info(user_id)
     return BaseReturn(message="User info retrieved successfully", data=data)
 
 
@@ -34,10 +30,10 @@ async def get_user_info(
 async def update_user_info(
     user_data: UserUpdate,
     user_id: str = Depends(get_current_user_id),
-    auth_service: AuthService = Depends(get_auth_service),
+    user_service=Depends(get_user_service),
 ):
     """Update information about the currently logged in user"""
-    data = await auth_service.update_user_info(user_id, user_data)
+    data = await user_service.update_user_info(user_id, user_data)
     return BaseReturn(
         message="User info updated successfully",
         data=data,
@@ -46,11 +42,10 @@ async def update_user_info(
 
 @router.delete("/me", response_model=BaseReturn, response_model_exclude_none=True)
 async def delete_user_info(
-    user_id: str = Depends(get_current_user_id),
-    auth_service: AuthService = Depends(get_auth_service),
+    user_id: str = Depends(get_current_user_id), user_service=Depends(get_user_service)
 ):
     """Delete the currently logged in user"""
-    await auth_service.delete_user_info(user_id)
+    await user_service.delete_user_info(user_id)
     return BaseReturn(
         message="User deleted successfully",
     )
@@ -64,10 +59,10 @@ async def delete_user_info(
 async def change_password(
     password_data: UserUpdatePassword,
     user_id: str = Depends(get_current_user_id),
-    auth_service: AuthService = Depends(get_auth_service),
+    user_service=Depends(get_user_service),
 ):
     """Change the password of the currently logged in user"""
-    await auth_service.change_password(
+    await user_service.change_password(
         user_id, password_data.password, password_data.new_password
     )
     return BaseReturn(

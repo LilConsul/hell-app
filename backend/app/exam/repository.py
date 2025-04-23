@@ -1,7 +1,7 @@
 from typing import List
 
 from app.core.repository.base_repository import BaseRepository
-from app.exam.models import Collection, Question, ExamStatus, ExamInstance
+from app.exam.models import Collection, ExamInstance, ExamStatus, Question
 
 
 class CollectionRepository(BaseRepository[Collection]):

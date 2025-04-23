@@ -3,7 +3,6 @@ from unittest.mock import patch
 
 import jwt
 import pytest
-
 from app.auth.models import User
 from app.auth.schemas import UserRole
 from app.auth.security import get_password_hash
@@ -11,8 +10,8 @@ from app.exam.models import (
     Collection,
     ExamStatus,
     Question,
-    QuestionType,
     QuestionOption,
+    QuestionType,
 )
 from app.settings import settings
 
@@ -121,6 +120,7 @@ class TestTeacherRouter:
                     "first_name": "Test",
                     "last_name": "Teacher",
                     "role": "teacher",
+                    "receive_notifications": True,
                 },
                 "questions": None,
                 "created_at": "2023-01-01T00:00:00",

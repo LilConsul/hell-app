@@ -1,9 +1,8 @@
 from enum import Enum
 from typing import Optional
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
-
 from app.core.schemas import BaseReturn
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 
 class UserRole(str, Enum):
@@ -37,6 +36,7 @@ class UserResponse(UserBase):
     first_name: Optional[str] = None
     last_name: Optional[str] = None
     role: UserRole
+    receive_notifications: bool
 
     model_config = ConfigDict(
         from_attributes=True,

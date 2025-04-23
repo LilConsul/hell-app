@@ -3,11 +3,10 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
-from beanie import BackLink, Document, Link
-from pydantic import BaseModel, ConfigDict, Field, field_validator
-
 from app.auth.models import User
 from app.database.mixins import TimestampMixin
+from beanie import BackLink, Document, Link
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class QuestionType(str, Enum):
@@ -166,13 +165,13 @@ class Collection(Document, TimestampMixin):
 class ExamInstance(Document, TimestampMixin):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     collection_id: Link[Collection]
-    title: str              # Override title
+    title: str  # Override title
     created_by: Link[User]  # Reference to user
     start_date: datetime
     end_date: datetime
     status: ExamStatus = ExamStatus.DRAFT
     max_attempts: int = 1
-    passing_score: int = 50 # Percentage
+    passing_score: int = 50  # Percentage
     security_settings: SecuritySettings = Field(default_factory=SecuritySettings)
     notification_settings: NotificationSettings = Field(
         default_factory=NotificationSettings
@@ -194,8 +193,8 @@ class ExamInstance(Document, TimestampMixin):
             "created_by",
             "collection_id",
             "status",
-            ("start_date", "end_date"),         # Compound index for date range queries
-            "assigned_students.student_id",     # Index for finding exams assigned to student
+            ("start_date", "end_date"),  # Compound index for date range queries
+            "assigned_students.student_id",  # Index for finding exams assigned to student
         ]
 
     model_config = ConfigDict(
@@ -290,6 +289,7 @@ class StudentExam(Document, TimestampMixin):
             }
         },
     )
+
 
 class StudentResponse(Document, TimestampMixin):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))

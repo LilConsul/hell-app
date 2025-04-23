@@ -1,7 +1,5 @@
 from typing import List
 
-from fastapi import APIRouter, Depends
-
 from app.auth.dependencies import get_current_teacher_id
 from app.core.schemas import BaseReturn
 from app.exam.teacher.dependencies import get_exam_instance_service
@@ -11,6 +9,7 @@ from app.exam.teacher.schemas import (
     UpdateExamInstanceSchema,
 )
 from app.exam.teacher.services import ExamInstanceService
+from fastapi import APIRouter, Depends
 
 router = APIRouter(
     prefix="/exam-instances",

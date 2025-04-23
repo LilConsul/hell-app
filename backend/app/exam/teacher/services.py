@@ -2,22 +2,22 @@ import uuid
 from typing import List
 
 from app.core.exceptions import ForbiddenError, NotFoundError
-from app.exam.models import ExamStatus, ExamInstance
+from app.exam.models import ExamInstance, ExamStatus
 from app.exam.repository import (
     CollectionRepository,
-    QuestionRepository,
     ExamInstanceRepository,
+    QuestionRepository,
 )
 from app.exam.teacher.schemas import (
     CreateCollection,
+    CreateExamInstanceSchema,
     GetCollection,
+    GetExamInstance,
+    JustCollection,
     QuestionSchema,
     UpdateCollection,
-    JustCollection,
-    UpdateQuestionSchema,
-    CreateExamInstanceSchema,
-    GetExamInstance,
     UpdateExamInstanceSchema,
+    UpdateQuestionSchema,
 )
 
 
@@ -264,7 +264,9 @@ class ExamInstanceService:
         return str(student_obj)
 
     async def create_exam_instance(
-        self, user_id: str,instance_data: CreateExamInstanceSchema,
+        self,
+        user_id: str,
+        instance_data: CreateExamInstanceSchema,
     ) -> str:
         """Create a new exam instance."""
 

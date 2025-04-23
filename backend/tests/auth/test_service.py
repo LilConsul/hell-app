@@ -4,7 +4,8 @@ import pytest
 from fastapi import Response
 
 from app.auth.models import User
-from app.auth.schemas import UserCreate, UserLogin, UserUpdate
+from app.auth.schemas import UserCreate, UserLogin
+from app.users.schemas import UserUpdate
 from app.auth.security import get_password_hash
 from app.auth.service import AuthService
 from app.core.exceptions import AuthenticationError, BadRequestError, NotFoundError

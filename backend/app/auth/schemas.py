@@ -22,16 +22,6 @@ class UserCreate(UserBase):
     last_name: Optional[str] = None
 
 
-class UserUpdate(BaseModel):
-    first_name: Optional[str] = None
-    last_name: Optional[str] = None
-
-
-class UserUpdatePassword(BaseModel):
-    password: str = Field(..., min_length=8)
-    new_password: str = Field(..., min_length=8)
-
-
 class UserResetPassword(BaseModel):
     password: str = Field(..., min_length=8)
     token: str

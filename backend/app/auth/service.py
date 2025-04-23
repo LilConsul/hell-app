@@ -2,7 +2,6 @@ from datetime import timedelta
 
 from app.auth.repository import UserRepository
 from app.auth.schemas import UserCreate, UserLogin, UserResponse
-from app.users.schemas import UserUpdate
 from app.auth.security import (
     create_access_token,
     create_verification_token,
@@ -10,9 +9,13 @@ from app.auth.security import (
     get_password_hash,
     verify_password,
 )
-from app.celery.tasks.email_tasks.tasks import user_verify_mail_event
+from app.celery.tasks.email_tasks.tasks import (
+    user_password_reset_mail,
+    user_verify_mail_event,
+)
 from app.core.exceptions import AuthenticationError, BadRequestError, NotFoundError
 from app.settings import settings
+from app.users.schemas import UserUpdate
 from fastapi import Response
 
 
@@ -114,13 +117,11 @@ class AuthService:
             user_id=user.id, token_type="password_reset"
         )
 
-        # In a real app, you'd send this via email with a URL like:
-        # password_reset_url = f"{settings.frontend_url}/reset-password?token={password_reset_token}"
-        # But we'll just print it to console for this example
-        print(f"Password reset token for user {email}: {password_reset_token}")
-        print(
-            f"Password reset URL would be: /auth/reset-password?token={password_reset_token}"
-        )
+        link = f"{settings.PASSWORD_RESET_URL}/{password_reset_token}"
+        user_password_reset_mail.delay(
+            user.email,
+            "Reset Your Password",
+            link,)
 
     async def reset_password(self, token: str, new_password: str) -> None:
         token_data = decode_verification_token(token)

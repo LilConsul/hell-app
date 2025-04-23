@@ -2,7 +2,6 @@ from unittest.mock import patch
 
 import jwt
 import pytest
-
 from app.auth.models import User
 from app.auth.security import get_password_hash
 from app.settings import settings
@@ -188,35 +187,6 @@ class TestAuthRouter:
         # Verify
         assert response.status_code == 200
         assert response.json()["message"] == "Password changed successfully"
-
-    @patch("app.auth.service.create_verification_token")
-    async def test_send_verification_token(self, mock_create_token, client, fake):
-        """Test send verification token endpoint"""
-        # Create unverified user
-        email = fake.email()
-        password = "Password123!"
-        hashed_password = get_password_hash(password)
-
-        user = User(email=email, hashed_password=hashed_password, is_verified=False)
-        await user.insert()
-
-        # Mock token creation
-        mock_create_token.return_value = "test-verification-token"
-
-        # Send verification token request
-        response = await client.post(
-            "/v1/auth/send-verification", json={"email": email}
-        )
-
-        # Verify response
-        assert response.status_code == 200
-        assert (
-            response.json()["message"]
-            == "Verification email sent. Please check your inbox."
-        )
-
-        # Cleanup
-        await User.find_one(User.email == email).delete()
 
     @patch("app.auth.service.decode_verification_token")
     async def test_verify_token_endpoint(self, mock_decode_token, client, test_user):

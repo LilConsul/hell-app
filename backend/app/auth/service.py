@@ -1,7 +1,5 @@
 from datetime import timedelta
 
-from fastapi import Response
-
 from app.auth.repository import UserRepository
 from app.auth.schemas import UserCreate, UserLogin, UserResponse, UserUpdate
 from app.auth.security import (
@@ -11,8 +9,10 @@ from app.auth.security import (
     get_password_hash,
     verify_password,
 )
+from app.celery.tasks.email_tasks.tasks import user_verify_mail_event
 from app.core.exceptions import AuthenticationError, BadRequestError, NotFoundError
 from app.settings import settings
+from fastapi import Response
 
 
 class AuthService:
@@ -31,7 +31,18 @@ class AuthService:
             "first_name": user_data.first_name,
             "last_name": user_data.last_name,
         }
-        await self.user_repository.create(user_dict)
+
+        user = await self.user_repository.create(user_dict)
+
+        verification_token = create_verification_token(
+            user_id=user.id, token_type="verification"
+        )
+        link = f"{settings.VERIFY_MAIL_URL}/{verification_token}"
+        user_verify_mail_event.delay(
+            user_data.email,
+            "Verify Your email",
+            link,
+        )
 
     async def login(self, login_data: UserLogin, response: Response) -> UserResponse:
         user = await self.user_repository.get_by_email(login_data.email)
@@ -70,22 +81,6 @@ class AuthService:
             secure=settings.COOKIE_SECURE,
             domain=settings.COOKIE_DOMAIN,
         )
-
-    # Email verification methods
-    async def send_verification_token(self, email: str) -> None:
-        user = await self.user_repository.get_by_email(email)
-        if not user:
-            raise BadRequestError(f"No user found with email {email}")
-
-        verification_token = create_verification_token(
-            user_id=user.id, token_type="verification"
-        )
-
-        # In a real app, you'd send this via email with a URL like:
-        # verification_url = f"{settings.frontend_url}/verify?token={verification_token}"
-        # But we'll just print it to console for this example
-        print(f"Verification token for user {email}: {verification_token}")
-        print(f"Verification URL would be: /auth/verify?token={verification_token}")
 
     async def verify_token(self, token: str) -> None:
         token_data = decode_verification_token(token)

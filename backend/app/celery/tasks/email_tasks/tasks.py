@@ -1,7 +1,10 @@
 from asgiref.sync import async_to_sync
-from manager import create_message, mail
+
+from ...worker import celery
+from .manager import create_message, mail
 
 
+@celery.task
 def user_verify_mail_event(recipient: str, subject: str, link: str):
     message = create_message(
         recipients=[

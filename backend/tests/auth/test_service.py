@@ -205,19 +205,6 @@ class TestAuthService:
         assert unverified_user.is_verified is True
         mock_user_repository.save.assert_called_once_with(unverified_user)
 
-    async def test_send_verification_token_user_not_found(
-        self, auth_service, mock_user_repository
-    ):
-        # Setup
-        mock_user_repository.get_by_email.return_value = None
-        email = "nonexistent@example.com"
-
-        # Execute and verify exception
-        with pytest.raises(BadRequestError) as exc_info:
-            await auth_service.send_verification_token(email)
-
-        assert f"No user found with email {email}" in str(exc_info.value)
-
     async def test_verify_token_invalid(self, auth_service):
         # Setup
         token = "invalid_token"

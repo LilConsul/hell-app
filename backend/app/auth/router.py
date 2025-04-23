@@ -1,5 +1,3 @@
-from fastapi import APIRouter, Depends, Response
-
 from app.auth.dependencies import (
     get_auth_service,
     get_current_user_id,
@@ -17,6 +15,7 @@ from app.auth.schemas import (
     UserUpdatePassword,
 )
 from app.auth.service import AuthService
+from fastapi import APIRouter, Depends, Response
 
 router = APIRouter(tags=["auth"], prefix="/auth")
 
@@ -51,23 +50,6 @@ async def logout(
     """Logout and clear cookies"""
     await auth_service.logout(response)
     return {"message": "Logout successful"}
-
-
-# Email verification endpoints
-@router.post(
-    "/send-verification", response_model=AuthReturn, response_model_exclude_none=True
-)
-async def send_verification_token(
-    email_request: EmailRequest,
-    auth_service: AuthService = Depends(get_auth_service),
-):
-    """
-    Send verification token (will print to console)
-
-    In a real application, this would send an email with a verification link
-    """
-    await auth_service.send_verification_token(email_request.email)
-    return {"message": "Verification email sent. Please check your inbox."}
 
 
 @router.post("/verify", response_model=AuthReturn, response_model_exclude_none=True)

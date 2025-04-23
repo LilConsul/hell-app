@@ -5,7 +5,7 @@ celery = Celery(
     "worker",
     broker=settings.REDIS_URL,
     backend=settings.REDIS_URL,
-    include=["app.celery.tasks.email_tasks"]
+    include=["app.celery.tasks.email_tasks.email_tasks"],
 )
 
 # Optional configuration

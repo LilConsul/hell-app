@@ -13,7 +13,7 @@ if [ ! -f "$CERT_PATH" ] || [ ! -f "$KEY_PATH" ]; then
     openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
         -keyout "$KEY_PATH" \
         -out "$CERT_PATH" \
-        -subj "/C=PL/ST=Krakow/L=SENOM_VEX/O=SESBIAN_LEX/CN=actPoly" > /dev/null 2>&1
+        -subj "/C=PL/ST=Krakow/L=SENOM_VEX/O=SESBIAN_LEX/CN=hellApp" > /dev/null 2>&1
 
 else
     echo "SSL certificates found."

@@ -1,5 +1,3 @@
-from fastapi import Depends
-
 from app.auth.infrastructure import CookieTokenAuth
 from app.auth.models import User, UserRole
 from app.auth.oauth_service import OAuthService
@@ -7,6 +5,7 @@ from app.auth.repository import UserRepository
 from app.auth.security import decode_token
 from app.auth.service import AuthService
 from app.core.exceptions import AuthenticationError, ForbiddenError
+from fastapi import Depends
 
 
 # Repositories
@@ -44,20 +43,26 @@ async def get_auth_token(
     return token
 
 
+async def get_decode_token(token: str = Depends(get_auth_token)) -> dict:
+    """Decode the authentication token"""
+    token_data = decode_token(token)
+    if not token_data:
+        raise AuthenticationError("Invalid token")
+    return token_data
+
+
 # Token validation dependencies
 async def get_current_user_id(
-    token: str = Depends(get_auth_token),
+    token_data: dict = Depends(get_decode_token),
 ) -> str:
-    token_data = decode_token(token)
     if not token_data.get("sub"):
         raise AuthenticationError("Invalid token")
     return token_data.get("sub")
 
 
 async def get_current_student_id(
-    token: str = Depends(get_auth_token),
+    token_data: dict = Depends(get_decode_token),
 ) -> str:
-    token_data = decode_token(token)
     if not token_data.get("sub"):
         raise AuthenticationError("Invalid token")
     if (
@@ -69,9 +74,8 @@ async def get_current_student_id(
 
 
 async def get_current_teacher_id(
-    token: str = Depends(get_auth_token),
+    token_data: dict = Depends(get_decode_token),
 ) -> str:
-    token_data = decode_token(token)
     if not token_data.get("sub"):
         raise AuthenticationError("Invalid token")
     if (
@@ -83,9 +87,8 @@ async def get_current_teacher_id(
 
 
 async def get_current_admin_id(
-    token: str = Depends(get_auth_token),
+    token_data: dict = Depends(get_decode_token),
 ) -> str:
-    token_data = decode_token(token)
     if not token_data.get("sub"):
         raise AuthenticationError("Invalid token")
     if not token_data.get("role") == UserRole.ADMIN:

@@ -1,6 +1,5 @@
 from app.auth.dependencies import (
     get_auth_service,
-    get_current_user_id,
     get_oauth_service,
 )
 from app.auth.schemas import (
@@ -10,9 +9,7 @@ from app.auth.schemas import (
     Token,
     UserCreate,
     UserLogin,
-    UserResetPassword,
-    UserUpdate,
-    UserUpdatePassword,
+    UserResetPassword
 )
 from app.auth.service import AuthService
 from fastapi import APIRouter, Depends, Response
@@ -113,50 +110,3 @@ async def google_login(
     """
     data = await oauth_service.google_login(oauth_data, response)
     return {"message": "Google login successful", "data": data}
-
-
-# User info endpoints
-@router.get("/me", response_model=AuthReturn, response_model_exclude_none=True)
-async def get_user_info(
-    user_id: str = Depends(get_current_user_id),
-    auth_service: AuthService = Depends(get_auth_service),
-):
-    """Get information about the currently logged in user"""
-    data = await auth_service.get_user_info(user_id)
-    return {"message": "User info retrieved successfully", "data": data}
-
-
-@router.put("/me", response_model=AuthReturn, response_model_exclude_none=True)
-async def update_user_info(
-    user_data: UserUpdate,
-    user_id: str = Depends(get_current_user_id),
-    auth_service: AuthService = Depends(get_auth_service),
-):
-    """Update information about the currently logged in user"""
-    data = await auth_service.update_user_info(user_id, user_data)
-    return {"message": "User info updated successfully", "data": data}
-
-
-@router.delete("/me", response_model=AuthReturn, response_model_exclude_none=True)
-async def delete_user_info(
-    user_id: str = Depends(get_current_user_id),
-    auth_service: AuthService = Depends(get_auth_service),
-):
-    """Delete the currently logged in user"""
-    await auth_service.delete_user_info(user_id)
-    return {"message": "User deleted successfully"}
-
-
-@router.put(
-    "/me/change-password", response_model=AuthReturn, response_model_exclude_none=True
-)
-async def change_password(
-    password_data: UserUpdatePassword,
-    user_id: str = Depends(get_current_user_id),
-    auth_service: AuthService = Depends(get_auth_service),
-):
-    """Change the password of the currently logged in user"""
-    await auth_service.change_password(
-        user_id, password_data.password, password_data.new_password
-    )
-    return {"message": "Password changed successfully"}

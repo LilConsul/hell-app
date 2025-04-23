@@ -10,7 +10,7 @@ export function AuthProvider({ children }) {
 
   const fetchUser = async () => {
     try {
-      const response = await fetch("/api/v1/auth/me", {
+      const response = await fetch("/api/v1/users/me", {
         credentials: "include",
       });
       

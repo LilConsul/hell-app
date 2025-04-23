@@ -1,7 +1,8 @@
 from datetime import timedelta
 
 from app.auth.repository import UserRepository
-from app.auth.schemas import UserCreate, UserLogin, UserResponse, UserUpdate
+from app.auth.schemas import UserCreate, UserLogin, UserResponse
+from app.users.schemas import UserUpdate
 from app.auth.security import (
     create_access_token,
     create_verification_token,

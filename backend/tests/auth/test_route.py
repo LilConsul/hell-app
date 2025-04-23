@@ -138,7 +138,7 @@ class TestAuthRouter:
 
         # Use Authorization header instead of cookies
         headers = {"Authorization": f"Bearer {token}"}
-        response = await client.get("/v1/auth/me", headers=headers)
+        response = await client.get("/v1/users/me", headers=headers)
 
         assert response.status_code == 200
         assert response.json()["data"]["id"] == user.id
@@ -158,7 +158,7 @@ class TestAuthRouter:
         headers = {"Authorization": f"Bearer {token}"}
 
         # Send request
-        response = await client.put("/v1/auth/me", json=new_data, headers=headers)
+        response = await client.put("/v1/users/me", json=new_data, headers=headers)
 
         # Verify
         assert response.status_code == 200
@@ -181,7 +181,7 @@ class TestAuthRouter:
 
         # Send request
         response = await client.put(
-            "/v1/auth/me/change-password", json=password_data, headers=headers
+            "/v1/users/me/change-password", json=password_data, headers=headers
         )
 
         # Verify
@@ -262,7 +262,7 @@ class TestAuthRouter:
 
         # Send delete request
         headers = {"Authorization": f"Bearer {token}"}
-        response = await client.delete("/v1/auth/me", headers=headers)
+        response = await client.delete("/v1/users/me", headers=headers)
 
         # Verify response
         assert response.status_code == 200

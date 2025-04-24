@@ -5,7 +5,7 @@ from typing import List
 from app.auth.repository import UserRepository
 from app.celery.tasks.email_tasks.tasks import exam_reminder_notification
 from app.core.exceptions import ForbiddenError, NotFoundError
-from app.exam.models import ExamStatus
+from app.exam.models import ExamStatus, NotificationSettings
 from app.exam.repository import (
     CollectionRepository,
     ExamInstanceRepository,
@@ -277,7 +277,7 @@ class ExamInstanceService:
 
     async def _send_notification(
         self,
-        users_id: List[str],
+        users_id: List[dict],
         reminders: List[str],
         exam_title: str,
         exam_start_time: datetime,
@@ -327,7 +327,9 @@ class ExamInstanceService:
                     user.notifications_tasks_id[str(exam_instance_id)] = result.id
             await self.user_repository.save(user)
 
-    async def _create_student_exam(self, users_id: List[str], exam_instance_id: str, attempts: int) -> None:
+    async def _create_student_exam(
+        self, users_id: List[dict], exam_instance_id: str, attempts: int
+    ) -> None:
         """Create a new StudentExam instance."""
         for user_id in users_id:
             student_exam_data = {
@@ -336,6 +338,60 @@ class ExamInstanceService:
                 "attempts_count": attempts,
             }
             await self.student_exam_repository.create(student_exam_data)
+
+    async def _add_students_to_exam(
+        self,
+        students: List[dict],
+        exam_instance_id: str,
+        max_attempts: int,
+        exam_title: str,
+        start_date: datetime,
+        end_date: datetime,
+        notification_settings: dict,
+    ) -> None:
+        """Add students to an exam instance, create StudentExam instances, and send notifications."""
+        # Create StudentExam instances for new students
+        await self._create_student_exam(students, exam_instance_id, max_attempts)
+
+        # Send notifications if enabled
+        if (
+            notification_settings["reminder_enabled"]
+            and notification_settings["reminders"]
+        ):
+            await self._send_notification(
+                students,
+                notification_settings["reminders"],
+                exam_title,
+                start_date,
+                end_date,
+                exam_instance_id,
+            )
+
+    async def _remove_students_from_exam(
+        self, students: List[dict], exam_instance_id: str
+    ) -> None:
+        """
+        Remove students from an exam instance, delete their StudentExam instances,
+        and revoke any pending notification tasks.
+        """
+        for student in students:
+            # Delete StudentExam records
+            student_exam = await self.student_exam_repository.get_by_student_and_exam(
+                student["student_id"], exam_instance_id
+            )
+            print(student_exam)
+            await self.student_exam_repository.delete(student_exam.id)
+
+            # Revoke pending notification tasks
+            user = await self.user_repository.get_by_id(student["student_id"])
+            if user and str(exam_instance_id) in user.notifications_tasks_id:
+                # Get task ID and revoke it
+                task_id = user.notifications_tasks_id[str(exam_instance_id)]
+                exam_reminder_notification.AsyncResult(task_id).revoke(terminate=True)
+
+                # Remove the task ID from user's notifications
+                del user.notifications_tasks_id[str(exam_instance_id)]
+                await self.user_repository.save(user)
 
     async def create_exam_instance(
         self,
@@ -361,29 +417,21 @@ class ExamInstanceService:
 
         exam_instance = await self.exam_instance_repository.create(instance_data)
 
-        await self._create_student_exam(
-            instance_data.get("assigned_students", []),
-            exam_instance.id,
-            instance_data.get("attempts", 1),
-        )
-
-        notification_settings = instance_data.get("notification_settings", {})
-        if notification_settings.get("reminder_enabled") and notification_settings.get(
-            "reminders"
-        ):
-            await self._send_notification(
-                instance_data.get("assigned_students", []),
-                notification_settings["reminders"],
+        # Handle student assignments
+        students = instance_data.get("assigned_students", [])
+        if students:
+            await self._add_students_to_exam(
+                students,
+                exam_instance.id,
+                instance_data.get("max_attempts", 1),
                 instance_data["title"],
                 instance_data["start_date"],
                 instance_data["end_date"],
-                exam_instance.id,
+                instance_data.get("notification_settings", NotificationSettings()),
             )
 
         return exam_instance.id
 
-    # TODO: add check if new student was assigned/removed to the exam instance and send notification
-    # TODO: add check if new student was added/removed to create/delete StudentExam instance
     async def update_exam_instance(
         self,
         user_id: str,
@@ -391,15 +439,79 @@ class ExamInstanceService:
         instance_data: UpdateExamInstanceSchema,
     ) -> None:
         """Update an existing exam instance."""
-        instance = await self.exam_instance_repository.get_by_id(instance_id)
+        instance = await self.exam_instance_repository.get_by_id(
+            instance_id, fetch_links=True
+        )
         if not instance:
             raise NotFoundError("Exam instance not found")
 
-        usr_obj = await instance.created_by.fetch()
-        if usr_obj.id != user_id:
+        # Access the id directly since created_by is already a User object
+        if instance.created_by.id != user_id:
             raise ForbiddenError("You do not own this exam instance")
 
         update_data = instance_data.model_dump(exclude_unset=True)
+
+        # Ensure start_date and end_date have timezone information
+        if "start_date" in update_data and update_data["start_date"].tzinfo is None:
+            update_data["start_date"] = update_data["start_date"].replace(
+                tzinfo=timezone.utc
+            )
+
+        if "end_date" in update_data and update_data["end_date"].tzinfo is None:
+            update_data["end_date"] = update_data["end_date"].replace(
+                tzinfo=timezone.utc
+            )
+
+        # Use the updated dates or existing ones
+        start_date = update_data.get("start_date", instance.start_date)
+        end_date = update_data.get("end_date", instance.end_date)
+
+        # Ensure instance dates have timezone if needed
+        if start_date.tzinfo is None:
+            start_date = start_date.replace(tzinfo=timezone.utc)
+        if end_date.tzinfo is None:
+            end_date = end_date.replace(tzinfo=timezone.utc)
+
+        if "assigned_students" in update_data:
+            current_students = [
+                {"student_id": await self._extract_student_id(student.student_id)}
+                for student in instance.assigned_students
+            ]
+
+            new_students = update_data.get("assigned_students", [])
+
+            current_student_ids = {
+                student["student_id"] for student in current_students
+            }
+            new_student_ids = {student["student_id"] for student in new_students}
+
+            added_students = [
+                student
+                for student in new_students
+                if student["student_id"] not in current_student_ids
+            ]
+
+            removed_students = [
+                student
+                for student in current_students
+                if student["student_id"] not in new_student_ids
+            ]
+
+            if added_students:
+                await self._add_students_to_exam(
+                    added_students,
+                    instance_id,
+                    instance.max_attempts,
+                    instance.title,
+                    start_date,  # Using timezone-aware date
+                    end_date,  # Using timezone-aware date
+                    instance.notification_settings.model_dump(),
+                )
+
+            # Handle removed students
+            if removed_students:
+                await self._remove_students_from_exam(removed_students, instance_id)
+
         await self.exam_instance_repository.update(instance_id, update_data)
 
     async def delete_exam_instance(self, user_id: str, instance_id: str) -> None:

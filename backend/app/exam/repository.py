@@ -65,4 +65,13 @@ class StudentAttemptRepository(BaseRepository[StudentAttempt]):
 class StudentExamRepository(BaseRepository[StudentExam]):
     """Repository for StudentExam model operations"""
 
-    pass
+    async def get_by_student_and_exam(
+        self, student_id: str, exam_id: str
+    ) -> List[StudentExam]:
+        """Get all StudentExam records for a specific student and exam"""
+        return await self.model_class.find(
+            {
+                "student_id._id": student_id,
+                "exam_instance_id._id": exam_id,
+            }
+        ).to_list()

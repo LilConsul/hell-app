@@ -324,7 +324,7 @@ class ExamInstanceService:
                     result = exam_reminder_notification.apply_async(
                         kwargs=data, eta=notification_time
                     )
-                    user.notifications_tasks_id.append(result.id)
+                    user.notifications_tasks_id[str(exam_instance_id)] = result.id
             await self.user_repository.save(user)
 
     async def _create_student_exam(self, users_id: List[str], exam_instance_id: str, attempts: int) -> None:

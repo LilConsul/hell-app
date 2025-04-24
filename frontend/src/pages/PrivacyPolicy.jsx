@@ -10,82 +10,77 @@ function PrivacyPolicy() {
 
       <main className="flex-1 container py-10 max-w-3xl mx-auto pt-20">
         <h1 className="text-3xl font-bold mb-6">Privacy Policy</h1>
-        <p className="mb-4 text-muted-foreground">
-          Thank you for choosing HellApp. We value your privacy and are committed to protecting your personal information. This Privacy Policy describes how we collect, use, disclose, and safeguard your data when you interact with our online examination platform.
+        <p className="mb-6 text-muted-foreground">
+          At HellApp, we are committed to transparency regarding how your personal data is collected, used, and protected. This policy provides a clear overview of our practices, so you can make informed decisions about your privacy when using our platform.
         </p>
 
-        <h2 className="text-xl font-semibold mt-8 mb-2">1. What Information Do We Collect?</h2>
+        <h2 className="text-xl font-semibold mt-8 mb-2">1. Data We Collect</h2>
         <ul className="list-disc pl-5 text-muted-foreground">
           <li>
-            <strong>Personal Information:</strong> Name, email address, profile photo, institution affiliation, and other details you provide during registration or while updating your profile.
+            <strong>Identification data:</strong> Name, email address, institutional affiliation, and any other information you provide during registration or profile updates.
           </li>
           <li>
-            <strong>Exam Data:</strong> Your exam submissions, scores, answers, timing, feedback, and other activity logs related to the assessments you participate in.
+            <strong>Exam-related data:</strong> Submissions, answers, grades, time logs, and interactions with assessments on the platform.
           </li>
           <li>
-            <strong>Technical Data:</strong> Device type, browser, operating system, IP address, time zone, log data, and usage statistics.
+            <strong>Technical and security data:</strong> Device type, browser, operating system, IP address, and usage statistics necessary for platform integrity and security.
           </li>
           <li>
-            <strong>Anti-Cheat Monitoring Data:</strong> Webcam snapshots, tab switching events, suspicious activity flags, and security logs recorded during exams for integrity purposes.
-          </li>
-          <li>
-            <strong>Communication Data:</strong> Messages sent to support or within the app, contact forms, and feedback you provide.
+            <strong>Anti-cheat monitoring data:</strong> In accordance with academic requirements, we may process webcam activity, tab-switching events, or security alerts generated during examinations. Such features will always be communicated in advance.
           </li>
         </ul>
 
-        <h2 className="text-xl font-semibold mt-8 mb-2">2. How Do We Use Your Information?</h2>
+        <h2 className="text-xl font-semibold mt-8 mb-2">2. Purposes of Data Processing</h2>
         <ul className="list-disc pl-5 text-muted-foreground">
-          <li>To create and manage your user account and profile.</li>
-          <li>To organize, deliver, and grade online exams securely.</li>
-          <li>To ensure exam integrity through anti-cheat measures.</li>
-          <li>To generate reports for you and your institution (if applicable).</li>
-          <li>To provide you with support and respond to your requests.</li>
-          <li>To maintain platform security, monitor usage, and improve our services.</li>
-          <li>To communicate important updates or changes in policies and features.</li>
+          <li>To provide and manage your account and enable participation in online examinations.</li>
+          <li>To ensure the integrity and fairness of assessments through security and anti-cheating measures.</li>
+          <li>To support teachers and administrators in managing and evaluating exam activities.</li>
+          <li>To respond to your requests, provide support, and maintain platform security.</li>
+          <li>To improve our services based on usage analytics and feedback.</li>
         </ul>
 
-        <h2 className="text-xl font-semibold mt-8 mb-2">3. How Is Your Information Shared?</h2>
+        <h2 className="text-xl font-semibold mt-8 mb-2">3. Data Use and Disclosure</h2>
         <ul className="list-disc pl-5 text-muted-foreground">
           <li>
-            We do <span className="font-bold">NOT</span> sell or rent your personal information to third parties.
+            Your data is accessible only to authorized personnel, such as your instructors and institutional administrators, strictly for educational purposes.
           </li>
           <li>
-            Data may be shared with your institution, exam organizers, or authorized staff for legitimate educational and administrative purposes.
+            We <span className="font-bold">do not sell or rent</span> your personal data to third parties. Data is never used for advertising purposes.
           </li>
           <li>
-            We may disclose your information to trusted service providers (such as hosting, analytics, and security services) who assist us in operating the platform, under strict confidentiality agreements.
+            Certain technical data may be processed by trusted service providers (e.g., for secure hosting, analytics, or support), under confidentiality agreements.
           </li>
           <li>
-            We may disclose information when required by law, regulation, or valid legal process.
+            We may disclose data if required to comply with applicable laws or legal proceedings.
           </li>
         </ul>
 
-        <h2 className="text-xl font-semibold mt-8 mb-2">4. Data Storage and Security</h2>
+        <h2 className="text-xl font-semibold mt-8 mb-2">4. Your Rights and Choices</h2>
+        <ul className="list-disc pl-5 text-muted-foreground">
+          <li>
+            You may review and update your personal information at any time in your profile settings.
+          </li>
+          <li>
+            You may request deletion of your account and associated data, subject to institutional or legal retention obligations.
+          </li>
+          <li>
+            For any concerns, requests, or questions regarding your data, you may contact us at <span className="underline">privacy@hellapp.com</span>.
+          </li>
+        </ul>
+
+        <h2 className="text-xl font-semibold mt-8 mb-2">5. Data Security</h2>
         <p className="mb-4 text-muted-foreground">
-          We use modern security technologies and practices to protect your information from unauthorized access, alteration, disclosure, or destruction. All exam data is stored securely and access is limited to authorized personnel. We regularly review our procedures to ensure your privacy is maintained.
+          We implement industry-standard security measures to protect your data against unauthorized access, alteration, or loss. Access is restricted to individuals with a legitimate need, and all sensitive information is stored and transmitted securely.
         </p>
-
-        <h2 className="text-xl font-semibold mt-8 mb-2">5. Your Rights & Choices</h2>
-        <ul className="list-disc pl-5 text-muted-foreground">
-          <li>You can access, update, or correct your personal data at any time from your profile settings.</li>
-          <li>You may request the deletion of your account or data (subject to legal or educational retention requirements).</li>
-          <li>You can opt out of non-essential communications.</li>
-          <li>To exercise your rights, contact us via the support section of HellApp or by email at <span className="underline">privacy@hellapp.com</span>.</li>
-        </ul>
 
         <h2 className="text-xl font-semibold mt-8 mb-2">6. Data Retention</h2>
         <p className="mb-4 text-muted-foreground">
-          We retain your information only as long as is necessary for educational, legal, and security purposes. When no longer required, your data will be securely deleted or anonymized.
+          Your personal data is retained only as long as necessary for educational, legal, or security purposes. When no longer required, data is securely deleted or anonymized.
         </p>
 
-        <h2 className="text-xl font-semibold mt-8 mb-2">7. Cookies & Tracking Technologies</h2>
+        <h2 className="text-xl font-semibold mt-8 mb-2">7. Policy Updates</h2>
         <p className="mb-4 text-muted-foreground">
-          HellApp may use cookies and similar technologies to enhance user experience, analyze site usage, and improve our services. You can control cookie preferences via your browser settings.
-        </p>
-
-        <h2 className="text-xl font-semibold mt-8 mb-2">8. Changes to this Privacy Policy</h2>
-        <p className="mb-4 text-muted-foreground">
-          We may update this Privacy Policy periodically to reflect changes in our practices or legal requirements. We will notify you of significant changes via the platform or email.
+          Any significant changes to this policy will be communicated via the platform or by email. The most current version is always available on this page.
         </p>
 
         <div className="mt-8">
@@ -100,4 +95,4 @@ function PrivacyPolicy() {
   )
 }
 
-export default PrivacyPolicy;
+export default PrivacyPolicy

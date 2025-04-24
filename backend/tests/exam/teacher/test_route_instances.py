@@ -4,7 +4,6 @@ from unittest.mock import patch
 
 import jwt
 import pytest
-
 from app.auth.models import User
 from app.auth.schemas import UserRole
 from app.auth.security import get_password_hash
@@ -217,14 +216,14 @@ class TestExamInstanceRouter:
         self, mock_service, client, auth_headers
     ):
         """Test getting a non-existent exam instance"""
-        mock_service.return_value = None
+        from app.core.exceptions import NotFoundError
+
+        mock_service.side_effect = NotFoundError("Exam instance not found")
         instance_id = str(uuid.uuid4())
 
         response = await client.get(
             f"/v1/exam/teacher/exam-instances/{instance_id}",
             headers=auth_headers,
         )
-        assert response.status_code == 200
-        assert response.json()["message"] == "Exam instance not found"
-        assert response.json()["data"] is None
-        
+        assert response.status_code == 404  # Should be 404 Not Found
+        assert response.json()["detail"] == "Exam instance not found"

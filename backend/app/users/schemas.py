@@ -1,5 +1,6 @@
-from pydantic import BaseModel, EmailStr, ConfigDict, Field
 from typing import Optional
+
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 
 class UserUpdatePassword(BaseModel):
@@ -10,6 +11,7 @@ class UserUpdatePassword(BaseModel):
 class UserUpdate(BaseModel):
     first_name: Optional[str] = None
     last_name: Optional[str] = None
+    receive_notifications: bool | None = None
 
 
 class StudentData(BaseModel):
@@ -20,4 +22,3 @@ class StudentData(BaseModel):
     email: EmailStr
 
     model_config = ConfigDict(from_attributes=True)
-

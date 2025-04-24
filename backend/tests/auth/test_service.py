@@ -1,14 +1,13 @@
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from fastapi import Response
-
 from app.auth.models import User
 from app.auth.schemas import UserCreate, UserLogin
-from app.users.schemas import UserUpdate
 from app.auth.security import get_password_hash
 from app.auth.service import AuthService
 from app.core.exceptions import AuthenticationError, BadRequestError, NotFoundError
+from app.settings import settings
+from fastapi import Response
 
 
 class TestAuthService:
@@ -62,6 +61,8 @@ class TestAuthService:
     async def test_register_success(self, auth_service, mock_user_repository, fake):
         # Setup
         mock_user_repository.get_by_email.return_value = None
+
+        # Create user data
         user_data = UserCreate(
             email=fake.email(),
             password="Password123!",
@@ -69,17 +70,32 @@ class TestAuthService:
             last_name=fake.last_name(),
         )
 
+        # Create a proper mock user with the same data
+        mock_user = MagicMock(id="new-user-id")
+        mock_user.first_name = user_data.first_name
+        mock_user.last_name = user_data.last_name
+        mock_user_repository.create.return_value = mock_user
+
         # Execute
-        await auth_service.register(user_data)
+        with patch(
+            "app.auth.service.create_verification_token", return_value="test_token"
+        ):
+            with patch("app.auth.service.user_verify_mail_event") as mock_email_task:
+                mock_email_task.delay = MagicMock()
+                await auth_service.register(user_data)
 
         # Verify
         mock_user_repository.get_by_email.assert_called_once_with(user_data.email)
         mock_user_repository.create.assert_called_once()
-        # Update to check first positional argument instead of keyword args
         created_data = mock_user_repository.create.call_args[0][0]
         assert created_data["email"] == user_data.email
         assert created_data["first_name"] == user_data.first_name
         assert created_data["last_name"] == user_data.last_name
+
+        username = f"{user_data.first_name} {user_data.last_name}"
+        mock_email_task.delay.assert_called_once_with(
+            user_data.email, f"{settings.VERIFY_MAIL_URL}/test_token", username
+        )
 
     async def test_register_duplicate_email(
         self, auth_service, mock_user_repository, test_user, fake
@@ -369,165 +385,3 @@ class TestAuthService:
                 await auth_service.reset_password(token, new_password)
 
         assert "User not found" in str(exc_info.value)
-
-    # User info tests
-    async def test_get_user_info_success(
-        self, auth_service, mock_user_repository, test_user
-    ):
-        # Setup
-        mock_user_repository.get_by_id.return_value = test_user
-        user_id = test_user.id
-
-        # Execute
-        result = await auth_service.get_user_info(user_id)
-
-        # Verify
-        mock_user_repository.get_by_id.assert_called_once_with(user_id)
-        assert result.id == test_user.id
-        assert result.email == test_user.email
-        assert result.first_name == test_user.first_name
-        assert result.last_name == test_user.last_name
-
-    async def test_get_user_info_not_found(self, auth_service, mock_user_repository):
-        # Setup
-        mock_user_repository.get_by_id.return_value = None
-        user_id = "non_existent_id"
-
-        # Execute and verify exception
-        with pytest.raises(NotFoundError) as exc_info:
-            await auth_service.get_user_info(user_id)
-
-        assert "User not found" in str(exc_info.value)
-
-    async def test_update_user_info_success(
-        self, auth_service, mock_user_repository, test_user, fake
-    ):
-        # Setup
-        mock_user_repository.get_by_id.return_value = test_user
-        user_id = test_user.id
-        new_first_name = fake.first_name()
-        new_last_name = fake.last_name()
-        user_data = UserUpdate(first_name=new_first_name, last_name=new_last_name)
-
-        # Create a proper updated user for the mock return value
-        updated_user = User(
-            id=test_user.id,
-            email=test_user.email,
-            first_name=new_first_name,
-            last_name=new_last_name,
-            hashed_password=test_user.hashed_password,
-            is_verified=test_user.is_verified,
-            role=test_user.role,
-        )
-        mock_user_repository.update.return_value = updated_user
-
-        # Execute
-        result = await auth_service.update_user_info(user_id, user_data)
-
-        # Verify
-        mock_user_repository.get_by_id.assert_called_once_with(user_id)
-        mock_user_repository.update.assert_called_once()
-        assert mock_user_repository.update.call_args[0][0] == user_id
-        update_data = mock_user_repository.update.call_args[0][1]
-        assert update_data["first_name"] == new_first_name
-        assert update_data["last_name"] == new_last_name
-        assert result.first_name == new_first_name
-        assert result.last_name == new_last_name
-
-    async def test_update_user_info_not_found(
-        self, auth_service, mock_user_repository, fake
-    ):
-        # Setup
-        mock_user_repository.get_by_id.return_value = None
-        user_id = "non_existent_id"
-        user_data = UserUpdate(first_name=fake.first_name(), last_name=fake.last_name())
-
-        # Execute and verify exception
-        with pytest.raises(NotFoundError) as exc_info:
-            await auth_service.update_user_info(user_id, user_data)
-
-        assert "User not found" in str(exc_info.value)
-        mock_user_repository.update_user.assert_not_called()
-
-    async def test_delete_user_info_success(self, auth_service, mock_user_repository):
-        # Setup
-        user_id = "test-user-id"
-        mock_user_repository.delete.return_value = True
-
-        # Execute
-        await auth_service.delete_user_info(user_id)
-
-        # Verify
-        mock_user_repository.delete.assert_called_once_with(user_id)
-
-    async def test_delete_user_info_not_found(self, auth_service, mock_user_repository):
-        # Setup
-        user_id = "non-existent-id"
-        mock_user_repository.delete.return_value = False
-
-        # Execute and verify exception
-        with pytest.raises(NotFoundError) as exc_info:
-            await auth_service.delete_user_info(user_id)
-
-        assert "User not found" in str(exc_info.value)
-        mock_user_repository.delete.assert_called_once_with(user_id)
-
-    async def test_change_password_success(
-        self, auth_service, mock_user_repository, test_user
-    ):
-        # Setup
-        mock_user_repository.get_by_id.return_value = test_user
-        user_id = test_user.id
-        old_password = "password123"
-        new_password = "NewPassword123!"
-        hashed_password = "new_hashed_password"
-
-        # Execute
-        with patch("app.auth.service.verify_password", return_value=True):
-            with patch(
-                "app.auth.service.get_password_hash", return_value=hashed_password
-            ):
-                await auth_service.change_password(user_id, old_password, new_password)
-
-        # Verify
-        mock_user_repository.get_by_id.assert_called_once_with(user_id)
-        mock_user_repository.update.assert_called_once_with(
-            user_id, {"hashed_password": hashed_password}
-        )
-
-    async def test_change_password_user_not_found(
-        self, auth_service, mock_user_repository
-    ):
-        # Setup
-        mock_user_repository.get_by_id.return_value = None
-        user_id = "non_existent_id"
-        old_password = "password123"
-        new_password = "NewPassword123!"
-
-        # Execute and verify exception
-        with pytest.raises(NotFoundError) as exc_info:
-            await auth_service.change_password(user_id, old_password, new_password)
-
-        assert "User not found" in str(exc_info.value)
-        mock_user_repository.update_user.assert_not_called()
-
-    async def test_change_password_wrong_password(
-        self, auth_service, mock_user_repository, test_user
-    ):
-        # Setup
-        mock_user_repository.get_by_id.return_value = test_user
-        user_id = test_user.id
-        wrong_password = "wrong_password"
-        new_password = "NewPassword123!"
-
-        # Execute and verify exception
-        with patch("app.auth.service.verify_password", return_value=False):
-            with pytest.raises(AuthenticationError) as exc_info:
-                await auth_service.change_password(
-                    user_id, wrong_password, new_password
-                )
-
-        assert "Invalid password" in str(exc_info.value)
-        # Password should not be changed
-        assert test_user.hashed_password != "new_hashed_password"
-        mock_user_repository.update_user.assert_not_called()

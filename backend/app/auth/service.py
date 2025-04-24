@@ -11,11 +11,11 @@ from app.auth.security import (
 )
 from app.celery.tasks.email_tasks.tasks import (
     user_password_reset_mail,
+    user_welcome_mail_event,
     user_verify_mail_event,
 )
 from app.core.exceptions import AuthenticationError, BadRequestError, NotFoundError
 from app.settings import settings
-from app.users.schemas import UserUpdate
 from fastapi import Response
 
 
@@ -41,12 +41,13 @@ class AuthService:
         verification_token = create_verification_token(
             user_id=user.id, token_type="verification"
         )
-        link = f"{settings.VERIFY_MAIL_URL}/{verification_token}"
-        user_verify_mail_event.delay(
-            user_data.email,
-            "Verify Your email",
-            link,
+        username = (
+            user.first_name + " " + user.last_name
+            if user.first_name and user.last_name
+            else user.email
         )
+        link = f"{settings.VERIFY_MAIL_URL}/{verification_token}"
+        user_verify_mail_event.delay(user_data.email, link, username)
 
     async def login(self, login_data: UserLogin, response: Response) -> UserResponse:
         user = await self.user_repository.get_by_email(login_data.email)
@@ -108,6 +109,14 @@ class AuthService:
         user.is_verified = True
         await self.user_repository.save(user)
 
+        username = (
+            user.first_name + " " + user.last_name
+            if user.first_name and user.last_name
+            else user.email
+        )
+        date_registered = user.created_at.strftime("%Y-%m-%d %H:%M:%S")
+        user_welcome_mail_event.delay(user.email, username, date_registered)
+
     async def send_password_reset_token(self, email: str) -> None:
         user = await self.user_repository.get_by_email(email)
         if not user:
@@ -118,10 +127,16 @@ class AuthService:
         )
 
         link = f"{settings.PASSWORD_RESET_URL}/{password_reset_token}"
+        username = (
+            user.first_name + " " + user.last_name
+            if user.first_name and user.last_name
+            else user.email
+        )
         user_password_reset_mail.delay(
             user.email,
-            "Reset Your Password",
-            link,)
+            link,
+            username
+        )
 
     async def reset_password(self, token: str, new_password: str) -> None:
         token_data = decode_verification_token(token)
@@ -142,46 +157,3 @@ class AuthService:
         hashed_password = get_password_hash(new_password)
         user.hashed_password = hashed_password
         await self.user_repository.save(user)
-
-    # User methods
-    async def get_user_info(self, user_id: str) -> UserResponse:
-        user = await self.user_repository.get_by_id(user_id)
-
-        if not user:
-            raise NotFoundError("User not found")
-
-        return UserResponse.model_validate(user)
-
-    async def update_user_info(
-        self, user_id: str, user_data: UserUpdate
-    ) -> UserResponse:
-        user = await self.user_repository.get_by_id(user_id)
-        if not user:
-            raise NotFoundError("User not found")
-
-        update_data = {}
-        if user_data.first_name is not None:
-            update_data["first_name"] = user_data.first_name
-        if user_data.last_name is not None:
-            update_data["last_name"] = user_data.last_name
-
-        updated_user = await self.user_repository.update(user_id, update_data)
-        return UserResponse.model_validate(updated_user)
-
-    async def delete_user_info(self, user_id: str) -> None:
-        success = await self.user_repository.delete(user_id)
-        if not success:
-            raise NotFoundError("User not found")
-
-    async def change_password(
-        self, user_id: str, old_password: str, new_password: str
-    ) -> None:
-        user = await self.user_repository.get_by_id(user_id)
-        if not user:
-            raise NotFoundError("User not found")
-        if not verify_password(old_password, user.hashed_password):
-            raise AuthenticationError("Invalid password")
-
-        await self.user_repository.update(
-            user_id, {"hashed_password": get_password_hash(new_password)}
-        )

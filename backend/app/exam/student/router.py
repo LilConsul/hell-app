@@ -1,6 +1,5 @@
-from fastapi import APIRouter, Depends
-
 from app.auth.dependencies import get_current_student_id
+from fastapi import APIRouter, Depends
 
 router = APIRouter(
     prefix="/student",

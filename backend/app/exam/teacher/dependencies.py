@@ -1,16 +1,17 @@
-from fastapi import Depends
-
+from app.auth.dependencies import get_user_repository
+from app.auth.repository import UserRepository
 from app.exam.dependencies import (
     get_collection_repository,
-    get_question_repository,
     get_exam_instance_repository,
+    get_question_repository,
 )
 from app.exam.repository import (
     CollectionRepository,
-    QuestionRepository,
     ExamInstanceRepository,
+    QuestionRepository,
 )
 from app.exam.teacher.services import CollectionService, ExamInstanceService
+from fastapi import Depends
 
 
 def get_collection_service(
@@ -23,5 +24,6 @@ def get_collection_service(
 def get_exam_instance_service(
     exam_ins_repo: ExamInstanceRepository = Depends(get_exam_instance_repository),
     collection_repo: CollectionRepository = Depends(get_collection_repository),
+    user_repository: UserRepository = Depends(get_user_repository),
 ) -> ExamInstanceService:
-    return ExamInstanceService(exam_ins_repo, collection_repo)
+    return ExamInstanceService(exam_ins_repo, collection_repo, user_repository)

@@ -7,4 +7,4 @@ celery = Celery(
     backend=settings.REDIS_URL,
 )
 
-celery.autodiscover_tasks(["app.celery.tasks.email_tasks"])
+celery.autodiscover_tasks(["app.celery.tasks.email_tasks.tasks"])

@@ -22,6 +22,7 @@ from app.exam.teacher.schemas import (
     UpdateExamInstanceSchema,
     UpdateQuestionSchema,
 )
+from app.settings import settings
 
 
 class CollectionService:
@@ -85,7 +86,9 @@ class CollectionService:
         collection = await self.collection_repository.get_by_id(collection_id)
         if not collection:
             raise NotFoundError("Collection not found")
-        if collection.created_by.id != user_id:
+        user_obj = await collection.created_by.fetch()
+        print(user_obj)
+        if user_obj.id != user_id:
             raise ForbiddenError("You do not own this collection")
 
         await self.collection_repository.delete(collection_id)
@@ -165,10 +168,11 @@ class CollectionService:
             for collection in collections
         ]
 
-    async def get_public_collections(self) -> List[JustCollection]:
+    async def get_public_collections(self) -> List[JustCollection] | []:
         """Get all published collections that are publicly available."""
         collections = await self.collection_repository.get_published()
-
+        if not collections:
+            return []
         return [
             JustCollection.model_validate(
                 {**collection.model_dump(), "questions": None}
@@ -274,6 +278,8 @@ class ExamInstanceService:
         reminders: List[str],
         exam_title: str,
         exam_start_time: datetime,
+        exam_end_time: datetime,
+        exam_instance_id: str,
     ) -> None:
         # Convert reminder strings to timedeltas (e.g. "24h" -> 24 hours before exam)
         reminder_times = []
@@ -294,13 +300,17 @@ class ExamInstanceService:
             if user is None or not user.receive_notifications:
                 continue
 
-            formatted_start_time = exam_start_time.strftime("%Y-%m-%d %H:%M")
+            # Assuming we have a link, which looks like this:
+            # https://localhost/exam/{id}
+            link = settings.EXAM_INSTANCE_URL
+            link = link.format(id=exam_instance_id)
             data = {
                 "recipient": user.email,
                 "username": f"{user.first_name} {user.last_name}",
                 "exam_title": exam_title,
-                "start_time": formatted_start_time,
-                "link": f"/exam/{user_id['student_id']}/exam-instance/",
+                "start_time": exam_start_time,
+                "end_time": exam_end_time,
+                "link": link,
             }
             # Send notification immediately
             exam_reminder_notification.apply_async(kwargs=data)
@@ -347,6 +357,8 @@ class ExamInstanceService:
                 notification_settings["reminders"],
                 instance_data["title"],
                 instance_data["start_date"],
+                instance_data["end_date"],
+                exam_instance.id,
             )
 
         return exam_instance.id

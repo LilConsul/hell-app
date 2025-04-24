@@ -63,6 +63,18 @@ class Settings(BaseSettings):
     def PASSWORD_RESET_URL(self) -> str:
         return f"https://{self.DOMAIN}{self.PASSWORD_RESET_PATH}"
 
+    LOGIN_PATH: str
+
+    @property
+    def LOGIN_URL(self) -> str:
+        return f"https://{self.DOMAIN}{self.LOGIN_PATH}"
+
+    EXAM_INSTANCE_PATH: str
+
+    @property
+    def EXAM_INSTANCE_URL(self) -> str:
+        return f"https://{self.DOMAIN}{self.EXAM_INSTANCE_PATH}"
+
     # Backend settings
     BACKEND_PORT_INTERNAL: int
 
@@ -71,6 +83,7 @@ class Settings(BaseSettings):
 
     model_config = SettingsConfigDict(
         env_file=".",
+        env_file_encoding="utf-8",
         case_sensitive=True,
     )
 

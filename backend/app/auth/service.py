@@ -126,7 +126,8 @@ class AuthService:
             user_id=user.id, token_type="password_reset"
         )
 
-        link = f"{settings.PASSWORD_RESET_URL}/{password_reset_token}"
+        link = settings.PASSWORD_RESET_URL
+        link = link.format(token=password_reset_token)
         username = (
             user.first_name + " " + user.last_name
             if user.first_name and user.last_name

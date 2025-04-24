@@ -18,10 +18,16 @@ class CollectionRepository(BaseRepository[Collection]):
 
     async def get_published(self) -> List[Collection]:
         """Get all published collections"""
-        return await self.model_class.find(
-            {"status": ExamStatus.PUBLISHED}, fetch_links=True
+        # Fetch collections with linked objects (created_by user)
+        collections = await self.model_class.find(
+            {"status": ExamStatus.PUBLISHED},
+            fetch_links=True,
         ).to_list()
 
+        for collection in collections:
+            if hasattr(collection.created_by, "notifications_tasks_id"):
+                collection.created_by.notifications_tasks_id = []
+        return collections
 
 class QuestionRepository(BaseRepository[Question]):
     """Repository for Question model operations"""

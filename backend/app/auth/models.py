@@ -3,7 +3,7 @@ from typing import List, Optional
 
 from app.auth.schemas import UserRole
 from app.database.mixins import TimestampMixin
-from beanie import Document, Indexed, Link
+from beanie import Document, Indexed, Link, before_event, Delete
 from pydantic import ConfigDict, EmailStr, Field
 
 
@@ -25,6 +25,16 @@ class User(Document, TimestampMixin):
     #         "original_field": "user",
     #     },
     # )
+
+    @before_event(Delete)
+    async def before_delete(self):
+        """Trigger cascade deletion of related exam data when a user is deleted"""
+        # FIXME: Uncomment this line when SocialConnection is defined
+        # from app.auth.models import SocialConnection
+        # await SocialConnection.find(SocialConnection.user.id == self.id).delete()
+
+        from app.exam.models import cascade_delete_user
+        await cascade_delete_user(self.id, self.role)
 
     class Settings:
         name = "users"
@@ -61,3 +71,4 @@ class SocialConnection(Document, TimestampMixin):
             "provider_user_id",
             ("provider", "provider_user_id"),  # Compound index
         ]
+    

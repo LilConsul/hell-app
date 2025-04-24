@@ -4,9 +4,10 @@ from enum import Enum
 from typing import Any, Dict, List, Optional
 
 from app.auth.models import User
+from app.auth.schemas import UserRole
 from app.database.mixins import TimestampMixin
-from beanie import BackLink, Document, Link
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from beanie import BackLink, Document, Link, before_event, Delete
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class QuestionType(str, Enum):
@@ -65,11 +66,14 @@ class SecuritySettings(BaseModel):
 
 class NotificationSettings(BaseModel):
     reminder_enabled: bool = True
-    reminders: List[str] | None = None  # ["24h", "1h"]
+    reminders: List[str] | None = None
 
     model_config = ConfigDict(
         json_schema_extra={
-            "example": {"reminder_enabled": True, "reminders": ["24h", "1h", "20m", "2d"]}
+            "example": {
+                "reminder_enabled": True,
+                "reminders": ["2d", "1h", "20m"],
+            }
         },
     )
 
@@ -151,6 +155,16 @@ class Collection(Document, TimestampMixin):
             "status",
         ]
 
+    @before_event(Delete)
+    async def before_delete(self):
+        """Delete all questions linked to this collection when the collection is deleted"""
+        question_ids = []
+        for q in self.questions:
+            question_obj = await q.fetch()
+            question_ids.append(question_obj.id)
+        if question_ids:
+            await Question.find({"_id": {"$in": question_ids}}).delete()
+
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
         json_schema_extra={
@@ -158,7 +172,7 @@ class Collection(Document, TimestampMixin):
                 "id": "550e8400-e29b-41d4-a716-446655440002",
                 "title": "Geography Quiz",
                 "description": "Test your knowledge of world capitals",
-                "created_by": "550e8400-e29b-41d4-a716-446655440001",  # User ID
+                "created_by": "550e8400-e29b-41d4-a716-446655440001",
                 "status": "draft",
                 "questions": [],
                 "created_at": "2025-04-16T11:01:29.000Z",
@@ -171,8 +185,8 @@ class Collection(Document, TimestampMixin):
 class ExamInstance(Document, TimestampMixin):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     collection_id: Link[Collection]
-    title: str  # Override title
-    created_by: Link[User]  # Reference to user
+    title: str
+    created_by: Link[User]
     start_date: datetime
     end_date: datetime
     status: ExamStatus = ExamStatus.DRAFT
@@ -333,3 +347,20 @@ class StudentResponse(Document, TimestampMixin):
             }
         },
     )
+
+
+async def cascade_delete_user(user_id: str, role: UserRole):
+    """
+    Cascade delete all data related to a user when they're deleted.
+    """
+    # Delete all questions created by the user (can be teacher or admin)
+    if role == UserRole.TEACHER or role == UserRole.ADMIN:
+        await Collection.find(Collection.created_by.id == user_id).delete()
+        await ExamInstance.find(ExamInstance.created_by.id == user_id).delete()
+
+    # Delete all student exams and responses
+    if role == UserRole.STUDENT:
+        #FIXME: Implement this logic
+        pass
+
+    print(f"Deleted all data related to user {user_id}")

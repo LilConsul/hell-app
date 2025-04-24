@@ -9,7 +9,6 @@ import Exams from './pages/Exams';
 import Students from './pages/Students';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
-import Settings from './pages/Settings';
 import EmailVerification from './pages/EmailVerification';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 
@@ -22,14 +21,15 @@ export default function App() {
           {/* Public routes */}
           <Route path="/" element={<Home />} />
           <Route path="/verify/:token" element={<EmailVerification />} />
-          
+          <Route path="/settings"  element={<Settings />}  />
+
           {/* Protected routes */}
           <Route path="/dashboard" element={<ProtectedRoute element={<Dashboard />} />} />
           <Route path="/exams" element={<ProtectedRoute element={<Exams />} />} />
           <Route path="/students" element={<ProtectedRoute element={<Students />} allowedRoles={['teacher', 'admin']} />} />
           <Route path="/reports" element={<ProtectedRoute element={<Reports />} allowedRoles={['teacher', 'admin']} />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-          <Route path="/settings" element={<ProtectedRoute element={<Settings />} />} />
+          
         </Routes>
       </AuthProvider>
     </ThemeProvider>

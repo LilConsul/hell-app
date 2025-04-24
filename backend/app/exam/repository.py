@@ -33,3 +33,6 @@ class ExamInstanceRepository(BaseRepository[ExamInstance]):
     """Repository for ExamInstance model operations"""
 
     pass
+
+
+

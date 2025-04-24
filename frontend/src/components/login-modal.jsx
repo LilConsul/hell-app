@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 import { Shield, X } from "lucide-react"
 import { createPortal } from "react-dom"
+import { useAuth } from "@/contexts/auth-context"
 import {
   Form,
   FormControl,
@@ -26,6 +27,7 @@ const loginSchema = z.object({
 
 export function LoginModal({ isOpen, onClose, onRegisterClick, onForgotPasswordClick }) {
   const [serverError, setServerError] = useState(null)
+  const { login } = useAuth()
   
   const form = useForm({
     resolver: zodResolver(loginSchema),
@@ -73,29 +75,13 @@ export function LoginModal({ isOpen, onClose, onRegisterClick, onForgotPasswordC
     setServerError(null)
     
     try {
-      const response = await fetch('/api/v1/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: data.email,
-          password: data.password
-        }),
-        credentials: 'include'
-      })
-      
-      const result = await response.json()
-      
-      if (!response.ok) {
-        setServerError(result.detail || "An error occurred during login");
-        return
-      }
-      
-      window.location.href = "/dashboard"
+      await login({
+        email: data.email,
+        password: data.password
+      })      
+      onClose()
     } catch (error) {
-      console.error("Login failed:", error)
-      setServerError("An unexpected error occurred. Please try again.")
+      setServerError(error.message || "An unexpected error occurred. Please try again.")
     }
   }
 

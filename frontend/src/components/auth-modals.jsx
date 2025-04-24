@@ -3,6 +3,7 @@ import { LoginModal } from "@/components/login-modal"
 import { RegisterModal } from "@/components/register-modal"
 import { ForgotPasswordModal } from "@/components/forgot-password-modal"
 
+
 export function AuthModals() {
   const [showLoginModal, setShowLoginModal] = useState(false)
   const [showRegisterModal, setShowRegisterModal] = useState(false)

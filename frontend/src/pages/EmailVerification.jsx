@@ -1,11 +1,10 @@
-
 import { useEffect, useState } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { CheckCircle, AlertTriangle, Loader2, Mail } from "lucide-react"
 
-export default function EmailVerification() {
+function EmailVerification() {
   const params = useParams()
   const navigate = useNavigate()
   const [verificationState, setVerificationState] = useState("loading")
@@ -30,13 +29,12 @@ export default function EmailVerification() {
           setErrorMessage("No verification token provided.")
           return
         }
-
         const response = await fetch('/api/v1/auth/verify', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ token })
         })
-        
+                
         const data = await response.json()
         
         if (response.ok) {
@@ -45,23 +43,22 @@ export default function EmailVerification() {
             openLoginModal()
           }, 5000)
         } else {
-          setVerificationState("error")
-            
           if (data.detail === "User is already verified") {
-            setErrorMessage("Your email is already verified. Redirecting you to login.")
+            setVerificationState("already-verified")
             setTimeout(() => {
               openLoginModal()
-            }, 20000)
+            }, 5000)
           } else if (data.detail === "Invalid or expired verification token") {
+            setVerificationState("error")
             setErrorMessage("The verification link has expired or is invalid. Please request a new one.")
           } else {
+            setVerificationState("error")
             setErrorMessage(data.detail || "Verification failed. Please try again later.")
           }
         }
       } catch (error) {
         setVerificationState("error")
         setErrorMessage("An unexpected error occurred. Please try again later.")
-        console.error("Verification error:", error)
       }
     }
 
@@ -104,6 +101,29 @@ export default function EmailVerification() {
                 <CheckCircle className="h-4 w-4 text-green-600" />
                 <AlertTitle>Verification Complete</AlertTitle>
                 <AlertDescription>Redirecting you to the login page...</AlertDescription>
+              </Alert>
+            </CardContent>
+          </>
+        )
+      
+      case "already-verified":
+        return (
+          <>
+            <CardHeader>
+              <CardTitle className="text-xl text-center text-blue-600">Already Verified</CardTitle>
+              <CardDescription className="text-center">Your email has already been verified.</CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col items-center justify-center py-6">
+              <div className="rounded-full bg-blue-100 p-3 mb-4">
+                <CheckCircle className="h-12 w-12 text-blue-600" />
+              </div>
+              <p className="text-center mb-6">
+                It looks like you've already verified your email address. No further action is needed.
+              </p>
+              <Alert className="bg-blue-50 border-blue-200">
+                <CheckCircle className="h-4 w-4 text-blue-600" />
+                <AlertTitle>Already Verified</AlertTitle>
+                <AlertDescription>Your account is active and you can access all features.</AlertDescription>
               </Alert>
             </CardContent>
           </>
@@ -158,3 +178,5 @@ export default function EmailVerification() {
     </div>
   )
 }
+
+export default EmailVerification;

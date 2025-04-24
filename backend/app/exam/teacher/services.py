@@ -379,8 +379,8 @@ class ExamInstanceService:
             student_exam = await self.student_exam_repository.get_by_student_and_exam(
                 student["student_id"], exam_instance_id
             )
-            print(student_exam)
-            await self.student_exam_repository.delete(student_exam.id)
+            if student_exam:
+                await self.student_exam_repository.delete(student_exam.id)
 
             # Revoke pending notification tasks
             user = await self.user_repository.get_by_id(student["student_id"])

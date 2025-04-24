@@ -67,11 +67,10 @@ class StudentExamRepository(BaseRepository[StudentExam]):
 
     async def get_by_student_and_exam(
         self, student_id: str, exam_id: str
-    ) -> List[StudentExam]:
-        """Get all StudentExam records for a specific student and exam"""
-        return await self.model_class.find(
-            {
-                "student_id._id": student_id,
-                "exam_instance_id._id": exam_id,
-            }
-        ).to_list()
+    ) -> StudentExam | None:
+        """Get a StudentExam record for a specific student and exam"""
+        student_exam = await self.model_class.find_one(
+            self.model_class.student_id.id == student_id,
+            self.model_class.exam_instance_id.id == exam_id,
+        )
+        return student_exam

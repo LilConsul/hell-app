@@ -1,4 +1,6 @@
 import { Shield } from "lucide-react"
+import { Link } from "react-router-dom"
+import { Button } from "@/components/ui/button"
 
 export function Footer() {
   return (
@@ -8,7 +10,14 @@ export function Footer() {
           <Shield className="h-5 w-5" />
           <span className="font-semibold">HellApp</span>
         </div>
-        <p className="text-sm text-muted-foreground">© {new Date().getFullYear()} HellApp. All rights reserved.</p>
+        <p className="text-sm text-muted-foreground">
+          © {new Date().getFullYear()} HellApp. All rights reserved.
+        </p>
+        <Link to="/privacy-policy">
+          <Button size="sm" variant="outline">
+            Privacy Policy
+          </Button>
+        </Link>
       </div>
     </footer>
   )

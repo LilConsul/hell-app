@@ -9,7 +9,10 @@ import Exams from './pages/Exams';
 import Students from './pages/Students';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
+import Settings from './pages/Settings';
 import EmailVerification from './pages/EmailVerification';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+
 
 export default function App() {
   return (
@@ -25,6 +28,7 @@ export default function App() {
           <Route path="/exams" element={<ProtectedRoute element={<Exams />} />} />
           <Route path="/students" element={<ProtectedRoute element={<Students />} allowedRoles={['teacher', 'admin']} />} />
           <Route path="/reports" element={<ProtectedRoute element={<Reports />} allowedRoles={['teacher', 'admin']} />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/settings" element={<ProtectedRoute element={<Settings />} />} />
         </Routes>
       </AuthProvider>

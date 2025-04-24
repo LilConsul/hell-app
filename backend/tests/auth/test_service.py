@@ -7,7 +7,6 @@ from app.auth.security import get_password_hash
 from app.auth.service import AuthService
 from app.core.exceptions import AuthenticationError, BadRequestError, NotFoundError
 from app.settings import settings
-from app.users.schemas import UserUpdate
 from fastapi import Response
 
 
@@ -62,13 +61,20 @@ class TestAuthService:
     async def test_register_success(self, auth_service, mock_user_repository, fake):
         # Setup
         mock_user_repository.get_by_email.return_value = None
-        mock_user_repository.create.return_value = MagicMock(id="new-user-id")
+
+        # Create user data
         user_data = UserCreate(
             email=fake.email(),
             password="Password123!",
             first_name=fake.first_name(),
             last_name=fake.last_name(),
         )
+
+        # Create a proper mock user with the same data
+        mock_user = MagicMock(id="new-user-id")
+        mock_user.first_name = user_data.first_name
+        mock_user.last_name = user_data.last_name
+        mock_user_repository.create.return_value = mock_user
 
         # Execute
         with patch(
@@ -85,8 +91,10 @@ class TestAuthService:
         assert created_data["email"] == user_data.email
         assert created_data["first_name"] == user_data.first_name
         assert created_data["last_name"] == user_data.last_name
+
+        username = f"{user_data.first_name} {user_data.last_name}"
         mock_email_task.delay.assert_called_once_with(
-            user_data.email, f"{settings.VERIFY_MAIL_URL}/test_token"
+            user_data.email, f"{settings.VERIFY_MAIL_URL}/test_token", username
         )
 
     async def test_register_duplicate_email(

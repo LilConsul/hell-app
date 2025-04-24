@@ -11,7 +11,7 @@ from app.auth.security import (
 )
 from app.celery.tasks.email_tasks.tasks import (
     user_password_reset_mail,
-    user_register_mail_event,
+    user_welcome_mail_event,
     user_verify_mail_event,
 )
 from app.core.exceptions import AuthenticationError, BadRequestError, NotFoundError
@@ -41,11 +41,13 @@ class AuthService:
         verification_token = create_verification_token(
             user_id=user.id, token_type="verification"
         )
-        link = f"{settings.VERIFY_MAIL_URL}/{verification_token}"
-        user_verify_mail_event.delay(
-            user_data.email,
-            link,
+        username = (
+            user.first_name + " " + user.last_name
+            if user.first_name and user.last_name
+            else user.email
         )
+        link = f"{settings.VERIFY_MAIL_URL}/{verification_token}"
+        user_verify_mail_event.delay(user_data.email, link, username)
 
     async def login(self, login_data: UserLogin, response: Response) -> UserResponse:
         user = await self.user_repository.get_by_email(login_data.email)
@@ -107,7 +109,13 @@ class AuthService:
         user.is_verified = True
         await self.user_repository.save(user)
 
-        user_register_mail_event.delay(user.email)
+        username = (
+            user.first_name + " " + user.last_name
+            if user.first_name and user.last_name
+            else user.email
+        )
+        date_registered = user.created_at.strftime("%Y-%m-%d %H:%M:%S")
+        user_welcome_mail_event.delay(user.email, username, date_registered)
 
     async def send_password_reset_token(self, email: str) -> None:
         user = await self.user_repository.get_by_email(email)
@@ -119,9 +127,15 @@ class AuthService:
         )
 
         link = f"{settings.PASSWORD_RESET_URL}/{password_reset_token}"
+        username = (
+            user.first_name + " " + user.last_name
+            if user.first_name and user.last_name
+            else user.email
+        )
         user_password_reset_mail.delay(
             user.email,
             link,
+            username
         )
 
     async def reset_password(self, token: str, new_password: str) -> None:

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hell App Email Verification</title>
+    <title>Welcome to Hell App</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
@@ -52,6 +52,12 @@
             letter-spacing: -0.5px;
         }
 
+        h2 {
+            font-size: 18px;
+            letter-spacing: -0.3px;
+            margin-top: 28px;
+        }
+
         .info-box {
             background-color: #f2f2f2;
             border-left: 3px solid #000000;
@@ -60,19 +66,26 @@
             border-radius: 0 6px 6px 0;
         }
 
-        .button {
-            display: inline-block;
-            background-color: #000000;
-            color: white;
-            text-decoration: none;
-            padding: 12px 24px;
-            border-radius: 6px;
-            font-weight: 500;
-            margin: 24px 0;
+        .feature-section {
+            margin: 28px 0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
         }
 
-        .button:hover {
-            background-color: #333333;
+        .feature {
+            flex: 1;
+            min-width: 150px;
+            padding: 16px;
+            background-color: #f9f9f9;
+            border-radius: 8px;
+        }
+
+        .feature-icon {
+            font-family: monospace;
+            font-size: 20px;
+            margin-bottom: 12px;
+            color: #000000;
         }
 
         .divider {
@@ -98,33 +111,11 @@
             color: #666;
         }
 
-        .next-steps {
-            margin-top: 24px;
-        }
+        @media screen and (max-width: 100px) {
+            .feature {
+                flex: 100%;
+            }
 
-        .step {
-            display: flex;
-            margin-bottom: 12px;
-        }
-
-        .step-number {
-            background-color: #000000;
-            color: white;
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-right: 12px;
-            flex-shrink: 0;
-        }
-
-        .step-text {
-            flex: 1;
-        }
-
-        @media screen and (max-width: 480px) {
             .email-container {
                 width: 100% !important;
                 border-radius: 0;
@@ -132,11 +123,6 @@
 
             .content {
                 padding: 24px 16px;
-            }
-
-            .button {
-                display: block;
-                text-align: center;
             }
         }
     </style>
@@ -154,42 +140,39 @@
                 <strong>User:</strong> {{username}}
             </div>
 
-            <h1>Verify Your Email Address</h1>
+            <h1>Welcome to Hell App</h1>
 
             <p>Hello {{username}},</p>
 
-            <p>Thank you for registering with Hell App, the secure examination platform designed to maintain academic integrity. To complete your registration and activate your account, please verify your email address.</p>
-
-            <div style="text-align: center;">
-                <a href="{{verification_link}}" class="button">Verify Email Address</a>
-            </div>
+            <p>We're pleased to welcome you to Hell App, the secure examination platform designed to maintain academic integrity through powerful anti-cheat technology.</p>
 
             <div class="info-box">
-                <strong>Important:</strong> This verification link will expire in 24 hours for security reasons.
+                <strong>Your account is now active.</strong> You can access the examination platform using your credentials when your institution schedules an assessment.
             </div>
 
             <div class="divider"></div>
 
-            <h2>What happens next?</h2>
+            <h2>Key Features of Hell App</h2>
 
-            <div class="next-steps">
-                <div class="step">
-                    <div class="step-number">1</div>
-                    <div class="step-text">After verification, your account will be fully activated</div>
+            <div class="feature-section">
+                <div class="feature">
+                    <div class="feature-icon">&#9719;</div>
+                    <h3>Advanced Anti-Cheat</h3>
+                    <p>Sophisticated monitoring system that ensures examination integrity.</p>
                 </div>
-                <div class="step">
-                    <div class="step-number">2</div>
-                    <div class="step-text">You can access the platform when your institution schedules an assessment</div>
+
+                <div class="feature">
+                    <div class="feature-icon">&#9881;</div>
+                    <h3>Intuitive Interface</h3>
+                    <p>Clean, distraction-free environment for optimal focus during exams.</p>
                 </div>
-                <div class="step">
-                    <div class="step-number">3</div>
-                    <div class="step-text">Log in using your credentials to start your secure examination</div>
+
+                <div class="feature">
+                    <div class="feature-icon">&#9782;</div>
+                    <h3>Seamless Experience</h3>
+                    <p>Reliable platform that works across devices and network conditions.</p>
                 </div>
             </div>
-
-            <div class="divider"></div>
-
-            <p>If you did not create an account with Hell App, please ignore this email or contact our support team if you have concerns.</p>
 
             <div class="divider"></div>
 
@@ -200,7 +183,7 @@
         <div class="footer">
             <p>© {{year}} Hell App. All rights reserved.</p>
             <p>This is an automated system email. Please do not reply.</p>
-            <p>This email was sent to you because an account was created with this email address on the Hell App examination platform.</p>
+            <p>This email was sent to you as a registered user of the Hell App examination platform.</p>
         </div>
     </div>
 </body>

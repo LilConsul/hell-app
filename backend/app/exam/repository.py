@@ -1,7 +1,15 @@
 from typing import List
 
 from app.core.repository.base_repository import BaseRepository
-from app.exam.models import Collection, ExamInstance, ExamStatus, Question
+from app.exam.models import (
+    Collection,
+    ExamInstance,
+    ExamStatus,
+    Question,
+    StudentAttempt,
+    StudentExam,
+    StudentResponse,
+)
 
 
 class CollectionRepository(BaseRepository[Collection]):
@@ -29,6 +37,7 @@ class CollectionRepository(BaseRepository[Collection]):
                 collection.created_by.notifications_tasks_id = []
         return collections
 
+
 class QuestionRepository(BaseRepository[Question]):
     """Repository for Question model operations"""
 
@@ -41,4 +50,19 @@ class ExamInstanceRepository(BaseRepository[ExamInstance]):
     pass
 
 
+class StudentResponseRepository(BaseRepository[StudentResponse]):
+    """Repository for StudentResponse model operations"""
 
+    pass
+
+
+class StudentAttemptRepository(BaseRepository[StudentAttempt]):
+    """Repository for StudentAttempt model operations"""
+
+    pass
+
+
+class StudentExamRepository(BaseRepository[StudentExam]):
+    """Repository for StudentExam model operations"""
+
+    pass

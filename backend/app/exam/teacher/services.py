@@ -10,6 +10,7 @@ from app.exam.repository import (
     CollectionRepository,
     ExamInstanceRepository,
     QuestionRepository,
+    StudentExamRepository,
 )
 from app.exam.teacher.schemas import (
     CreateCollection,
@@ -207,10 +208,12 @@ class ExamInstanceService:
         exam_instance_repository: ExamInstanceRepository,
         collection_repository: CollectionRepository,
         user_repository: UserRepository,
+        student_exam_repository: StudentExamRepository,
     ):
         self.exam_instance_repository = exam_instance_repository
         self.collection_repository = collection_repository
         self.user_repository = user_repository
+        self.student_exam_repository = student_exam_repository
 
     async def get_by_creator(self, user_id: str) -> List[GetExamInstance]:
         """Get all exam instances created by a specific teacher."""
@@ -324,6 +327,16 @@ class ExamInstanceService:
                     user.notifications_tasks_id.append(result.id)
             await self.user_repository.save(user)
 
+    async def _create_student_exam(self, users_id: List[str], exam_instance_id: str, attempts: int) -> None:
+        """Create a new StudentExam instance."""
+        for user_id in users_id:
+            student_exam_data = {
+                "student_id": user_id["student_id"],
+                "exam_instance_id": exam_instance_id,
+                "attempts_count": attempts,
+            }
+            await self.student_exam_repository.create(student_exam_data)
+
     async def create_exam_instance(
         self,
         user_id: str,
@@ -348,6 +361,12 @@ class ExamInstanceService:
 
         exam_instance = await self.exam_instance_repository.create(instance_data)
 
+        await self._create_student_exam(
+            instance_data.get("assigned_students", []),
+            exam_instance.id,
+            instance_data.get("attempts", 1),
+        )
+
         notification_settings = instance_data.get("notification_settings", {})
         if notification_settings.get("reminder_enabled") and notification_settings.get(
             "reminders"
@@ -363,6 +382,8 @@ class ExamInstanceService:
 
         return exam_instance.id
 
+    # TODO: add check if new student was assigned/removed to the exam instance and send notification
+    # TODO: add check if new student was added/removed to create/delete StudentExam instance
     async def update_exam_instance(
         self,
         user_id: str,

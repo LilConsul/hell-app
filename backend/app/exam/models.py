@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Optional
 from app.auth.models import User
 from app.auth.schemas import UserRole
 from app.database.mixins import TimestampMixin
-from beanie import BackLink, Document, Link, before_event, Delete
+from beanie import BackLink, Delete, Document, Link, before_event
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -198,14 +198,6 @@ class ExamInstance(Document, TimestampMixin):
     )
     assigned_students: List[StudentAssignment] = Field(default_factory=list)
 
-    # Back reference to student exams for this instance
-    student_exams: List[BackLink["StudentExam"]] = Field(
-        default_factory=list,
-        json_schema_extra={
-            "original_field": "exam_instance_id",
-        },
-    )
-
     class Settings:
         name = "exam_instances"
         use_state_management = True
@@ -301,7 +293,7 @@ class StudentAttempt(Document, TimestampMixin):
     class Settings:
         name = "student_attempts"
         use_state_management = True
-        indexes = ["student_exam_id", "status", "attempt_number", "grade"]
+        indexes = ["student_exam_id", "status", "grade"]
 
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
@@ -355,7 +347,7 @@ class StudentExam(Document, TimestampMixin):
                 "exam_instance_id": "550e8400-e29b-41d4-a716-446655440003",
                 "student_id": "550e8400-e29b-41d4-a716-446655440007",
                 "current_status": "in_progress",
-                "latest_attempt": "550e8400-e29b-41d4-a716-446655440005",
+                "latest_attempt_id": "550e8400-e29b-41d4-a716-446655440005",
                 "attempts_count": 1,
                 "created_at": "2025-04-19T14:30:00.000Z",
                 "updated_at": "2025-04-20T09:00:10.000Z",

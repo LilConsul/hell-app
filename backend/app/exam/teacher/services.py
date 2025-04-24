@@ -1,8 +1,11 @@
 import uuid
+from datetime import datetime, timedelta, timezone
 from typing import List
 
+from app.auth.repository import UserRepository
+from app.celery.tasks.email_tasks.tasks import exam_reminder_notification
 from app.core.exceptions import ForbiddenError, NotFoundError
-from app.exam.models import ExamInstance, ExamStatus
+from app.exam.models import ExamStatus
 from app.exam.repository import (
     CollectionRepository,
     ExamInstanceRepository,
@@ -199,9 +202,11 @@ class ExamInstanceService:
         self,
         exam_instance_repository: ExamInstanceRepository,
         collection_repository: CollectionRepository,
+        user_repository: UserRepository,
     ):
         self.exam_instance_repository = exam_instance_repository
         self.collection_repository = collection_repository
+        self.user_repository = user_repository
 
     async def get_by_creator(self, user_id: str) -> List[GetExamInstance]:
         """Get all exam instances created by a specific teacher."""
@@ -263,6 +268,52 @@ class ExamInstanceService:
             return student_obj.get("_id", str(student_obj))
         return str(student_obj)
 
+    async def _send_notification(
+        self,
+        users_id: List[str],
+        reminders: List[str],
+        exam_title: str,
+        exam_start_time: datetime,
+    ) -> None:
+        # Convert reminder strings to timedeltas (e.g. "24h" -> 24 hours before exam)
+        reminder_times = []
+        for reminder in reminders:
+            if reminder.endswith("h"):
+                hours = int(reminder[:-1])
+                reminder_times.append(timedelta(hours=hours))
+            elif reminder.endswith("m"):
+                minutes = int(reminder[:-1])
+                reminder_times.append(timedelta(minutes=minutes))
+            elif reminder.endswith("d"):
+                days = int(reminder[:-1])
+                reminder_times.append(timedelta(days=days))
+
+        current_time = datetime.now(timezone.utc)
+        for user_id in users_id:
+            user = await self.user_repository.get_by_id(user_id["student_id"])
+            if user is None or not user.receive_notifications:
+                continue
+
+            formatted_start_time = exam_start_time.strftime("%Y-%m-%d %H:%M")
+            data = {
+                "recipient": user.email,
+                "username": f"{user.first_name} {user.last_name}",
+                "exam_title": exam_title,
+                "start_time": formatted_start_time,
+                "link": f"/exam/{user_id['student_id']}/exam-instance/",
+            }
+            # Send notification immediately
+            exam_reminder_notification.apply_async(kwargs=data)
+
+            for delta in reminder_times:
+                notification_time = exam_start_time - delta
+                if notification_time > current_time:
+                    result = exam_reminder_notification.apply_async(
+                        kwargs=data, eta=notification_time
+                    )
+                    user.notifications_tasks_id.append(result.id)
+            await self.user_repository.save(user)
+
     async def create_exam_instance(
         self,
         user_id: str,
@@ -286,6 +337,18 @@ class ExamInstanceService:
         instance_data["created_by"] = user_id
 
         exam_instance = await self.exam_instance_repository.create(instance_data)
+
+        notification_settings = instance_data.get("notification_settings", {})
+        if notification_settings.get("reminder_enabled") and notification_settings.get(
+            "reminders"
+        ):
+            await self._send_notification(
+                instance_data.get("assigned_students", []),
+                notification_settings["reminders"],
+                instance_data["title"],
+                instance_data["start_date"],
+            )
+
         return exam_instance.id
 
     async def update_exam_instance(

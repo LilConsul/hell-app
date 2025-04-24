@@ -58,3 +58,24 @@ def user_welcome_mail_event(
         },
     )
     async_to_sync(mail.send_message)(message, "welcome.html")
+
+
+@celery.task
+def exam_reminder_notification(
+    recipient: str,
+    username: str,
+    exam_title: str,
+    start_time: str,
+    link: str | None = None,
+):
+    message = create_message(
+        recipients=[recipient],
+        subject=f"Reminder: {exam_title} Exam",
+        body={
+            "username": username,
+            "exam_title": exam_title,
+            "start_time": start_time,
+            "link": link,
+        },
+    )
+    async_to_sync(mail.send_message)(message, "exam_reminder.html")

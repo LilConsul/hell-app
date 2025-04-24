@@ -65,7 +65,13 @@ class SecuritySettings(BaseModel):
 
 class NotificationSettings(BaseModel):
     reminder_enabled: bool = True
-    reminders: List[str] = ["24h", "1h"]
+    reminders: List[str] | None = None  # ["24h", "1h"]
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {"reminder_enabled": True, "reminders": ["24h", "1h", "20m", "2d"]}
+        },
+    )
 
 
 class StudentAssignment(BaseModel):

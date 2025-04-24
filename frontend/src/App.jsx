@@ -9,6 +9,7 @@ import Exams from './pages/Exams';
 import Students from './pages/Students';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
+import EmailVerification from './pages/EmailVerification';
 
 export default function App() {
   return (
@@ -17,6 +18,7 @@ export default function App() {
         <Routes>
           {/* Public routes */}
           <Route path="/" element={<Home />} />
+          <Route path="/verify/:token" element={<EmailVerification />} />
           
           {/* Protected routes */}
           <Route path="/dashboard" element={<ProtectedRoute element={<Dashboard />} />} />

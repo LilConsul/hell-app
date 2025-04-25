@@ -52,6 +52,10 @@ class QuestionOption(BaseModel):
 
 
 class SecuritySettings(BaseModel):
+    # Shuffle questions and options
+    shuffle_questions: bool = False
+    allow_skipping_questions: bool = False
+
     # Allow students to check their answers after submission
     allow_review: bool = True
 
@@ -224,6 +228,8 @@ class ExamInstance(Document, TimestampMixin):
                 "passing_score": 60,
                 "security_settings": {
                     "allow_review": True,
+                    "shuffle_questions": True,
+                    "allow_skipping_questions": False,
                     "prevent_tab_switching": False,
                     "tab_switch_limit": None,
                     "gaze_tracking": False,

@@ -7,7 +7,7 @@ function Settings() {
   return (
     <div className="flex flex-col min-h-screen">
       <Navbar />
-      <main className="flex-1 container py-10 max-w-3xl mx-auto pt-20">
+      <main className="flex-1 container py-10 max-w-3xl mx-auto">
         <h1 className="text-3xl font-bold mb-8">Settings</h1>
         <div className="grid gap-8 max-w-2xl mx-auto">
 

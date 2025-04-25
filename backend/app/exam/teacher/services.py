@@ -59,15 +59,7 @@ class CollectionService:
         if not (is_owner or is_public):
             raise ForbiddenError("You don't have access to this collection")
 
-        # Create a dictionary with all the collection data
-        collection_data = collection.model_dump()
-        if "questions" in collection_data and collection_data["questions"]:
-            for question in collection_data["questions"]:
-                if "options" in question and question["options"]:
-                    question["options"] = [opt["text"] for opt in question["options"]]
-
-        # Return the validated model
-        return GetCollection.model_validate(collection_data)
+        return collection.model_dump()
 
     async def update_collection(
         self, collection_id: str, user_id: str, collection_data: UpdateCollection
@@ -112,15 +104,14 @@ class CollectionService:
         question_data_dict = question_data.model_dump()
         question_data_dict["_id"] = str(uuid.uuid4())
 
-        if (
-            isinstance(question_data_dict.get("options"), list)
-            and question_data_dict["options"]
-        ):
-            if isinstance(question_data_dict["options"][0], str):
-                question_data_dict["options"] = [
-                    {"id": str(uuid.uuid4()), "text": opt, "is_correct": False}
-                    for opt in question_data_dict["options"]
-                ]
+        question_data_dict["options"] = [
+            {
+                "id": str(uuid.uuid4()),
+                "text": opt["text"],
+                "is_correct": opt["is_correct"],
+            }
+            for opt in question_data_dict["options"]
+        ]
 
         question_data_dict["created_by"] = user_id
         question = await self.question_repository.create(question_data_dict)

@@ -1,6 +1,8 @@
 from datetime import datetime
 from typing import List
 
+from pydantic.json_schema import model_json_schema
+
 from app.auth.schemas import UserResponse
 from app.exam.models import (
     ExamInstance,
@@ -28,7 +30,7 @@ class QuestionBase(BaseModel):
     type: QuestionType
     has_katex: bool = False
     weight: int = 1
-    options: List[QuestionOptionSchema] | None = []
+    options: List[QuestionOptionSchema] = []
     correct_input_answer: str | None = None
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
@@ -36,6 +38,23 @@ class QuestionBase(BaseModel):
 
 class QuestionSchema(QuestionBase):
     id: str | None = None
+
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,
+        json_schema_extra={
+            "example": {
+                "question_text": "What is the capital of France?",
+                "type": "mcq",
+                "has_katex": False,
+                "weight": 1,
+                "options": [
+                    {"text": "Paris", "is_correct": True},
+                    {"text": "London", "is_correct": False},
+                ],
+                "correct_input_answer": "Correct input answer, if type:shortanswer"
+            }
+        },
+    )
 
 
 class CreateQuestionSchema(QuestionBase):

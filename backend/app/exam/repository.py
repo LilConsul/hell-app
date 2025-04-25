@@ -66,11 +66,12 @@ class StudentExamRepository(BaseRepository[StudentExam]):
     """Repository for StudentExam model operations"""
 
     async def get_by_student_and_exam(
-        self, student_id: str, exam_id: str
+        self, student_id: str, exam_id: str, fetch_links: bool = False
     ) -> StudentExam | None:
         """Get a StudentExam record for a specific student and exam"""
         student_exam = await self.model_class.find_one(
             self.model_class.student_id.id == student_id,
             self.model_class.exam_instance_id.id == exam_id,
+            fetch_links=fetch_links,
         )
         return student_exam

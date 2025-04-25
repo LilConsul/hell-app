@@ -29,12 +29,14 @@ class StudentExamService:
         ]
 
     async def get_student_exam(
-        self, exam_id: str
+        self, student_id: str, exam_id: str
     ) -> BaseStudentExamSchema:
         """
         Get a specific exam for a student.
         """
-        data = await self.student_exam_repository.get_by_id(exam_id, fetch_links=True)
+        data = await self.student_exam_repository.get_by_student_and_exam(
+            student_id, exam_id, fetch_links=True
+        )
         return BaseStudentExamSchema.model_validate(
             {
                 **data.model_dump(),

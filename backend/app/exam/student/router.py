@@ -33,13 +33,23 @@ async def get_student_exams(
 @router.get("/exams/{exam_id}", response_model=BaseReturn[BaseStudentExamSchema])
 async def get_student_exam(
     exam_id: str,
+    student_id: str = Depends(get_current_student_id),
     student_exam_service: StudentExamService = Depends(get_student_exam_service),
 ):
     """
     Get a specific exam for a student.
     """
-    data = await student_exam_service.get_student_exam(exam_id)
+    data = await student_exam_service.get_student_exam(student_id, exam_id)
     return {
         "message": "Exam retrieved successfully",
         "data": data,
     }
+
+
+@router.post("/exam/{exam_id}/start")
+async def start_exam(
+    exam_id: str,
+    student_id: str = Depends(get_current_student_id),
+    student_exam_service: StudentExamService = Depends(get_student_exam_service),
+):
+    pass

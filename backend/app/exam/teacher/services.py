@@ -350,10 +350,8 @@ class ExamInstanceService:
         notification_settings: dict,
     ) -> None:
         """Add students to an exam instance, create StudentExam instances, and send notifications."""
-        # Create StudentExam instances for new students
         await self._create_student_exam(students, exam_instance_id, max_attempts)
 
-        # Send notifications if enabled
         if (
             notification_settings["reminder_enabled"]
             and notification_settings["reminders"]
@@ -375,21 +373,17 @@ class ExamInstanceService:
         and revoke any pending notification tasks.
         """
         for student in students:
-            # Delete StudentExam records
             student_exam = await self.student_exam_repository.get_by_student_and_exam(
                 student["student_id"], exam_instance_id
             )
             if student_exam:
                 await self.student_exam_repository.delete(student_exam.id)
 
-            # Revoke pending notification tasks
             user = await self.user_repository.get_by_id(student["student_id"])
             if user and str(exam_instance_id) in user.notifications_tasks_id:
-                # Get task ID and revoke it
                 task_id = user.notifications_tasks_id[str(exam_instance_id)]
                 exam_reminder_notification.AsyncResult(task_id).revoke(terminate=True)
 
-                # Remove the task ID from user's notifications
                 del user.notifications_tasks_id[str(exam_instance_id)]
                 await self.user_repository.save(user)
 
@@ -399,7 +393,6 @@ class ExamInstanceService:
         instance_data: CreateExamInstanceSchema,
     ) -> str:
         """Create a new exam instance."""
-
         collection = await self.collection_repository.get_by_id(
             instance_data.collection_id, fetch_links=True
         )
@@ -417,7 +410,6 @@ class ExamInstanceService:
 
         exam_instance = await self.exam_instance_repository.create(instance_data)
 
-        # Handle student assignments
         students = instance_data.get("assigned_students", [])
         if students:
             await self._add_students_to_exam(
@@ -445,13 +437,11 @@ class ExamInstanceService:
         if not instance:
             raise NotFoundError("Exam instance not found")
 
-        # Access the id directly since created_by is already a User object
         if instance.created_by.id != user_id:
             raise ForbiddenError("You do not own this exam instance")
 
         update_data = instance_data.model_dump(exclude_unset=True)
 
-        # Ensure start_date and end_date have timezone information
         if "start_date" in update_data and update_data["start_date"].tzinfo is None:
             update_data["start_date"] = update_data["start_date"].replace(
                 tzinfo=timezone.utc
@@ -462,11 +452,9 @@ class ExamInstanceService:
                 tzinfo=timezone.utc
             )
 
-        # Use the updated dates or existing ones
         start_date = update_data.get("start_date", instance.start_date)
         end_date = update_data.get("end_date", instance.end_date)
 
-        # Ensure instance dates have timezone if needed
         if start_date.tzinfo is None:
             start_date = start_date.replace(tzinfo=timezone.utc)
         if end_date.tzinfo is None:
@@ -503,12 +491,11 @@ class ExamInstanceService:
                     instance_id,
                     instance.max_attempts,
                     instance.title,
-                    start_date,  # Using timezone-aware date
-                    end_date,  # Using timezone-aware date
+                    start_date,
+                    end_date,
                     instance.notification_settings.model_dump(),
                 )
 
-            # Handle removed students
             if removed_students:
                 await self._remove_students_from_exam(removed_students, instance_id)
 

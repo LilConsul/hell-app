@@ -5,7 +5,7 @@ from typing import List
 from app.auth.repository import UserRepository
 from app.celery.tasks.email_tasks.tasks import exam_reminder_notification
 from app.core.exceptions import ForbiddenError, NotFoundError
-from app.exam.models import ExamStatus, NotificationSettings
+from app.exam.models import ExamStatus, NotificationSettings, QuestionType
 from app.exam.repository import (
     CollectionRepository,
     ExamInstanceRepository,
@@ -86,6 +86,46 @@ class CollectionService:
 
         await self.collection_repository.delete(collection_id)
 
+    def _validate_question_by_type(self, question_data: dict) -> None:
+        """
+        Validate question data based on its type.
+
+        Args:
+            question_data: The question data to validate
+
+        Raises:
+            ValueError: If the question data is invalid for its type
+        """
+        question_type = question_data.get("type")
+        if not question_type:
+            raise ValueError("Question type is required")
+
+        # For MCQ and SINGLECHOICE: validate options
+        if question_type in [QuestionType.MCQ, QuestionType.SINGLECHOICE]:
+            options = question_data.get("options", [])
+            if not options:
+                raise ValueError(f"{question_type} question must have options")
+
+            # Check for correct answers
+            correct_count = sum(1 for opt in options if opt.get("is_correct"))
+
+            if correct_count == 0:
+                raise ValueError(
+                    f"{question_type} question must have at least one correct answer"
+                )
+
+            if question_type == QuestionType.SINGLECHOICE and correct_count > 1:
+                raise ValueError(
+                    f"{QuestionType.SINGLECHOICE} question must have exactly one correct answer"
+                )
+
+        # For SHORTANSWER: validate correct_input_answer
+        elif question_type == QuestionType.SHORTANSWER:
+            if not question_data.get("correct_input_answer"):
+                raise ValueError(
+                    f"{QuestionType.SHORTANSWER} question must have a correct_input_answer"
+                )
+
     async def add_question_to_collection(
         self, collection_id: str, user_id: str, question_data: QuestionSchema
     ) -> str:
@@ -94,31 +134,35 @@ class CollectionService:
             collection_id, fetch_links=True
         )
         if not collection:
-            raise NotFoundError("Collection not found")
+            raise NotFoundError(f"Collection with ID {collection_id} not found")
+
         if collection.created_by.id != user_id:
             raise ForbiddenError(
-                "You do not own this collection, can't add question to it"
+                "You don't have permission to add questions to this collection"
             )
 
-        # Create the question
+        # Prepare question data
         question_data_dict = question_data.model_dump()
         question_data_dict["_id"] = str(uuid.uuid4())
-
-        question_data_dict["options"] = [
-            {
-                "id": str(uuid.uuid4()),
-                "text": opt["text"],
-                "is_correct": opt["is_correct"],
-            }
-            for opt in question_data_dict["options"]
-        ]
-
         question_data_dict["created_by"] = user_id
-        question = await self.question_repository.create(question_data_dict)
 
-        # Add the question reference to the collection as a Link
+        if "options" in question_data_dict:
+            question_data_dict["options"] = [
+                {
+                    "id": str(uuid.uuid4()),
+                    "text": opt["text"],
+                    "is_correct": opt["is_correct"],
+                }
+                for opt in question_data_dict["options"]
+            ]
+
+        self._validate_question_by_type(question_data_dict)
+
+        # Create question
+        question = await self.question_repository.create(question_data_dict)
         collection.questions.append(question)
         await self.collection_repository.save(collection)
+
         return question.id
 
     async def edit_question(
@@ -139,13 +183,20 @@ class CollectionService:
         if "_id" in update_data:
             del update_data["_id"]
 
-        # Transform options from strings to QuestionOption objects if needed
-        if isinstance(update_data.get("options"), list) and update_data["options"]:
-            if isinstance(update_data["options"][0], str):
-                update_data["options"] = [
-                    {"id": str(uuid.uuid4()), "text": opt, "is_correct": False}
-                    for opt in update_data["options"]
-                ]
+        if "options" in update_data:
+            update_data["options"] = [
+                {
+                    "id": str(uuid.uuid4()),
+                    "text": opt["text"],
+                    "is_correct": opt["is_correct"],
+                }
+                for opt in update_data["options"]
+            ]
+
+        merged_data = question.model_dump()
+        merged_data.update(update_data)
+
+        self._validate_question_by_type(merged_data)
 
         # Update the question
         await self.question_repository.update(question_id, update_data)
@@ -163,8 +214,6 @@ class CollectionService:
     async def get_public_collections(self) -> List[JustCollection] | []:
         """Get all published collections that are publicly available."""
         collections = await self.collection_repository.get_published()
-        if not collections:
-            return []
         return [
             JustCollection.model_validate(
                 {**collection.model_dump(), "questions": None}
@@ -378,6 +427,22 @@ class ExamInstanceService:
                 del user.notifications_tasks_id[str(exam_instance_id)]
                 await self.user_repository.save(user)
 
+    @staticmethod
+    async def check_datetime(
+        start_date: datetime,
+        end_date: datetime,
+    ):
+        """Check if the start and end dates are valid."""
+        if start_date.tzinfo is None:
+            start_date = start_date.replace(tzinfo=timezone.utc)
+        if end_date.tzinfo is None:
+            end_date = end_date.replace(tzinfo=timezone.utc)
+
+        if start_date < datetime.now(timezone.utc):
+            raise ForbiddenError("Start date must be in the future")
+        if end_date < start_date:
+            raise ForbiddenError("End date must be after start date")
+
     async def create_exam_instance(
         self,
         user_id: str,
@@ -398,6 +463,9 @@ class ExamInstanceService:
 
         instance_data = instance_data.model_dump()
         instance_data["created_by"] = user_id
+        await self.check_datetime(
+            instance_data["start_date"], instance_data["end_date"]
+        )
 
         exam_instance = await self.exam_instance_repository.create(instance_data)
 
@@ -430,26 +498,12 @@ class ExamInstanceService:
 
         if instance.created_by.id != user_id:
             raise ForbiddenError("You do not own this exam instance")
-
         update_data = instance_data.model_dump(exclude_unset=True)
 
-        if "start_date" in update_data and update_data["start_date"].tzinfo is None:
-            update_data["start_date"] = update_data["start_date"].replace(
-                tzinfo=timezone.utc
-            )
-
-        if "end_date" in update_data and update_data["end_date"].tzinfo is None:
-            update_data["end_date"] = update_data["end_date"].replace(
-                tzinfo=timezone.utc
-            )
-
-        start_date = update_data.get("start_date", instance.start_date)
-        end_date = update_data.get("end_date", instance.end_date)
-
-        if start_date.tzinfo is None:
-            start_date = start_date.replace(tzinfo=timezone.utc)
-        if end_date.tzinfo is None:
-            end_date = end_date.replace(tzinfo=timezone.utc)
+        if "start_date" in update_data and "end_date" in update_data:
+            start_date = update_data["start_date"]
+            end_date = update_data["end_date"]
+            await self.check_datetime(start_date, end_date)
 
         if "assigned_students" in update_data:
             current_students = [

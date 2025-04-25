@@ -1,6 +1,5 @@
 import { Shield } from "lucide-react"
 import { Link } from "react-router-dom"
-import { Button } from "@/components/ui/button"
 
 export function Footer() {
   return (
@@ -13,10 +12,11 @@ export function Footer() {
         <p className="text-sm text-muted-foreground">
           © {new Date().getFullYear()} HellApp. All rights reserved.
         </p>
-        <Link to="/privacy-policy">
-          <Button size="sm" variant="outline">
-            Privacy Policy
-          </Button>
+        <Link
+          to="/privacy-policy"
+          className="text-sm text-muted-foreground underline-offset-2 hover:underline transition"
+        >
+          Privacy Policy
         </Link>
       </div>
     </footer>

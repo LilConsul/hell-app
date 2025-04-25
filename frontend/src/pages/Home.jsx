@@ -74,78 +74,102 @@ function Home() {
 
         {/* How it Works */}
         <section className="py-20">
-          <div className="container px-4 sm:px-6 mx-auto max-w-4xl text-center">
-            <h2 className="text-3xl md:text-4xl font-bold tracking-tighter mb-6">How it Works</h2>
-            <div className="grid md:grid-cols-3 gap-8">
-              <div className="bg-background p-6 rounded-lg border">
-                <h3 className="text-xl font-semibold mb-2">1. Register an Account</h3>
-                <p className="text-muted-foreground">
-                  Sign up easily as a student, teacher, or institution.
-                </p>
-              </div>
-              <div className="bg-background p-6 rounded-lg border">
-                <h3 className="text-xl font-semibold mb-2">2. Create or Join Exams</h3>
-                <p className="text-muted-foreground">
-                  Organize or participate in secure online exams with just a few clicks.
-                </p>
-              </div>
-              <div className="bg-background p-6 rounded-lg border">
-                <h3 className="text-xl font-semibold mb-2">3. Get Instant Results</h3>
-                <p className="text-muted-foreground">
-                  Receive automatic grading and detailed reports as soon as the exam ends.
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
+  <div className="container px-4 sm:px-6 mx-auto max-w-6xl">
+    <div className="grid md:grid-cols-2 gap-12 items-center">
+      <div>
+        <h2 className="text-3xl md:text-4xl font-bold tracking-tighter">How It Works</h2>
+        <p className="mt-4 text-lg text-muted-foreground">
+          The simple, step-by-step process to experience secure exams.
+        </p>
+      </div>
+      <div className="grid sm:grid-cols-2 gap-6">
+        <div className="bg-background p-6 rounded-lg border">
+          <h3 className="text-xl font-semibold mb-2">1. Register</h3>
+          <p className="text-muted-foreground">Create your account as a student, teacher or institution.</p>
+        </div>
+        <div className="bg-background p-6 rounded-lg border">
+          <h3 className="text-xl font-semibold mb-2">2. Create/Join Exam</h3>
+          <p className="text-muted-foreground">Easily participate in or organize secure exams online.</p>
+        </div>
+        <div className="bg-background p-6 rounded-lg border">
+          <h3 className="text-xl font-semibold mb-2">3. Take Exam</h3>
+          <p className="text-muted-foreground">Enjoy a streamlined, fair and monitored exam experience.</p>
+        </div>
+        <div className="bg-background p-6 rounded-lg border">
+          <h3 className="text-xl font-semibold mb-2">4. Get Results</h3>
+          <p className="text-muted-foreground">Receive instant grading and detailed feedback.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
 
         {/* Who is it for */}
         <section className="py-20 bg-muted/50">
-          <div className="container px-4 sm:px-6 mx-auto max-w-4xl text-center">
-            <h2 className="text-3xl md:text-4xl font-bold tracking-tighter mb-6">Who is it for?</h2>
-            <div className="grid md:grid-cols-3 gap-8">
-              <div className="bg-background p-6 rounded-lg border">
-                <h3 className="text-xl font-semibold mb-2">Teachers</h3>
-                <p className="text-muted-foreground">
-                  Create and monitor exams, track student performance, and maintain academic integrity.
-                </p>
-              </div>
-              <div className="bg-background p-6 rounded-lg border">
-                <h3 className="text-xl font-semibold mb-2">Students</h3>
-                <p className="text-muted-foreground">
-                  Participate in fair and transparent assessments from anywhere.
-                </p>
-              </div>
-              <div className="bg-background p-6 rounded-lg border">
-                <h3 className="text-xl font-semibold mb-2">Universities</h3>
-                <p className="text-muted-foreground">
-                  Manage exams at scale with advanced analytics and security.
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
+  <div className="container px-4 sm:px-6 mx-auto max-w-6xl">
+    <div className="grid md:grid-cols-2 gap-12 items-center">
+      <div>
+        <h2 className="text-3xl md:text-4xl font-bold tracking-tighter">Who is it for?</h2>
+        <p className="mt-4 text-lg text-muted-foreground">
+          Designed for every role in the education ecosystem.
+        </p>
+      </div>
+      <div className="grid sm:grid-cols-2 gap-6">
+        <div className="bg-background p-6 rounded-lg border">
+          <h3 className="text-xl font-semibold mb-2">Teachers</h3>
+          <p className="text-muted-foreground">Easily manage, create, and monitor exams.</p>
+        </div>
+        <div className="bg-background p-6 rounded-lg border">
+          <h3 className="text-xl font-semibold mb-2">Students</h3>
+          <p className="text-muted-foreground">Participate in exams from anywhere with fairness.</p>
+        </div>
+        <div className="bg-background p-6 rounded-lg border">
+          <h3 className="text-xl font-semibold mb-2">Universities</h3>
+          <p className="text-muted-foreground">Oversee exams at scale with robust analytics and security.</p>
+        </div>
+        <div className="bg-background p-6 rounded-lg border">
+          <h3 className="text-xl font-semibold mb-2">Institutions</h3>
+          <p className="text-muted-foreground">Integrate our system for your entire educational process.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
 
         {/* Testimonials */}
         <section className="py-20">
-          <div className="container px-4 sm:px-6 mx-auto max-w-4xl text-center">
-            <h2 className="text-3xl md:text-4xl font-bold tracking-tighter mb-6">Testimonials</h2>
-            <div className="grid md:grid-cols-3 gap-8">
-              <div className="bg-background p-6 rounded-lg border">
-                <p className="italic mb-2">"This platform made remote exams so much easier and safer for my class."</p>
-                <span className="block font-semibold">– Maria, Teacher</span>
-              </div>
-              <div className="bg-background p-6 rounded-lg border">
-                <p className="italic mb-2">"I loved how fast I got my grades and how fair the exams felt!"</p>
-                <span className="block font-semibold">– Alex, Student</span>
-              </div>
-              <div className="bg-background p-6 rounded-lg border">
-                <p className="italic mb-2">"Managing exams across our university was never this secure and streamlined."</p>
-                <span className="block font-semibold">– Dr. Popescu, University Admin</span>
-              </div>
-            </div>
-          </div>
-        </section>
+  <div className="container px-4 sm:px-6 mx-auto max-w-6xl">
+    <div className="grid md:grid-cols-2 gap-12 items-center">
+      <div>
+        <h2 className="text-3xl md:text-4xl font-bold tracking-tighter">Testimonials</h2>
+        <p className="mt-4 text-lg text-muted-foreground">
+          Trusted by educators and students around the world.
+        </p>
+      </div>
+      <div className="grid sm:grid-cols-2 gap-6">
+        <div className="bg-background p-6 rounded-lg border">
+          <p className="italic mb-2">"This platform made remote exams so much easier and safer for my class."</p>
+          <span className="block font-semibold">– Maria, Teacher</span>
+        </div>
+        <div className="bg-background p-6 rounded-lg border">
+          <p className="italic mb-2">"I loved how fast I got my grades and how fair the exams felt!"</p>
+          <span className="block font-semibold">– Alex, Student</span>
+        </div>
+        <div className="bg-background p-6 rounded-lg border">
+          <p className="italic mb-2">"Managing exams across our university was never this secure and streamlined."</p>
+          <span className="block font-semibold">– Dr. Popescu, Admin</span>
+        </div>
+        <div className="bg-background p-6 rounded-lg border">
+          <p className="italic mb-2">"Best platform for online assessments!"</p>
+          <span className="block font-semibold">– Mihai, IT Specialist</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
 
       </main>
       <Footer />

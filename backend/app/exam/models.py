@@ -326,7 +326,9 @@ class StudentExam(Document, TimestampMixin):
     exam_instance_id: Link[ExamInstance]
     student_id: Link[User]
     current_status: StudentExamStatus = StudentExamStatus.NOT_STARTED  # Overall status
-    latest_attempt_id: Link[StudentAttempt] | None = None  # Reference to the latest attempt
+    latest_attempt_id: Link[StudentAttempt] | None = (
+        None  # Reference to the latest attempt
+    )
     attempts_count: int = 0
 
     # BackLink to attempts
@@ -367,7 +369,7 @@ async def cascade_delete_user(user_id: str, role: UserRole):
 
     # Delete all student exams and responses
     if role == UserRole.STUDENT:
-        #FIXME: Implement this logic
+        #TODO: Implement this logic
         pass
 
     print(f"Deleted all data related to user {user_id}")

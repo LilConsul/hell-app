@@ -58,6 +58,7 @@ async def verify_token(
     Verify a user's email with token
     """
     await auth_service.verify_token(token.token)
+    # FIXME: Email is being send twice, if two simultaneous requests are made.
     return {"message": "Email verified successfully"}
 
 

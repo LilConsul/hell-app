@@ -1,9 +1,11 @@
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
-import { Link } from "react-router-dom";
+import { useAuth } from "@/contexts/auth-context";
 
 function Settings() {
+  const { user } = useAuth();
   return (
     <div className="flex flex-col min-h-screen">
       <Navbar />
@@ -15,12 +17,31 @@ function Settings() {
           <section className="bg-white dark:bg-muted rounded-2xl shadow p-6 space-y-4 border">
             <h2 className="text-xl font-semibold mb-2">Personal Data</h2>
             <div>
-              <label className="block font-medium mb-1">Name</label>
-              <input type="text" className="w-full border rounded p-2" placeholder="Your name" />
+              <label className="block font-medium mb-1">First Name</label>
+              <input 
+                type="text" 
+                className="w-full border rounded p-2" 
+                placeholder="Enter first name" 
+                defaultValue={user?.first_name || ""} 
+              />
+            </div>
+            <div>
+              <label className="block font-medium mb-1">Last Name</label>
+              <input 
+                type="text" 
+                className="w-full border rounded p-2" 
+                placeholder="Enter last name" 
+                defaultValue={user?.last_name || ""} 
+              />
             </div>
             <div>
               <label className="block font-medium mb-1">Email</label>
-              <input type="email" className="w-full border rounded p-2" value="your@email.com" disabled />
+              <input 
+                type="email" 
+                className="w-full border rounded p-2" 
+                value={user?.email || "your@email.com"} 
+                disabled 
+              />
             </div>
           </section>
 

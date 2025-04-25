@@ -1,69 +1,94 @@
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { useParams, useNavigate } from "react-router-dom"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { CheckCircle, AlertTriangle, Loader2, Mail } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { CheckCircle, AlertTriangle, Loader2, Mail, ArrowRight } from "lucide-react"
+
+const verificationCache = {};
 
 function EmailVerification() {
   const params = useParams()
   const navigate = useNavigate()
   const [verificationState, setVerificationState] = useState("loading")
   const [errorMessage, setErrorMessage] = useState("")
-
-  const openLoginModal = () => {
-    navigate("/");
-    setTimeout(() => {
-      if (window.openLoginModal) {
-        window.openLoginModal();
-      }
-    }, 100);
+  const requestSentRef = useRef(false)
+  
+  const navigateToLogin = () => {
+    navigate("/login");
   };
 
   useEffect(() => {
+    const token = params.token;
+    
+    if (!token) {
+      setVerificationState("error");
+      setErrorMessage("No verification token provided.");
+      return;
+    }
+    
+    if (verificationCache[token]) {
+      setVerificationState(verificationCache[token].state);
+      if (verificationCache[token].errorMessage) {
+        setErrorMessage(verificationCache[token].errorMessage);
+      }
+      return;
+    }
+    
+    // Avoid sending 2nd request
+    if (requestSentRef.current) {
+      return;
+    }
+    
+    requestSentRef.current = true;
+    
     const verifyEmail = async () => {
       try {
-        const token = params.token
-        
-        if (!token) {
-          setVerificationState("error")
-          setErrorMessage("No verification token provided.")
-          return
-        }
         const response = await fetch('/api/v1/auth/verify', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ token })
-        })
+        });
                 
-        const data = await response.json()
+        const data = await response.json();
+        
+        let result = { state: "error", errorMessage: "" };
         
         if (response.ok) {
-          setVerificationState("success")
-          setTimeout(() => {
-            openLoginModal()
-          }, 5000)
+          result.state = "success";
+          setVerificationState("success");
         } else {
           if (data.detail === "User is already verified") {
-            setVerificationState("already-verified")
-            setTimeout(() => {
-              openLoginModal()
-            }, 5000)
+            result.state = "already-verified";
+            setVerificationState("already-verified");
           } else if (data.detail === "Invalid or expired verification token") {
-            setVerificationState("error")
-            setErrorMessage("The verification link has expired or is invalid. Please request a new one.")
+            result.errorMessage = "The verification link has expired or is invalid. Please request a new one.";
+            setVerificationState("error");
+            setErrorMessage(result.errorMessage);
           } else {
-            setVerificationState("error")
-            setErrorMessage(data.detail || "Verification failed. Please try again later.")
+            result.errorMessage = data.detail || "Verification failed. Please try again later.";
+            setVerificationState("error");
+            setErrorMessage(result.errorMessage);
           }
         }
+        
+        verificationCache[token] = result;
+        
       } catch (error) {
-        setVerificationState("error")
-        setErrorMessage("An unexpected error occurred. Please try again later.")
+        const result = {
+          state: "error",
+          errorMessage: "An unexpected error occurred. Please try again later."
+        };
+        setVerificationState(result.state);
+        setErrorMessage(result.errorMessage);
+        
+        verificationCache[token] = result;
       }
-    }
+    };
 
-    verifyEmail()
-  }, [params.token, navigate])
+    verifyEmail();
+    
+  }, [params.token]);
 
   const renderContent = () => {
     switch (verificationState) {
@@ -100,9 +125,14 @@ function EmailVerification() {
               <Alert className="bg-green-50 border-green-200">
                 <CheckCircle className="h-4 w-4 text-green-600" />
                 <AlertTitle>Verification Complete</AlertTitle>
-                <AlertDescription>Redirecting you to the login page...</AlertDescription>
+                <AlertDescription>Your account is now active.</AlertDescription>
               </Alert>
             </CardContent>
+            <CardFooter className="flex justify-center">
+              <Button onClick={navigateToLogin}>
+                Continue to Login <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </CardFooter>
           </>
         )
       
@@ -126,6 +156,11 @@ function EmailVerification() {
                 <AlertDescription>Your account is active and you can access all features.</AlertDescription>
               </Alert>
             </CardContent>
+            <CardFooter className="flex justify-center">
+              <Button onClick={navigateToLogin}>
+                Continue to Login <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </CardFooter>
           </>
         )
   
@@ -149,6 +184,11 @@ function EmailVerification() {
                 <AlertDescription>Please contact support if you need assistance.</AlertDescription>
               </Alert>
             </CardContent>
+            <CardFooter className="flex justify-center">
+              <Button onClick={navigateToLogin}>
+                Return to Home <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </CardFooter>
           </>
         )
   

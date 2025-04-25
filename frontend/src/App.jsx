@@ -2,6 +2,7 @@ import { Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from './components/theme-provider';
 import { AuthProvider } from './contexts/auth-context';
 import { ProtectedRoute } from './components/protected-route';
+import { useEffect } from 'react';
 
 import Home from './pages/Home';
 import Dashboard from './pages/Dashboard';
@@ -12,6 +13,19 @@ import Settings from './pages/Settings';
 import EmailVerification from './pages/EmailVerification';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 
+function HomeWithLoginModal() {
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (window.openLoginModal) {
+        window.openLoginModal();
+      }
+    }, 100);
+    
+    return () => clearTimeout(timer);
+  }, []);
+  
+  return <Home />;
+}
 
 export default function App() {
   return (
@@ -20,6 +34,7 @@ export default function App() {
         <Routes>
           {/* Public routes */}
           <Route path="/" element={<Home />} />
+          <Route path="/login" element={<HomeWithLoginModal />} />
           <Route path="/verify/:token" element={<EmailVerification />} />
           <Route path="/settings"  element={<Settings />}  />
 
@@ -29,7 +44,6 @@ export default function App() {
           <Route path="/students" element={<ProtectedRoute element={<Students />} allowedRoles={['teacher', 'admin']} />} />
           <Route path="/reports" element={<ProtectedRoute element={<Reports />} allowedRoles={['teacher', 'admin']} />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-          
         </Routes>
       </AuthProvider>
     </ThemeProvider>

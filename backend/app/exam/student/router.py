@@ -5,6 +5,7 @@ from app.exam.student.dependencies import get_student_exam_service
 from app.exam.student.services import StudentExamService
 from fastapi import APIRouter, Depends
 
+from ...core.schemas import BaseReturn
 from .schemas import BaseStudentExamSchema
 
 router = APIRouter(
@@ -14,23 +15,31 @@ router = APIRouter(
 )
 
 
-@router.get("/exams")
+@router.get("/exams", response_model=BaseReturn[List[BaseStudentExamSchema]])
 async def get_student_exams(
     student_id: str = Depends(get_current_student_id),
     student_exam_service: StudentExamService = Depends(get_student_exam_service),
-) -> List[BaseStudentExamSchema]:
+):
     """
     Get all exams for a student.
     """
-    return await student_exam_service.get_student_exams(student_id)
+    data = await student_exam_service.get_student_exams(student_id)
+    return {
+        "message": "Exams retrieved successfully",
+        "data": data,
+    }
 
 
-@router.get("/exams/{exam_id}")
+@router.get("/exams/{exam_id}", response_model=BaseReturn[BaseStudentExamSchema])
 async def get_student_exam(
     exam_id: str,
     student_exam_service: StudentExamService = Depends(get_student_exam_service),
-) -> BaseStudentExamSchema:
+):
     """
     Get a specific exam for a student.
     """
-    return await student_exam_service.get_student_exam(exam_id)
+    data = await student_exam_service.get_student_exam(exam_id)
+    return {
+        "message": "Exam retrieved successfully",
+        "data": data,
+    }

@@ -18,8 +18,19 @@ router = APIRouter(
 async def get_student_exams(
     student_id: str = Depends(get_current_student_id),
     student_exam_service: StudentExamService = Depends(get_student_exam_service),
-)-> List[BaseStudentExamSchema]:
+) -> List[BaseStudentExamSchema]:
     """
     Get all exams for a student.
     """
     return await student_exam_service.get_student_exams(student_id)
+
+
+@router.get("/exams/{exam_id}")
+async def get_student_exam(
+    exam_id: str,
+    student_exam_service: StudentExamService = Depends(get_student_exam_service),
+) -> BaseStudentExamSchema:
+    """
+    Get a specific exam for a student.
+    """
+    return await student_exam_service.get_student_exam(exam_id)

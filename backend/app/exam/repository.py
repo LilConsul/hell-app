@@ -1,4 +1,5 @@
-from typing import List
+from datetime import datetime, timezone
+from typing import Dict, List
 
 from app.core.repository.base_repository import BaseRepository
 from app.exam.models import (
@@ -8,6 +9,7 @@ from app.exam.models import (
     Question,
     StudentAttempt,
     StudentExam,
+    StudentExamStatus,
     StudentResponse,
 )
 
@@ -53,17 +55,54 @@ class ExamInstanceRepository(BaseRepository[ExamInstance]):
 class StudentResponseRepository(BaseRepository[StudentResponse]):
     """Repository for StudentResponse model operations"""
 
-    pass
+    async def create_response(
+        self, attempt: StudentAttempt, question, option_order: Dict[str, int]
+    ) -> None:
+        """Create a single student response for a question in an attempt."""
+        response = StudentResponse(
+            attempt_id=attempt,
+            question_id=question,
+            option_order=option_order,
+            selected_option_ids=[],
+        )
+        await self.create(response.model_dump())
+
+    async def create_responses_for_attempt(
+        self,
+        attempt: StudentAttempt,
+        questions: List,
+        option_orders: Dict[str, Dict[str, int]],
+    ) -> None:
+        """Create response records for all questions in an attempt."""
+        for question in questions:
+            option_order = option_orders.get(question.id, {})
+            await self.create_response(attempt, question, option_order)
 
 
 class StudentAttemptRepository(BaseRepository[StudentAttempt]):
     """Repository for StudentAttempt model operations"""
 
-    pass
+    async def create_exam_attempt(
+        self, student_exam: StudentExam, question_order: List[str]
+    ) -> StudentAttempt:
+        """Create a new exam attempt."""
+        new_attempt = StudentAttempt(
+            student_exam_id=student_exam,
+            status=StudentExamStatus.IN_PROGRESS,
+            started_at=datetime.now(timezone.utc),
+            question_order=question_order,
+        )
+        return await self.create(new_attempt.model_dump())
 
 
 class StudentExamRepository(BaseRepository[StudentExam]):
     """Repository for StudentExam model operations"""
+
+    async def get_all_by_student(self, student_id: str) -> List[StudentExam]:
+        """Get all exams for a student."""
+        return await self.model_class.find(
+            {"student_id._id": student_id}, fetch_links=True
+        ).to_list()
 
     async def get_by_student_and_exam(
         self, student_id: str, exam_id: str, fetch_links: bool = False
@@ -75,5 +114,16 @@ class StudentExamRepository(BaseRepository[StudentExam]):
             fetch_links=fetch_links,
         )
         return student_exam
+
+    async def update_exam_status(
+        self, exam_id: str, attempt_id: str, attempts_count: int
+    ) -> None:
+        """Update exam status to in-progress with latest attempt."""
+        update_data = {
+            "current_status": StudentExamStatus.IN_PROGRESS,
+            "latest_attempt_id": attempt_id,
+            "attempts_count": attempts_count,
+        }
+        await self.update(exam_id, update_data)
 
 

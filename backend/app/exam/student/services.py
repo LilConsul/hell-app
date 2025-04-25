@@ -1,9 +1,8 @@
 import random
-from datetime import datetime, timezone
 from typing import List
 
 from app.core.exceptions import ForbiddenError
-from app.exam.models import StudentAttempt, StudentExamStatus, StudentResponse
+from app.exam.models import StudentExamStatus
 from app.exam.repository import (
     StudentAttemptRepository,
     StudentExamRepository,
@@ -63,10 +62,10 @@ class StudentExamService:
             }
         )
 
-    async def start_exam(self, student_id: str, exam_id: str):
-        """
-        Start an exam for a student.
-        """
+    async def start_exam(
+        self, student_id: str, exam_id: str
+    ) -> List[QuestionForStudent]:
+        """Start an exam for a student."""
         student_exam = await self.student_exam_repository.get_by_student_and_exam(
             student_id, exam_id, fetch_links=True
         )
@@ -82,58 +81,49 @@ class StudentExamService:
             raise ForbiddenError("Max attempts reached")
 
         collection = student_exam.exam_instance_id.collection_id
-
         questions = collection.questions
         question_ids = [question.id for question in questions]
 
-        if exam_instance.security_settings.shuffle_questions:
-            # Shuffle both lists together
+        should_shuffle = exam_instance.security_settings.shuffle_questions
+        if should_shuffle:
             combined = list(zip(question_ids, questions))
             random.shuffle(combined)
             question_ids, questions = zip(*combined) if combined else ([], [])
             question_ids = list(question_ids)
             questions = list(questions)
 
-        new_attempt = StudentAttempt(
-            student_exam_id=student_exam,
-            status=StudentExamStatus.IN_PROGRESS,
-            started_at=datetime.now(timezone.utc),
-            question_order=question_ids,
+        attempt = await self.student_attempt_repository.create_exam_attempt(
+            student_exam, question_ids
         )
 
-        attempt = await self.student_attempt_repository.create(new_attempt.model_dump())
-
+        option_orders = {}
         for question in questions:
             options = question.options
             option_order = {}
 
-            # Create option_order mapping
-            if exam_instance.security_settings.shuffle_questions:
+            if should_shuffle and options:
                 shuffled_indices = list(range(len(options)))
                 random.shuffle(shuffled_indices)
                 for i, option in enumerate(options):
                     option_order[option.id] = shuffled_indices[i]
             else:
-                # Sequential order if no shuffling
                 for i, option in enumerate(options):
                     option_order[option.id] = i
 
-            response = StudentResponse(
-                attempt_id=attempt,
-                question_id=question,
-                option_order=option_order,
-                selected_option_ids=[],
-            )
-            await self.student_response_repository.create(response.model_dump())
+            option_orders[question.id] = option_order
 
-        update_data = {
-            "current_status": StudentExamStatus.IN_PROGRESS,
-            "latest_attempt_id": attempt.id,
-            "attempts_count": student_exam.attempts_count + 1,
-        }
+        await self.student_response_repository.create_responses_for_attempt(
+            attempt, questions, option_orders
+        )
 
-        await self.student_exam_repository.update(student_exam.id, update_data)
+        await self.student_exam_repository.update_exam_status(
+            student_exam.id, attempt.id, student_exam.attempts_count + 1
+        )
 
+        return self._sanitize_questions(questions)
+
+    def _sanitize_questions(self, questions) -> List[QuestionForStudent]:
+        """Helper method to remove sensitive data from questions."""
         sanitized_questions = []
         for question in questions:
             sanitized_question = QuestionForStudent(
@@ -144,7 +134,6 @@ class StudentExamService:
                 weight=question.weight,
             )
 
-            # Only include options if they exist
             if question.options:
                 sanitized_question.options = [
                     QuestionOptionForStudent(id=option.id, text=option.text)

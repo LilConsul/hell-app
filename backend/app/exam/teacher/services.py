@@ -368,14 +368,13 @@ class ExamInstanceService:
             await self.user_repository.save(user)
 
     async def _create_student_exam(
-        self, users_id: List[dict], exam_instance_id: str, attempts: int
+        self, users_id: List[dict], exam_instance_id: str
     ) -> None:
         """Create a new StudentExam instance."""
         for user_id in users_id:
             student_exam_data = {
                 "student_id": user_id["student_id"],
                 "exam_instance_id": exam_instance_id,
-                "attempts_count": attempts,
             }
             await self.student_exam_repository.create(student_exam_data)
 
@@ -390,7 +389,7 @@ class ExamInstanceService:
         notification_settings: dict,
     ) -> None:
         """Add students to an exam instance, create StudentExam instances, and send notifications."""
-        await self._create_student_exam(students, exam_instance_id, max_attempts)
+        await self._create_student_exam(students, exam_instance_id)
 
         if (
             notification_settings["reminder_enabled"]

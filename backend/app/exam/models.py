@@ -253,8 +253,11 @@ class StudentResponse(Document, TimestampMixin):
     question_id: Link[Question]
     selected_option_ids: List[str] = Field(default_factory=list)
     text_response: Optional[str] = None
-    score: float = 0
+    score: float = -1.0  # Default to -1 for ungraded
     is_flagged: bool = False
+    option_order: Dict[str, int] = Field(
+        default_factory=dict
+    )  # Maps option_id -> position
 
     class Settings:
         name = "student_responses"
@@ -272,6 +275,7 @@ class StudentResponse(Document, TimestampMixin):
                 "text_response": None,
                 "score": 1.0,
                 "is_flagged": False,
+                "option_order": {"opt1": 2, "opt2": 0, "opt3": 1},
                 "created_at": "2025-04-20T09:15:30.000Z",
                 "updated_at": "2025-04-20T09:15:30.000Z",
             }
@@ -290,8 +294,8 @@ class StudentAttempt(Document, TimestampMixin):
     pass_fail: Optional[PassFailStatus] = None
     graded_at: Optional[datetime] = None
     last_auto_save: Optional[datetime] = None
+    question_order: List[str] = Field(default_factory=list)
 
-    # BackLink to responses
     responses: List[BackLink[StudentResponse]] = Field(
         default_factory=list, json_schema_extra={"original_field": "attempt_id"}
     )
@@ -320,6 +324,11 @@ class StudentAttempt(Document, TimestampMixin):
                 "pass_fail": None,
                 "graded_at": None,
                 "last_auto_save": "2025-04-20T09:14:30.000Z",
+                "question_order": [
+                    "550e8400-e29b-41d4-a716-446655440010",
+                    "550e8400-e29b-41d4-a716-446655440011",
+                    "550e8400-e29b-41d4-a716-446655440012",
+                ],
                 "created_at": "2025-04-20T09:00:10.000Z",
                 "updated_at": "2025-04-20T09:14:30.000Z",
             }
@@ -333,11 +342,10 @@ class StudentExam(Document, TimestampMixin):
     student_id: Link[User]
     current_status: StudentExamStatus = StudentExamStatus.NOT_STARTED  # Overall status
     latest_attempt_id: Link[StudentAttempt] | None = (
-        None  # Reference to the latest attempt
+        None
     )
     attempts_count: int = 0
 
-    # BackLink to attempts
     attempts: List[BackLink[StudentAttempt]] = Field(
         default_factory=list, json_schema_extra={"original_field": "student_exam_id"}
     )
@@ -375,7 +383,7 @@ async def cascade_delete_user(user_id: str, role: UserRole):
 
     # Delete all student exams and responses
     if role == UserRole.STUDENT:
-        #TODO: Implement this logic
+        # TODO: Implement this logic
         pass
 
     print(f"Deleted all data related to user {user_id}")

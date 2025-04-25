@@ -1,8 +1,6 @@
 from datetime import datetime
 from typing import List
 
-from pydantic.json_schema import model_json_schema
-
 from app.auth.schemas import UserResponse
 from app.exam.models import (
     ExamInstance,
@@ -12,6 +10,7 @@ from app.exam.models import (
     SecuritySettings,
 )
 from pydantic import BaseModel, ConfigDict
+from pydantic.json_schema import model_json_schema
 
 
 class TimeStamp(BaseModel):

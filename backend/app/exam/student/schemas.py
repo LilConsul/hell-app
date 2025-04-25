@@ -1,8 +1,6 @@
-from typing import List
-
 from app.auth.schemas import UserResponse
 from app.exam.models import StudentExamStatus
-from app.exam.teacher.schemas import ExamInstanceBase, UserId
+from app.exam.teacher.schemas import ExamInstanceBase
 from pydantic import BaseModel, ConfigDict
 
 
@@ -19,6 +17,8 @@ class BaseStudentExamSchema(BaseModel):
     attempts_count: int
     # attempt:
 
-    model_config = ConfigDict(
-        arbitrary_types_allowed=True
-    )
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+
+class CreateStudentExamSchema(BaseStudentExamSchema):
+    pass

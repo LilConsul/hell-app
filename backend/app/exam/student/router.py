@@ -6,7 +6,7 @@ from app.exam.student.services import StudentExamService
 from fastapi import APIRouter, Depends
 
 from ...core.schemas import BaseReturn
-from .schemas import BaseStudentExamSchema
+from .schemas import CreateStudentExamSchema
 
 router = APIRouter(
     prefix="/student",
@@ -15,7 +15,7 @@ router = APIRouter(
 )
 
 
-@router.get("/exams", response_model=BaseReturn[List[BaseStudentExamSchema]])
+@router.get("/exams", response_model=BaseReturn[List[CreateStudentExamSchema]])
 async def get_student_exams(
     student_id: str = Depends(get_current_student_id),
     student_exam_service: StudentExamService = Depends(get_student_exam_service),
@@ -30,7 +30,7 @@ async def get_student_exams(
     }
 
 
-@router.get("/exams/{exam_id}", response_model=BaseReturn[BaseStudentExamSchema])
+@router.get("/exams/{exam_id}", response_model=BaseReturn[CreateStudentExamSchema])
 async def get_student_exam(
     exam_id: str,
     student_id: str = Depends(get_current_student_id),

@@ -92,7 +92,7 @@ class AuthService:
         user_id = token_data.get("user_id")
         token_type = token_data.get("type")
 
-        if token_type != "verification":
+        if token_type != str(TokenType.VERIFICATION):
             raise AuthenticationError("Invalid token type")
 
         user = await self.user_repository.get_by_id(user_id)
@@ -134,7 +134,7 @@ class AuthService:
         user_id = token_data.get("user_id")
         token_type = token_data.get("type")
 
-        if token_type != "password_reset":
+        if token_type != str(TokenType.PASSWORD_RESET):
             raise AuthenticationError("Invalid token type")
 
         user = await self.user_repository.get_by_id(user_id)

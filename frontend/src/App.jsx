@@ -12,6 +12,7 @@ import Reports from './pages/Reports';
 import Settings from './pages/Settings';
 import EmailVerification from './pages/EmailVerification';
 import PrivacyPolicy from './pages/PrivacyPolicy';
+import PasswordReset from './pages/PasswordReset';
 
 function HomeWithLoginModal() {
   useEffect(() => {
@@ -36,6 +37,7 @@ export default function App() {
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<HomeWithLoginModal />} />
           <Route path="/verify/:token" element={<EmailVerification />} />
+          <Route path="/password-reset/:token" element={<PasswordReset />} />
           <Route path="/settings"  element={<Settings />}  />
 
           {/* Protected routes */}

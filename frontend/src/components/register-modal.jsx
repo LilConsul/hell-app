@@ -5,7 +5,7 @@ import * as z from "zod"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
-import { Shield, X } from "lucide-react"
+import { Shield, X, Check } from "lucide-react"
 import { createPortal } from "react-dom"
 import {
   Form,
@@ -16,30 +16,33 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 
-// Password must include at least one uppercase, one lowercase, one digit, and one special character
-const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_\-+=]).{8,}$/
-
-const registerSchema = z.object({
-  first_name: z.string().min(2, { message: "First name is required" }),
-  last_name: z.string().min(2, { message: "Last name is required" }),
-  email: z
-    .string()
-    .min(1, { message: "Email is required" })
-    .regex(/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/, { message: "Invalid email format." }),
-  password: z
-    .string()
-    .min(8, { message: "Password must be at least 8 characters" })
-    .regex(passwordRegex, { message: "Password must meet security requirements." }),
-  confirmPassword: z.string(),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords do not match",
-  path: ["confirmPassword"],
-})
+import { PasswordInput } from "@/components/password/password-input"
+import { PasswordRequirements } from "@/components/password/password-requirements"
+import { usePasswordValidation } from "@/components/password/password-validation"
 
 export function RegisterModal({ isOpen, onClose, onLoginClick }) {
   const [serverError, setServerError] = useState(null)
   const [registrationSuccess, setRegistrationSuccess] = useState(false)
   
+  const { passwordRegex } = usePasswordValidation("")
+  
+  const registerSchema = z.object({
+    first_name: z.string().min(2, { message: "First name is required" }),
+    last_name: z.string().min(2, { message: "Last name is required" }),
+    email: z
+      .string()
+      .min(1, { message: "Email is required" })
+      .regex(/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/, { message: "Invalid email format." }),
+    password: z
+      .string()
+      .min(8, { message: "Password must be at least 8 characters" })
+      .regex(passwordRegex, { message: "Password must meet security requirements." }),
+    confirmPassword: z.string(),
+  }).refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords do not match",
+    path: ["confirmPassword"],
+  })
+
   const form = useForm({
     resolver: zodResolver(registerSchema),
     defaultValues: {
@@ -52,6 +55,10 @@ export function RegisterModal({ isOpen, onClose, onLoginClick }) {
   })
 
   const isSubmitting = form.formState.isSubmitting
+  const password = form.watch("password")
+  const confirmPassword = form.watch("confirmPassword")
+  
+  const { passwordErrors, showRequirements } = usePasswordValidation(password)
 
   useEffect(() => {
     const handleEscape = (e) => {
@@ -120,10 +127,8 @@ export function RegisterModal({ isOpen, onClose, onLoginClick }) {
       
       setRegistrationSuccess(true)
 
-      // After successful registration, redirect or show verification message
       setTimeout(() => {
         onClose()
-        // redirect to login
         onLoginClick()
       }, 3000)
     } catch (error) {
@@ -237,12 +242,18 @@ export function RegisterModal({ isOpen, onClose, onLoginClick }) {
                   <FormItem>
                     <FormLabel>Password</FormLabel>
                     <FormControl>
-                      <Input type="password" {...field} />
+                      <PasswordInput {...field} />
                     </FormControl>
                     <FormMessage />
-                    <p className="text-xs text-muted-foreground">
-                      Must be at least 8 characters with uppercase, lowercase, number, and special character.
-                    </p>
+                    
+                    {showRequirements && Object.values(passwordErrors).some((error) => error) && (
+                      <div className="mt-2">
+                        <PasswordRequirements 
+                          passwordErrors={passwordErrors} 
+                          showRequirements={showRequirements} 
+                        />
+                      </div>
+                    )}
                   </FormItem>
                 )}
               />
@@ -254,8 +265,17 @@ export function RegisterModal({ isOpen, onClose, onLoginClick }) {
                   <FormItem>
                     <FormLabel>Confirm Password</FormLabel>
                     <FormControl>
-                      <Input type="password" {...field} />
+                      <PasswordInput {...field} />
                     </FormControl>
+                    {confirmPassword && password && (
+                      password !== confirmPassword ? (
+                        <p className="text-sm text-red-500 mt-1">Passwords do not match</p>
+                      ) : (
+                        <p className="text-sm text-green-500 mt-1 flex items-center">
+                          <Check className="h-4 w-4 mr-1" /> Passwords match
+                        </p>
+                      )
+                    )}
                     <FormMessage />
                   </FormItem>
                 )}
@@ -274,8 +294,7 @@ export function RegisterModal({ isOpen, onClose, onLoginClick }) {
               variant="outline" 
               className="w-full"
               onClick={() => {
-                // Implement Google login
-
+                // Implement Google auth here
               }}
             >
               Continue with Google
@@ -295,6 +314,6 @@ export function RegisterModal({ isOpen, onClose, onLoginClick }) {
         </div>
       </div>
     </div>,
-    document.body,
+    document.body
   )
 }

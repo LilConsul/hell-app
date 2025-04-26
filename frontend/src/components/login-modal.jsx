@@ -8,6 +8,7 @@ import { Separator } from "@/components/ui/separator"
 import { Shield, X } from "lucide-react"
 import { createPortal } from "react-dom"
 import { useAuth } from "@/contexts/auth-context"
+import { PasswordInput } from "@/components/password/password-input"
 import {
   Form,
   FormControl,
@@ -148,7 +149,10 @@ export function LoginModal({ isOpen, onClose, onRegisterClick, onForgotPasswordC
                       </Button>
                     </div>
                     <FormControl>
-                      <Input type="password" {...field} />
+                      <PasswordInput 
+                        {...field} 
+                        placeholder="Enter your password"
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

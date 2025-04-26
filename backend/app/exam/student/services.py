@@ -174,9 +174,11 @@ class StudentExamService:
             raise ForbiddenError("Max attempts reached")
 
         current_time = datetime.now(timezone.utc)
-        if current_time < exam_instance.start_date:
+        start_date_aware = exam_instance.start_date.replace(tzinfo=timezone.utc)
+        end_date_aware = exam_instance.end_date.replace(tzinfo=timezone.utc)
+        if current_time < start_date_aware:
             raise ForbiddenError("Exam is not available yet")
-        if current_time > exam_instance.end_date:
+        if current_time > end_date_aware:
             raise ForbiddenError("Exam has already ended")
 
         collection = student_exam.exam_instance_id.collection_id

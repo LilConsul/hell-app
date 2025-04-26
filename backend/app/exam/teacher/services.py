@@ -563,4 +563,11 @@ class ExamInstanceService:
         if usr_obj.id != user_id:
             raise ForbiddenError("You do not own this exam instance")
 
+        if instance.assigned_students:
+            students = [
+                {"student_id": await self._extract_student_id(student.student_id)}
+                for student in instance.assigned_students
+            ]
+            await self._remove_students_from_exam(students, instance_id)
+
         await self.exam_instance_repository.delete(instance_id)

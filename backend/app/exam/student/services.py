@@ -47,14 +47,12 @@ class StudentExamService:
         ]
 
     async def get_student_exam(
-        self, student_id: str, exam_id: str
+        self, user_exam_id: str
     ) -> DetailGetStudentExamSchema:
         """
         Get a specific exam for a student.
         """
-        data = await self.student_exam_repository.get_by_student_and_exam(
-            student_id, exam_id, fetch_links=True
-        )
+        data = await self.student_exam_repository.get_by_id(user_exam_id, fetch_links=True)
         return DetailGetStudentExamSchema.model_validate(
             {
                 **data.model_dump(),

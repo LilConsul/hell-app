@@ -303,8 +303,8 @@ export function RegisterModal({ isOpen, onClose, onLoginClick }) {
                       />
                     </FormControl>
                     <div className="space-y-1 leading-none">
-                      <FormLabel className="text-sm font-normal">
-                        I agree to the{" "}
+                      <div className="text-sm">
+                        <span className="font-normal">I agree to the </span>
                         <Button 
                           variant="link" 
                           className="p-0 h-auto text-sm" 
@@ -313,7 +313,7 @@ export function RegisterModal({ isOpen, onClose, onLoginClick }) {
                         >
                           Privacy Policy
                         </Button>
-                      </FormLabel>
+                      </div>
                       <FormMessage />
                     </div>
                   </FormItem>

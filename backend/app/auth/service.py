@@ -8,6 +8,7 @@ from app.auth.security import (
     decode_verification_token,
     get_password_hash,
     verify_password,
+    TokenType,
 )
 from app.celery.tasks.email_tasks.tasks import (
     user_password_reset_mail,
@@ -15,6 +16,7 @@ from app.celery.tasks.email_tasks.tasks import (
     user_verify_mail_event,
 )
 from app.core.exceptions import AuthenticationError, BadRequestError, NotFoundError
+from app.core.utils import make_username
 from app.settings import settings
 from fastapi import Response
 
@@ -39,15 +41,10 @@ class AuthService:
         user = await self.user_repository.create(user_dict)
 
         verification_token = create_verification_token(
-            user_id=user.id, token_type="verification"
-        )
-        username = (
-            user.first_name + " " + user.last_name
-            if user.first_name and user.last_name
-            else user.email
+            user_id=user.id, token_type=TokenType.VERIFICATION
         )
         link = f"{settings.VERIFY_MAIL_URL}/{verification_token}"
-        user_verify_mail_event.delay(user_data.email, link, username)
+        user_verify_mail_event.delay(user_data.email, link, make_username(user))
 
     async def login(self, login_data: UserLogin, response: Response) -> UserResponse:
         user = await self.user_repository.get_by_email(login_data.email)
@@ -109,13 +106,8 @@ class AuthService:
         user.is_verified = True
         await self.user_repository.save(user)
 
-        username = (
-            user.first_name + " " + user.last_name
-            if user.first_name and user.last_name
-            else user.email
-        )
         date_registered = user.created_at.strftime("%Y-%m-%d %H:%M:%S")
-        user_welcome_mail_event.delay(user.email, username, date_registered)
+        user_welcome_mail_event.delay(user.email, date_registered, make_username(user))
 
     async def send_password_reset_token(self, email: str) -> None:
         user = await self.user_repository.get_by_email(email)
@@ -123,20 +115,15 @@ class AuthService:
             raise BadRequestError(f"No user found with email {email}")
 
         password_reset_token = create_verification_token(
-            user_id=user.id, token_type="password_reset"
+            user_id=user.id, token_type=TokenType.PASSWORD_RESET
         )
 
         link = settings.PASSWORD_RESET_URL
         link = link.format(token=password_reset_token)
-        username = (
-            user.first_name + " " + user.last_name
-            if user.first_name and user.last_name
-            else user.email
-        )
         user_password_reset_mail.delay(
             user.email,
             link,
-            username
+            make_username(user),
         )
 
     async def reset_password(self, token: str, new_password: str) -> None:

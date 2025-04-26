@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+from enum import Enum
 from typing import Any, Dict, Optional
 
 import bcrypt
@@ -10,6 +11,14 @@ from itsdangerous import URLSafeTimedSerializer
 serializer = URLSafeTimedSerializer(
     secret_key=settings.SECRET_KEY, salt="email_verification"
 )
+
+
+class TokenType(str, Enum):
+    """Enum for token types"""
+
+    VERIFICATION = "verification"
+    PASSWORD_RESET = "password_reset"
+    USER_DELETION = "user_deletion"
 
 
 def get_password_hash(password: str) -> str:
@@ -54,12 +63,12 @@ def decode_token(token: str) -> Dict[str, Any]:
         return None
 
 
-def create_verification_token(user_id: str, token_type: str) -> str:
+def create_verification_token(user_id: str, token_type: TokenType) -> str:
     """Create URL-safe token for email verification"""
     data = {
         "user_id": user_id,
         "created": datetime.now(timezone.utc).timestamp(),
-        "type": token_type,
+        "type": str(token_type),
     }
     return serializer.dumps(data)
 
@@ -69,5 +78,6 @@ def decode_verification_token(token: str, max_age=86400) -> Optional[Dict[str, A
     try:
         data = serializer.loads(token, max_age=max_age)  # Default max_age is 24 hours
         return data
-    except Exception:
+    except Exception as e:
+        print(e)
         return None

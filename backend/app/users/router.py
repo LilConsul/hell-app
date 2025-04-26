@@ -4,7 +4,7 @@ from app.auth.dependencies import (
     get_current_teacher_id,
     get_current_user_id,
 )
-from app.auth.schemas import UserResponse
+from app.auth.schemas import UserResponse, Token
 from app.core.schemas import BaseReturn
 from app.users.dependencies import get_user_service
 from app.users.schemas import StudentData, UserUpdate, UserUpdatePassword
@@ -19,7 +19,9 @@ router = APIRouter(prefix="/users", tags=["users"])
 async def get_user_info(
     user_id: str = Depends(get_current_user_id), user_service=Depends(get_user_service)
 ):
-    """Get information about the currently logged in user"""
+    """
+    Get information about the currently logged-in user
+    """
     data = await user_service.get_user_info(user_id)
     return BaseReturn(message="User info retrieved successfully", data=data)
 
@@ -32,7 +34,9 @@ async def update_user_info(
     user_id: str = Depends(get_current_user_id),
     user_service=Depends(get_user_service),
 ):
-    """Update information about the currently logged in user"""
+    """
+    Update information about the currently logged-in user
+    """
     data = await user_service.update_user_info(user_id, user_data)
     return BaseReturn(
         message="User info updated successfully",
@@ -40,12 +44,32 @@ async def update_user_info(
     )
 
 
+@router.post(
+    "/me/request-delete", response_model=BaseReturn, response_model_exclude_none=True
+)
+async def request_delete_user_info(
+    user_id: str = Depends(get_current_user_id),
+    user_service=Depends(get_user_service),
+):
+    """
+    Email the user to delete their account
+    """
+    await user_service.request_delete_user_info(user_id)
+    return BaseReturn(
+        message="User deletion requested successfully",
+    )
+
+
 @router.delete("/me", response_model=BaseReturn, response_model_exclude_none=True)
 async def delete_user_info(
-    user_id: str = Depends(get_current_user_id), user_service=Depends(get_user_service)
+    token: Token,
+    user_id: str = Depends(get_current_user_id),
+    user_service=Depends(get_user_service),
 ):
-    """Delete the currently logged in user"""
-    await user_service.delete_user_info(user_id)
+    """
+    Delete user account with token confirmation
+    """
+    await user_service.delete_user_info(user_id, token)
     return BaseReturn(
         message="User deleted successfully",
     )
@@ -61,7 +85,9 @@ async def change_password(
     user_id: str = Depends(get_current_user_id),
     user_service=Depends(get_user_service),
 ):
-    """Change the password of the currently logged in user"""
+    """
+    Change the password of the currently logged-in user
+    """
     await user_service.change_password(
         user_id, password_data.password, password_data.new_password
     )
@@ -70,11 +96,15 @@ async def change_password(
     )
 
 
-@router.get("/fetch-students")
+@router.get(
+    "/fetch-students",
+    response_model=BaseReturn[List[StudentData]],
+    response_model_exclude_none=True,
+)
 async def get_student_mails(
     teacher_id=Depends(get_current_teacher_id),
     user_service=Depends(get_user_service),
-) -> BaseReturn[List[StudentData]]:
+):
     """
     As a teacher get all student emails as a teacher.
     """

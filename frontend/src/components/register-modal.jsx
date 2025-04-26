@@ -15,6 +15,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form"
+import { Checkbox } from "@/components/ui/checkbox"
 
 import { PasswordInput } from "@/components/password/password-input"
 import { PasswordRequirements } from "@/components/password/password-requirements"
@@ -38,6 +39,9 @@ export function RegisterModal({ isOpen, onClose, onLoginClick }) {
       .min(8, { message: "Password must be at least 8 characters" })
       .regex(passwordRegex, { message: "Password must meet security requirements." }),
     confirmPassword: z.string(),
+    acceptPrivacy: z.boolean().refine(val => val === true, {
+      message: "You must agree with the privacy policy"
+    })
   }).refine((data) => data.password === data.confirmPassword, {
     message: "Passwords do not match",
     path: ["confirmPassword"],
@@ -51,6 +55,7 @@ export function RegisterModal({ isOpen, onClose, onLoginClick }) {
       email: "",
       password: "",
       confirmPassword: "",
+      acceptPrivacy: false
     },
   })
 
@@ -135,6 +140,11 @@ export function RegisterModal({ isOpen, onClose, onLoginClick }) {
       console.error("Registration failed:", error)
       setServerError("An unexpected error occurred. Please try again.")
     }
+  }
+
+  const handlePrivacyPolicyClick = (e) => {
+    e.preventDefault()
+    window.open('https://localhost/privacy-policy', '_blank')
   }
 
   if (registrationSuccess) {
@@ -277,6 +287,35 @@ export function RegisterModal({ isOpen, onClose, onLoginClick }) {
                       )
                     )}
                     <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="acceptPrivacy"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 mt-4">
+                    <FormControl>
+                      <Checkbox 
+                        checked={field.value} 
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel className="text-sm font-normal">
+                        I agree to the{" "}
+                        <Button 
+                          variant="link" 
+                          className="p-0 h-auto text-sm" 
+                          onClick={handlePrivacyPolicyClick}
+                          type="button"
+                        >
+                          Privacy Policy
+                        </Button>
+                      </FormLabel>
+                      <FormMessage />
+                    </div>
                   </FormItem>
                 )}
               />

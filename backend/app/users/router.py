@@ -69,7 +69,7 @@ async def delete_user_info(
     """
     Delete user account with token confirmation
     """
-    await user_service.delete_user_info(user_id, token)
+    await user_service.delete_user_info(user_id, token.token)
     return BaseReturn(
         message="User deleted successfully",
     )

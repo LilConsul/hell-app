@@ -78,5 +78,5 @@ def decode_verification_token(token: str, max_age=86400) -> Optional[Dict[str, A
     try:
         data = serializer.loads(token, max_age=max_age)  # Default max_age is 24 hours
         return data
-    except Exception as e:
+    except Exception:
         return None

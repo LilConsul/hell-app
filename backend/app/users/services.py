@@ -75,15 +75,15 @@ class UserService:
         )
 
     async def delete_user_info(self, user_id: str, token: str) -> None:
-        data = decode_verification_token(token)
-        if not data or not data["type"]:
-            raise AuthenticationError(f"Invalid or expired token {data}")
+        delete_data = decode_verification_token(token)
+        if not delete_data or not delete_data.get("type"):
+            raise AuthenticationError("Invalid or expired token")
 
-        if data["type"] != str(TokenType.USER_DELETION):
+        if delete_data.get("type") != str(TokenType.USER_DELETION):
             raise AuthenticationError("Invalid token type")
 
-        if data["user_id"] != user_id:
-            raise AuthenticationError("Invalid token user ID")
+        if delete_data.get("user_id") != user_id:
+            raise AuthenticationError("Token does not match current user")
 
         user = await self.user_repository.get_by_id(user_id)
         if not user:

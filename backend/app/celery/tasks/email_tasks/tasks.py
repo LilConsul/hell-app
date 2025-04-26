@@ -44,8 +44,8 @@ def user_password_reset_mail(recipient: str, link: str, username: str):
 @celery.task
 def user_welcome_mail_event(
     recipient: str,
-    username: str,
     date_registered: str,
+    username: str,
 ):
     message = create_message(
         recipients=[
@@ -74,7 +74,10 @@ def exam_reminder_notification(
     duration = int((end_time - start_time).total_seconds() / 60)
     subject = (
         f"{settings.PROJECT_NAME} | Reminder: {exam_title}"
-        if any(word in exam_title.lower() for word in ["exam", "test", "quiz", "assessment"])
+        if any(
+            word in exam_title.lower()
+            for word in ["exam", "test", "quiz", "assessment"]
+        )
         else f"{settings.PROJECT_NAME} | Reminder: {exam_title} Exam"
     )
     message = create_message(
@@ -91,3 +94,46 @@ def exam_reminder_notification(
         },
     )
     async_to_sync(mail.send_message)(message, "exam_reminder.html")
+
+
+@celery.task
+def user_deletion_confirmation(
+    recipient: str,
+    username: str,
+    date_registered: datetime,
+    link: str,
+):
+    message = create_message(
+        recipients=[
+            recipient,
+        ],
+        subject=f"{settings.PROJECT_NAME} | Account Deletion Confirmation",
+        body={
+            "datetime": date_registered.strftime("%Y-%m-%d %H:%M"),
+            "username": username,
+            "deletion_link": link,
+            "year": datetime.now().year,
+        },
+    )
+    async_to_sync(mail.send_message)(message, "request_deletion.html")
+
+
+@celery.task
+def user_deleted_notification(
+    recipient: str,
+    username: str,
+    date_registered: datetime,
+):
+    message = create_message(
+        recipients=[
+            recipient,
+        ],
+        subject=f"{settings.PROJECT_NAME} | Thanks for being with us :(",
+        body={
+            "datetime": date_registered.strftime("%Y-%m-%d %H:%M"),
+            "username": username,
+            "year": datetime.now().year,
+        },
+    )
+    async_to_sync(mail.send_message)(message, "account_deleted.html")
+    

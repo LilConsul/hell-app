@@ -2,12 +2,13 @@ from functools import lru_cache
 from pathlib import Path
 from typing import List, Optional
 
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
     # Redis settings
-    REDIS_PORT: int
+    REDIS_PORT: str = Field(..., alias="REDIS_PORT_INTERNAL")
     REDIS_HOST: str
 
     @property
@@ -18,8 +19,8 @@ class Settings(BaseSettings):
     SECRET_KEY: str
     ALGORITHM: str
     PROJECT_NAME: str
-    CORS_ORIGINS: List[str]
-    DEBUG: bool
+    CORS_ORIGINS: List[str] = Field(..., alias="BACKEND_CORS_ORIGINS")
+    DEBUG: bool = Field(..., alias="BACKEND_DEBUG")
     DOMAIN: str
     ACCESS_TOKEN_EXPIRE_SECONDS: int
 
@@ -40,9 +41,9 @@ class Settings(BaseSettings):
     EMAIL_FROM_NAME: str
 
     # MongoDB settings
-    MONGO_USERNAME: str
-    MONGO_PASSWORD: str
-    MONGO_DATABASE: str
+    MONGO_USERNAME: str = Field(..., alias="MONGO_INITDB_ROOT_USERNAME")
+    MONGO_PASSWORD: str = Field(..., alias="MONGO_INITDB_ROOT_PASSWORD")
+    MONGO_DATABASE: str = Field(..., alias="MONGO_INITDB_DATABASE")
     MONGO_PORT: int
     MONGO_HOST: str
 
@@ -74,6 +75,12 @@ class Settings(BaseSettings):
     @property
     def EXAM_INSTANCE_URL(self) -> str:
         return f"https://{self.DOMAIN}{self.EXAM_INSTANCE_PATH}"
+
+    DELETE_ACCOUNT_PATH: str
+
+    @property
+    def DELETE_ACCOUNT_URL(self) -> str:
+        return f"https://{self.DOMAIN}{self.DELETE_ACCOUNT_PATH}"
 
     # Backend settings
     BACKEND_PORT_INTERNAL: int

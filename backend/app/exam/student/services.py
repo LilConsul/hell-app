@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from typing import List
 
 from app.core.exceptions import ForbiddenError
-from app.exam.models import StudentExamStatus
+from app.exam.models import QuestionType, StudentExamStatus
 from app.exam.repository import (
     StudentAttemptRepository,
     StudentExamRepository,
@@ -244,7 +244,6 @@ class StudentExamService:
 
         attempt = await student_exam.latest_attempt_id.fetch()
 
-        # Find the response for this question in this attempt
         response = await self.student_response_repository.find_by_attempt_and_question(
             attempt.id, question.question_id
         )
@@ -252,13 +251,25 @@ class StudentExamService:
         if not response:
             raise ForbiddenError("Question not found in this attempt")
 
+        question_type = response.question_id.type
         update_data = {}
-
-        # Handle different question types
-        if question.option_ids is not None:
+        if question_type == QuestionType.MCQ:
+            if question.option_ids is None:
+                raise ForbiddenError(
+                    "Multiple choice question requires option selections"
+                )
             update_data["selected_option_ids"] = question.option_ids
 
-        if question.answer is not None:
+        elif question_type == QuestionType.SINGLECHOICE:
+            if question.option_ids is None or len(question.option_ids) != 1:
+                raise ForbiddenError(
+                    "Single choice question requires exactly one option"
+                )
+            update_data["selected_option_ids"] = question.option_ids
+
+        elif question_type == QuestionType.SHORTANSWER:
+            if question.answer is None:
+                raise ForbiddenError("Short answer question requires text input")
             update_data["text_response"] = question.answer
 
         await self.student_response_repository.update(response.id, update_data)

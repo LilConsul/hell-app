@@ -54,7 +54,6 @@ class QuestionOption(BaseModel):
 class SecuritySettings(BaseModel):
     # Shuffle questions and options
     shuffle_questions: bool = False
-    allow_skipping_questions: bool = False
 
     # Allow students to check their answers after submission
     allow_review: bool = True

@@ -1,5 +1,5 @@
 import uuid
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 
 from app.auth.schemas import UserRole
 from app.database.mixins import TimestampMixin
@@ -16,7 +16,7 @@ class User(Document, TimestampMixin):
     is_verified: bool = False
     role: UserRole = UserRole.STUDENT
     receive_notifications: bool = True
-    notifications_tasks_id: Dict[str, str] = {}
+    notifications_tasks_id: Dict[str, List[str]] = Field(default_factory=dict)
 
     # Add a back-reference to social connections
     # social_connections: List[BackLink["SocialConnection"]] = Field(

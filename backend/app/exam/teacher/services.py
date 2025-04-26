@@ -358,13 +358,17 @@ class ExamInstanceService:
             # Send notification immediately
             exam_reminder_notification.apply_async(kwargs=data)
 
+            exam_id_str = str(exam_instance_id)
+            if exam_id_str not in user.notifications_tasks_id:
+                user.notifications_tasks_id[exam_id_str] = []
+
             for delta in reminder_times:
                 notification_time = exam_start_time - delta
                 if notification_time > current_time:
                     result = exam_reminder_notification.apply_async(
                         kwargs=data, eta=notification_time
                     )
-                    user.notifications_tasks_id[str(exam_instance_id)] = result.id
+                    user.notifications_tasks_id[exam_id_str].append(result.id)
             await self.user_repository.save(user)
 
     async def _create_student_exam(
@@ -419,11 +423,15 @@ class ExamInstanceService:
                 await self.student_exam_repository.delete(student_exam.id)
 
             user = await self.user_repository.get_by_id(student["student_id"])
-            if user and str(exam_instance_id) in user.notifications_tasks_id:
-                task_id = user.notifications_tasks_id[str(exam_instance_id)]
-                exam_reminder_notification.AsyncResult(task_id).revoke(terminate=True)
+            exam_id_str = str(exam_instance_id)
+            if user and exam_id_str in user.notifications_tasks_id:
+                task_ids = user.notifications_tasks_id[exam_id_str]
+                for task_id in task_ids:
+                    exam_reminder_notification.AsyncResult(task_id).revoke(
+                        terminate=True
+                    )
 
-                del user.notifications_tasks_id[str(exam_instance_id)]
+                del user.notifications_tasks_id[exam_id_str]
                 await self.user_repository.save(user)
 
     @staticmethod

@@ -78,6 +78,25 @@ class StudentResponseRepository(BaseRepository[StudentResponse]):
             option_order = option_orders.get(question.id, {})
             await self.create_response(attempt, question, option_order)
 
+    async def find_by_attempt_and_question(
+        self, attempt_id: str, question_id: str
+    ) -> StudentResponse | None:
+        """
+        Find a student response for a specific question in a specific attempt.
+
+        Args:
+            attempt_id: ID of the student attempt
+            question_id: ID of the question
+
+        Returns:
+            The student response or None if not found
+        """
+        response = await self.model_class.find_one(
+            {"attempt_id._id": attempt_id, "question_id._id": question_id},
+            fetch_links=True,
+        )
+        return response
+
 
 class StudentAttemptRepository(BaseRepository[StudentAttempt]):
     """Repository for StudentAttempt model operations"""

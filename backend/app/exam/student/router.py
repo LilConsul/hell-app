@@ -8,10 +8,10 @@ from fastapi import APIRouter, Depends
 from ...core.schemas import BaseReturn
 from .schemas import (
     BaseGetStudentExamSchema,
+    BaseQuestionSchema,
     CurrentAttemptSchema,
     DetailGetStudentExamSchema,
-    QuestionAnswer,
-    QuestionForStudent,
+    QuestionSetAnswer,
 )
 
 router = APIRouter(
@@ -37,17 +37,17 @@ async def get_student_exams(
 
 
 @router.get(
-    "/exams/{user_exam_id}", response_model=BaseReturn[DetailGetStudentExamSchema]
+    "/exams/{student_exam_id}", response_model=BaseReturn[DetailGetStudentExamSchema]
 )
 async def get_student_exam(
-    user_exam_id: str,
+    student_exam_id: str,
     student_id: str = Depends(get_current_student_id),
     student_exam_service: StudentExamService = Depends(get_student_exam_service),
 ):
     """
     Get a specific exam for a student.
     """
-    data = await student_exam_service.get_student_exam(student_id, user_exam_id)
+    data = await student_exam_service.get_student_exam(student_id, student_exam_id)
     return {
         "message": "Exam retrieved successfully",
         "data": data,
@@ -74,28 +74,26 @@ async def get_student_attempt(
 
 
 @router.post(
-    "/exam/{exam_id}/start", response_model=BaseReturn[List[QuestionForStudent]]
+    "/exam/{student_exam_id}/start", response_model=BaseReturn[List[BaseQuestionSchema]]
 )
 async def start_exam(
-    exam_id: str,
-    student_id: str = Depends(get_current_student_id),
+    student_exam_id: str,
     student_exam_service: StudentExamService = Depends(get_student_exam_service),
 ):
-    data = await student_exam_service.start_exam(student_id, exam_id)
+    data = await student_exam_service.start_exam(student_exam_id)
     return {
         "message": "Exam started successfully",
         "data": data,
     }
 
 
-@router.put("/exam/{exam_id}/save_answer", response_model=BaseReturn[None])
+@router.put("/exam/{student_exam_id}/save_answer", response_model=BaseReturn[None])
 async def save_answer(
-    exam_id: str,
-    question: QuestionAnswer,
-    student_id: str = Depends(get_current_student_id),
+    student_exam_id: str,
+    question: QuestionSetAnswer,
     student_exam_service: StudentExamService = Depends(get_student_exam_service),
 ):
-    await student_exam_service.save_answer(student_id, exam_id, question)
+    await student_exam_service.save_answer(student_exam_id, question)
     return {
         "message": "Answer saved successfully",
     }

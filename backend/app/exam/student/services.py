@@ -11,11 +11,12 @@ from app.exam.repository import (
 )
 from app.exam.student.schemas import (
     BaseGetStudentExamSchema,
+    BaseQuestionOptionSchema,
+    BaseQuestionSchema,
     CurrentAttemptSchema,
     DetailGetStudentExamSchema,
-    QuestionAnswer,
-    QuestionForStudent,
-    QuestionOptionForStudent,
+    QuestionSetAnswer,
+    StudentResponseSchema,
 )
 
 
@@ -52,19 +53,20 @@ class StudentExamService:
         ]
 
     async def get_student_exam(
-        self, student_id: str, user_exam_id: str
+        self, student_id: str, student_exam_id: str
     ) -> DetailGetStudentExamSchema:
         """
         Get a specific exam for a student.
         """
         data = await self.student_exam_repository.get_by_id(
-            user_exam_id, fetch_links=True
+            student_exam_id, fetch_links=True
         )
         if not data:
             raise ForbiddenError("Exam not found")
 
         if data.student_id.id != student_id:
             raise ForbiddenError("You do not have permission to access this exam")
+        print(data.attempts)
 
         # Create exam dictionary with basic fields
         exam_dict = {
@@ -121,65 +123,45 @@ class StudentExamService:
         if data.student_exam_id.student_id.id != student_id:
             raise ForbiddenError("You do not have permission to access this attempt")
 
-        if data.status == StudentExamStatus.IN_PROGRESS:
-            raise ForbiddenError("Attempt is still in progress")
+        # if data.status == StudentExamStatus.IN_PROGRESS:
+        #     raise ForbiddenError("Attempt is still in progress")
 
-        attempt_dict = {
-            "id": data.id,
-            "status": data.status,
-            "started_at": data.started_at,
-            "submitted_at": data.submitted_at,
-            "grade": data.grade,
-            "pass_fail": data.pass_fail,
-            "graded_at": data.graded_at,
-            "question_order": data.question_order,
-            "security_events": data.security_events,
-            "responses": [],
-        }
-
-        # Process responses if they exist
+        attempt_dict = data.model_dump()
         if hasattr(data, "responses") and data.responses:
-            for response in data.responses:
-                response_dict = {
-                    "id": response.id,
-                    "question_id": response.question_id.id
-                    if hasattr(response.question_id, "id")
-                    else str(response.question_id),
-                    "selected_option_ids": response.selected_option_ids,
-                    "text_response": response.text_response,
-                    "score": response.score,
-                    "is_flagged": response.is_flagged,
-                    "option_order": response.option_order,
-                }
-                attempt_dict["responses"].append(response_dict)
+            attempt_dict["responses"] = [
+                StudentResponseSchema.model_validate(response.model_dump())
+                for response in data.responses
+            ]
 
         return CurrentAttemptSchema.model_validate(attempt_dict)
 
-    async def start_exam(
-        self, student_id: str, exam_id: str
-    ) -> List[QuestionForStudent]:
+    def _validate_exam_time(self, start_date, end_date):
+        """Validate if the current time is within the exam time range."""
+        # TODO: Validata timezones
+        current_time = datetime.now(timezone.utc)
+        start_date_aware = start_date.replace(tzinfo=timezone.utc)
+        end_date_aware = end_date.replace(tzinfo=timezone.utc)
+        if current_time < start_date_aware:
+            raise ForbiddenError("Exam is not available yet")
+        if current_time > end_date_aware:
+            raise ForbiddenError("Exam has already ended")
+
+    async def start_exam(self, student_exam_id: str) -> List[BaseQuestionSchema]:
         """Start an exam for a student."""
-        student_exam = await self.student_exam_repository.get_by_student_and_exam(
-            student_id, exam_id, fetch_links=True
+        student_exam = await self.student_exam_repository.get_by_id(
+            student_exam_id, fetch_links=True
         )
         if not student_exam:
             raise ForbiddenError("Exam not found")
 
         if student_exam.current_status == StudentExamStatus.IN_PROGRESS:
-            # TODO: add reload student progress of started exam
             raise ForbiddenError("Exam already started")
 
         exam_instance = student_exam.exam_instance_id
         if student_exam.attempts_count >= exam_instance.max_attempts:
             raise ForbiddenError("Max attempts reached")
 
-        current_time = datetime.now(timezone.utc)
-        start_date_aware = exam_instance.start_date.replace(tzinfo=timezone.utc)
-        end_date_aware = exam_instance.end_date.replace(tzinfo=timezone.utc)
-        if current_time < start_date_aware:
-            raise ForbiddenError("Exam is not available yet")
-        if current_time > end_date_aware:
-            raise ForbiddenError("Exam has already ended")
+        self._validate_exam_time(exam_instance.start_date, exam_instance.end_date)
 
         collection = student_exam.exam_instance_id.collection_id
         questions = collection.questions
@@ -221,36 +203,30 @@ class StudentExamService:
             student_exam.id, attempt.id, student_exam.attempts_count + 1
         )
 
-        return self._sanitize_questions(questions)
-
-    def _sanitize_questions(self, questions) -> List[QuestionForStudent]:
-        """Helper method to remove sensitive data from questions."""
-        sanitized_questions = []
-        for question in questions:
-            sanitized_question = QuestionForStudent(
+        return [
+            BaseQuestionSchema(
                 id=question.id,
                 question_text=question.question_text,
                 type=question.type,
-                has_katex=question.has_katex,
-                weight=question.weight,
-            )
-
-            if question.options:
-                sanitized_question.options = [
-                    QuestionOptionForStudent(id=option.id, text=option.text)
+                has_katex=getattr(question, "has_katex", False),
+                weight=getattr(question, "weight", 1),
+                options=[
+                    BaseQuestionOptionSchema(id=option.id, text=option.text)
                     for option in question.options
                 ]
-
-            sanitized_questions.append(sanitized_question)
-
-        return sanitized_questions
+                if question.options
+                else None,
+            )
+            for question in questions
+        ]
 
     async def save_answer(
-        self, student_id: str, exam_id: str, question: QuestionAnswer
-    ) -> None:
+        self, student_exam_id: str, question: QuestionSetAnswer
+    ):
         """Save the answer for a question."""
-        student_exam = await self.student_exam_repository.get_by_student_and_exam(
-            student_id, exam_id
+        # Get and validate student exam
+        student_exam = await self.student_exam_repository.get_by_id(
+            student_exam_id, fetch_links=True
         )
         if not student_exam:
             raise ForbiddenError("Exam not found")
@@ -258,9 +234,35 @@ class StudentExamService:
         if student_exam.current_status != StudentExamStatus.IN_PROGRESS:
             raise ForbiddenError("Exam not in progress")
 
+        # Validate exam time
         exam_instance = student_exam.exam_instance_id
-        current_time = datetime.now(timezone.utc)
-        if current_time < exam_instance.start_date:
-            raise ForbiddenError("Exam is not available yet")
-        if current_time > exam_instance.end_date:
-            raise ForbiddenError("Exam has already ended")
+        self._validate_exam_time(exam_instance.start_date, exam_instance.end_date)
+
+        # Get the latest attempt
+        if not student_exam.latest_attempt_id:
+            raise ForbiddenError("No active attempt found")
+
+        attempt = await student_exam.latest_attempt_id.fetch()
+
+        # Find the response for this question in this attempt
+        response = await self.student_response_repository.find_by_attempt_and_question(
+            attempt.id, question.question_id
+        )
+
+        if not response:
+            raise ForbiddenError("Question not found in this attempt")
+
+        update_data = {}
+
+        # Handle different question types
+        if question.option_ids is not None:
+            update_data["selected_option_ids"] = question.option_ids
+
+        if question.answer is not None:
+            update_data["text_response"] = question.answer
+
+        await self.student_response_repository.update(response.id, update_data)
+
+        await self.student_attempt_repository.update(
+            attempt.id, {"last_auto_save": datetime.now(timezone.utc)}
+        )

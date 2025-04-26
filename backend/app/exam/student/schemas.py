@@ -30,9 +30,32 @@ class BaseGetStudentExamSchema(BaseStudentExamSchema):
     pass
 
 
+class BaseQuestionOptionSchema(BaseModel):
+    id: str
+    text: str
+
+
+class FullQuestionOptionSchema(BaseQuestionOptionSchema):
+    is_correct: bool
+
+
+class BaseQuestionSchema(BaseModel):
+    id: str
+    question_text: str
+    type: QuestionType
+    has_katex: bool = False
+    options: List[BaseQuestionOptionSchema] | None = None
+    weight: int = 1
+
+
+class FullQuestionSchema(BaseQuestionSchema):
+    options: List[FullQuestionOptionSchema] | None = None
+    correct_input_answer: str | None = None
+
+
 class StudentResponseSchema(BaseModel):
     id: str
-    question_id: str
+    question_id: FullQuestionSchema
     selected_option_ids: List[str] = []
     text_response: Optional[str] = None
     score: float = -1.0
@@ -61,21 +84,7 @@ class CurrentAttemptSchema(StudentAttemptBasicSchema):
     security_events: List[SecurityEvent] = []
 
 
-class QuestionOptionForStudent(BaseModel):
-    id: str
-    text: str
-
-
-class QuestionForStudent(BaseModel):
-    id: str
-    question_text: str
-    type: QuestionType
-    has_katex: bool = False
-    options: List[QuestionOptionForStudent] | None = None
-    weight: int = 1
-
-
-class QuestionAnswer(BaseModel):
-    id: str
+class QuestionSetAnswer(BaseModel):
+    question_id: str
     answer: str | None = None
     option_ids: List[str] | None = None

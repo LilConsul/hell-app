@@ -13,7 +13,7 @@ serializer = URLSafeTimedSerializer(
 )
 
 
-class TokenType(str, Enum):
+class TokenType(Enum):
     """Enum for token types"""
 
     VERIFICATION = "verification"

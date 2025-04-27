@@ -5,9 +5,8 @@ from typing import List
 from app.auth.repository import UserRepository
 from app.celery.tasks.email_tasks.tasks import exam_reminder_notification
 from app.core.exceptions import ForbiddenError, NotFoundError
-from app.exam.models import ExamStatus, NotificationSettings, QuestionType
 from app.core.utils import make_username
-from app.exam.models import ExamStatus
+from app.exam.models import ExamStatus, NotificationSettings, QuestionType
 from app.exam.repository import (
     CollectionRepository,
     ExamInstanceRepository,

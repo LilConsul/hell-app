@@ -4,6 +4,7 @@ from app.exam.models import (
     Collection,
     ExamInstance,
     Question,
+    StudentAttempt,
     StudentExam,
     StudentResponse,
 )
@@ -38,6 +39,7 @@ async def my_fixture():
             ExamInstance,
             StudentExam,
             StudentResponse,
+            StudentAttempt,
         ],
         database=client.get_database(name="db"),
     )

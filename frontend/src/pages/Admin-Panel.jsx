@@ -1,14 +1,14 @@
-import { useState, useEffect } from "react";
-import { useAdmin } from "@/contexts/admin-context";
-import { Navbar } from "@/components/navbar";
-import { Footer } from "@/components/footer";
-import { UsersDataTable } from "@/components/users-data-table";
-import { UserActionsDialog } from "@/components/user-actions-dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertTriangle, RefreshCw, Search, Trash, Shield, UserCheck } from "lucide-react";
+import {useEffect, useState} from "react";
+import {useAdmin} from "@/contexts/admin-context";
+import {Navbar} from "@/components/navbar";
+import {Footer} from "@/components/footer";
+import {UsersDataTable} from "@/components/users-data-table";
+import {UserActionsDialog} from "@/components/user-actions-dialog";
+import {Button} from "@/components/ui/button";
+import {Input} from "@/components/ui/input";
+import {Alert, AlertDescription, AlertTitle} from "@/components/ui/alert";
+import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
+import {AlertTriangle, RefreshCw, Search, Shield, Trash, UserCheck} from "lucide-react";
 
 function AdminPanel() {
   const {
@@ -120,7 +120,7 @@ function AdminPanel() {
 
   return (
     <div className="flex flex-col min-h-screen">
-      <Navbar />
+      <Navbar/>
 
       <main className="flex-1 container max-w-7xl mx-auto px-4 py-8">
         <div className="flex flex-col gap-8">
@@ -141,7 +141,7 @@ function AdminPanel() {
           {/* Display any operation errors */}
           {operationError && (
             <Alert variant="destructive" className="mb-4">
-              <AlertTriangle className="h-4 w-4" />
+              <AlertTriangle className="h-4 w-4"/>
               <AlertTitle>Error</AlertTitle>
               <AlertDescription>{operationError}</AlertDescription>
             </Alert>
@@ -159,7 +159,7 @@ function AdminPanel() {
                     onClick={fetchUsers}
                     disabled={isLoading}
                   >
-                    <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
+                    <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`}/>
                   </Button>
                 </div>
               </div>
@@ -173,7 +173,7 @@ function AdminPanel() {
               <div className="flex flex-col space-y-4">
                 {/* Search */}
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground"/>
                   <Input
                     placeholder="Search by name or email"
                     value={searchTerm}
@@ -183,36 +183,45 @@ function AdminPanel() {
                 </div>
 
                 {/* Batch actions */}
-                <div className="pt-2 border-t flex flex-wrap gap-2">
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => setShowBatchDeleteDialog(true)}
-                    disabled={selectedUsers.length === 0}
-                  >
-                    <Trash className="h-4 w-4 mr-2" />
-                    Delete Selected {selectedUsers.length > 0 ? `(${selectedUsers.length})` : ""}
-                  </Button>
-                  
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowBatchRoleDialog(true)}
-                    disabled={selectedUsers.length === 0}
-                  >
-                    <Shield className="h-4 w-4 mr-2" />
-                    Change Role {selectedUsers.length > 0 ? `(${selectedUsers.length})` : ""}
-                  </Button>
-                  
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowBatchVerifyDialog(true)}
-                    disabled={selectedUsers.length === 0}
-                  >
-                    <UserCheck className="h-4 w-4 mr-2" />
-                    Verify Users {selectedUsers.length > 0 ? `(${selectedUsers.length})` : ""}
-                  </Button>
+                <div className="pt-3 border-t">
+                  <div className="flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2">
+                    <div className="flex-1">
+                      <Button
+                        variant={selectedUsers.length === 0 ? "outline" : "secondary"}
+                        size="sm"
+                        className="w-full transition-all duration-200"
+                        onClick={() => setShowBatchRoleDialog(true)}
+                        disabled={selectedUsers.length === 0}
+                      >
+                        <Shield className="h-4 w-4 mr-2"/>
+                        Change Role {selectedUsers.length > 0 ? `(${selectedUsers.length})` : ""}
+                      </Button>
+                    </div>
+                    <div className="flex-1">
+                      <Button
+                        variant={selectedUsers.length === 0 ? "outline" : "default"}
+                        size="sm"
+                        className="w-full transition-all duration-200"
+                        onClick={() => setShowBatchVerifyDialog(true)}
+                        disabled={selectedUsers.length === 0}
+                      >
+                        <UserCheck className="h-4 w-4 mr-2"/>
+                        Verify {selectedUsers.length > 0 ? `(${selectedUsers.length})` : ""}
+                      </Button>
+                    </div>
+                    <div className="flex-1">
+                      <Button
+                        variant={selectedUsers.length === 0 ? "outline" : "destructive"}
+                        size="sm"
+                        className="w-full transition-all duration-200"
+                        onClick={() => setShowBatchDeleteDialog(true)}
+                        disabled={selectedUsers.length === 0}
+                      >
+                        <Trash className="h-4 w-4 mr-2"/>
+                        Delete {selectedUsers.length > 0 ? `(${selectedUsers.length})` : ""}
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               </div>
             </CardContent>
@@ -286,9 +295,10 @@ function AdminPanel() {
         onRoleChange={setNewRole}
       />
 
-      <Footer />
+      <Footer/>
     </div>
   );
 }
 
 export default AdminPanel;
+

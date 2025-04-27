@@ -11,7 +11,6 @@ from app.exam.repository import (
 )
 from app.exam.student.schemas import (
     BaseGetStudentExamSchema,
-    BaseQuestionOptionSchema,
     BaseQuestionSchema,
     DetailGetStudentExamSchema,
     QuestionSetAnswer,
@@ -280,8 +279,13 @@ class StudentExamService:
                 )
                 selected_ids = set(response.selected_option_ids)
 
-                if selected_ids == correct_ids and selected_ids:
-                    score = 1.0
+                total_correct_options = len(correct_ids)
+                if total_correct_options > 0:
+                    correct_selections = len(correct_ids.intersection(selected_ids))
+                    score = correct_selections / total_correct_options
+                else:
+                    score = 0.0
+
             elif question.type == QuestionType.SINGLECHOICE:
                 correct_option_ids = [
                     opt.id for opt in question.options if opt.is_correct

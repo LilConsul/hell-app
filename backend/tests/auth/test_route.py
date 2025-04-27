@@ -257,24 +257,50 @@ class TestAuthRouter:
         user, _ = test_user
 
         # Create token for auth and mock verification token
-        token = jwt.encode(
+        auth_token = jwt.encode(
             {"sub": user.id}, settings.SECRET_KEY, algorithm=settings.ALGORITHM
         )
         mock_decode_token.return_value = {"user_id": user.id, "type": "user_deletion"}
 
-        # Send delete request
-        headers = {"Authorization": f"Bearer {token}"}
-        response = await client.delete(
-            "/v1/users/me", 
-            headers=headers, 
-            json={"token": "test-token"}
+        # Send DELETE request with the token in the request body
+        headers = {"Authorization": f"Bearer {auth_token}"}
+        response = await client.request(
+            "DELETE",
+            "/v1/users/me",
+            json={"token": "deletion-token"},
+            headers=headers,
         )
 
         # Verify response
         assert response.status_code == 200
         assert response.json()["message"] == "User deleted successfully"
 
-        # Verify user was deleted
+        # Verify user was actually deleted from database
         deleted_user = await User.find_one(User.id == user.id)
         assert deleted_user is None
 
+    @patch("app.users.services.UserService.request_delete_user_info")
+    async def test_request_delete_user_endpoint(
+        self, mock_request_delete, client, test_user
+    ):
+        """Test request user deletion endpoint"""
+        user, _ = test_user
+
+        # Create auth token
+        auth_token = jwt.encode(
+            {"sub": user.id}, settings.SECRET_KEY, algorithm=settings.ALGORITHM
+        )
+
+        # Set up mock
+        mock_request_delete.return_value = None
+
+        # Send request with auth header
+        headers = {"Authorization": f"Bearer {auth_token}"}
+        response = await client.post("/v1/users/me/request-delete", headers=headers)
+
+        # Verify response
+        assert response.status_code == 200
+        assert response.json()["message"] == "User deletion requested successfully"
+
+        # Verify service method was called with correct user ID
+        mock_request_delete.assert_called_once_with(user.id)

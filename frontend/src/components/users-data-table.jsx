@@ -37,6 +37,7 @@ export function UsersDataTable({
     });
   };
 
+  // Column definitions
   const columns = [
     {id: 'select', header: 'Select', sortable: false, size: 50},
     {id: 'first_name', header: 'First Name', sortable: true, size: 120},

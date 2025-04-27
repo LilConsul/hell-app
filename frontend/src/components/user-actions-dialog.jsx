@@ -65,6 +65,67 @@ export function UserActionsDialog({
     );
   }
 
+  if (type === "batchChangeRole") {
+    return (
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Change Role for Selected Users</DialogTitle>
+            <DialogDescription>
+              Change the role for {count} selected users.
+            </DialogDescription>
+          </DialogHeader>
+
+          <Select
+            value={role}
+            onValueChange={onRoleChange}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select a role" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="student">Student</SelectItem>
+              <SelectItem value="teacher">Teacher</SelectItem>
+              <SelectItem value="admin">Admin</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button onClick={onConfirm}>
+              Change Role for All Selected
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  if (type === "batchVerify") {
+    return (
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Verify Selected Users</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to verify {count} selected users?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button onClick={onConfirm}>
+              Verify All Selected
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
   if (type === "changeRole") {
     return (
       <Dialog open={isOpen} onOpenChange={onClose}>

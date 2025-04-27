@@ -222,6 +222,84 @@ export function AdminProvider({children}) {
     }
   };
 
+  // Batch change role for selected users
+  const batchChangeUserRole = async (newRole, useConfirmation = true) => {
+    if (selectedUsers.length === 0) {
+      throw new Error("No users selected for role change");
+    }
+
+    // Only show confirmation if useConfirmation is true
+    if (useConfirmation) {
+      const confirmation = window.confirm(`Are you sure you want to change the role to ${newRole} for ${selectedUsers.length} users?`);
+      if (!confirmation) return;
+    }
+
+    setIsLoading(true);
+    const failed = [];
+
+    try {
+      // In a real app, this should use a batch update API endpoint
+      // For now, we'll update one by one
+      await Promise.all(
+        selectedUsers.map(async (userId) => {
+          try {
+            await changeUserRole(userId, newRole);
+          } catch (err) {
+            failed.push(userId);
+            console.error(`Failed to change role for user ${userId}:`, err);
+          }
+        })
+      );
+
+      if (failed.length > 0) {
+        throw new Error(`Failed to change role for ${failed.length} out of ${selectedUsers.length} users`);
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Batch verify selected users
+  const batchVerifyUsers = async (useConfirmation = true) => {
+    if (selectedUsers.length === 0) {
+      throw new Error("No users selected for verification");
+    }
+
+    // Only show confirmation if useConfirmation is true
+    if (useConfirmation) {
+      const confirmation = window.confirm(`Are you sure you want to verify ${selectedUsers.length} users?`);
+      if (!confirmation) return;
+    }
+
+    setIsLoading(true);
+    const failed = [];
+
+    try {
+      // In a real app, this should use a batch verify API endpoint
+      // For now, we'll verify one by one
+      await Promise.all(
+        selectedUsers.map(async (userId) => {
+          try {
+            const user = users.find(u => u.id === userId);
+            // Only attempt to verify users who aren't already verified
+            if (user && !user.is_verified) {
+              await changeVerification(userId);
+            }
+          } catch (err) {
+            failed.push(userId);
+            console.error(`Failed to verify user ${userId}:`, err);
+          }
+        })
+      );
+
+      if (failed.length > 0) {
+        throw new Error(`Failed to verify ${failed.length} out of ${selectedUsers.length} users`);
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const toggleUserSelection = useCallback((userId) => {
     setSelectedUsers(prev =>
       prev.includes(userId)
@@ -280,6 +358,8 @@ export function AdminProvider({children}) {
     changeUserRole,
     deleteUser,
     batchDeleteUsers,
+    batchChangeUserRole,
+    batchVerifyUsers,
     changeVerification,
   }), [
     filteredUsers,

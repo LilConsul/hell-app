@@ -1,13 +1,14 @@
-import {useState} from "react";
-import {useAdmin} from "@/contexts/admin-context";
-import {Footer} from "@/components/footer";
-import {UsersDataTable} from "@/components/users-data-table";
-import {UserActionsDialog} from "@/components/user-actions-dialog";
-import {Button} from "@/components/ui/button";
-import {Input} from "@/components/ui/input";
-import {Alert, AlertDescription, AlertTitle} from "@/components/ui/alert";
-import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
-import {AlertTriangle, RefreshCw, Search, Trash} from "lucide-react";
+import { useState, useEffect } from "react";
+import { useAdmin } from "@/contexts/admin-context";
+import { Navbar } from "@/components/navbar";
+import { Footer } from "@/components/footer";
+import { UsersDataTable } from "@/components/users-data-table";
+import { UserActionsDialog } from "@/components/user-actions-dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { AlertTriangle, RefreshCw, Search, Trash, Shield, UserCheck } from "lucide-react";
 
 function AdminPanel() {
   const {
@@ -23,6 +24,8 @@ function AdminPanel() {
     changeUserRole,
     deleteUser,
     batchDeleteUsers,
+    batchChangeUserRole,
+    batchVerifyUsers,
     changeVerification,
     getUserFullName
   } = useAdmin();
@@ -31,10 +34,24 @@ function AdminPanel() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showBatchDeleteDialog, setShowBatchDeleteDialog] = useState(false);
   const [showRoleDialog, setShowRoleDialog] = useState(false);
+  const [showBatchRoleDialog, setShowBatchRoleDialog] = useState(false);
+  const [showBatchVerifyDialog, setShowBatchVerifyDialog] = useState(false);
   const [newRole, setNewRole] = useState("");
+  const [batchNewRole, setBatchNewRole] = useState("student");
   const [operationError, setOperationError] = useState(null);
+  const [currentDateTime, setCurrentDateTime] = useState("");
 
+  // Set the current date and time in the required format
+  useEffect(() => {
+    const now = new Date();
+    const formatted = now.toISOString().slice(0, 19).replace('T', ' ');
+    setCurrentDateTime(formatted);
+  }, []);
 
+  // Current user from admin_context
+  const currentUser = window.admin_context?.currentUser || "LilConsul";
+
+  // Handle role change confirmation
   const handleRoleChange = async () => {
     if (!selectedUser || !newRole) return;
     setOperationError(null);
@@ -48,6 +65,7 @@ function AdminPanel() {
     }
   };
 
+  // Handle delete confirmation
   const handleDeleteConfirm = async () => {
     if (!selectedUser) return;
     setOperationError(null);
@@ -74,9 +92,35 @@ function AdminPanel() {
     }
   };
 
+  // Handle batch role change confirmation
+  const handleBatchRoleChangeConfirm = async () => {
+    setOperationError(null);
+
+    try {
+      await batchChangeUserRole(batchNewRole, false);
+      setShowBatchRoleDialog(false);
+    } catch (err) {
+      setOperationError(err.message || "Failed to change role for selected users");
+      console.error("Failed to change role for selected users:", err);
+    }
+  };
+
+  // Handle batch verify confirmation
+  const handleBatchVerifyConfirm = async () => {
+    setOperationError(null);
+
+    try {
+      await batchVerifyUsers(false);
+      setShowBatchVerifyDialog(false);
+    } catch (err) {
+      setOperationError(err.message || "Failed to verify selected users");
+      console.error("Failed to verify selected users:", err);
+    }
+  };
+
   return (
     <div className="flex flex-col min-h-screen">
-      {/*<Navbar />*/}
+      <Navbar />
 
       <main className="flex-1 container max-w-7xl mx-auto px-4 py-8">
         <div className="flex flex-col gap-8">
@@ -84,6 +128,10 @@ function AdminPanel() {
           <div className="flex flex-col gap-2">
             <div className="flex justify-between items-center">
               <h1 className="text-3xl font-bold tracking-tight">User Management</h1>
+              <div className="text-sm text-muted-foreground">
+                Logged in as: <span className="font-semibold">{currentUser}</span>
+                <div className="text-xs">{currentDateTime || "2025-04-27 15:45:02"}</div>
+              </div>
             </div>
             <p className="text-muted-foreground">
               Manage users, change roles, and control verification status
@@ -93,7 +141,7 @@ function AdminPanel() {
           {/* Display any operation errors */}
           {operationError && (
             <Alert variant="destructive" className="mb-4">
-              <AlertTriangle className="h-4 w-4"/>
+              <AlertTriangle className="h-4 w-4" />
               <AlertTitle>Error</AlertTitle>
               <AlertDescription>{operationError}</AlertDescription>
             </Alert>
@@ -111,7 +159,7 @@ function AdminPanel() {
                     onClick={fetchUsers}
                     disabled={isLoading}
                   >
-                    <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`}/>
+                    <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
                   </Button>
                 </div>
               </div>
@@ -125,7 +173,7 @@ function AdminPanel() {
               <div className="flex flex-col space-y-4">
                 {/* Search */}
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground"/>
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     placeholder="Search by name or email"
                     value={searchTerm}
@@ -135,18 +183,37 @@ function AdminPanel() {
                 </div>
 
                 {/* Batch actions */}
-                {selectedUsers.length > 0 && (
-                  <div className="pt-2 border-t">
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => setShowBatchDeleteDialog(true)}
-                    >
-                      <Trash className="h-4 w-4 mr-2"/>
-                      Delete Selected ({selectedUsers.length})
-                    </Button>
-                  </div>
-                )}
+                <div className="pt-2 border-t flex flex-wrap gap-2">
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => setShowBatchDeleteDialog(true)}
+                    disabled={selectedUsers.length === 0}
+                  >
+                    <Trash className="h-4 w-4 mr-2" />
+                    Delete Selected {selectedUsers.length > 0 ? `(${selectedUsers.length})` : ""}
+                  </Button>
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowBatchRoleDialog(true)}
+                    disabled={selectedUsers.length === 0}
+                  >
+                    <Shield className="h-4 w-4 mr-2" />
+                    Change Role {selectedUsers.length > 0 ? `(${selectedUsers.length})` : ""}
+                  </Button>
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowBatchVerifyDialog(true)}
+                    disabled={selectedUsers.length === 0}
+                  >
+                    <UserCheck className="h-4 w-4 mr-2" />
+                    Verify Users {selectedUsers.length > 0 ? `(${selectedUsers.length})` : ""}
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -192,6 +259,24 @@ function AdminPanel() {
       />
 
       <UserActionsDialog
+        type="batchChangeRole"
+        isOpen={showBatchRoleDialog}
+        onClose={() => setShowBatchRoleDialog(false)}
+        onConfirm={handleBatchRoleChangeConfirm}
+        count={selectedUsers.length}
+        role={batchNewRole}
+        onRoleChange={setBatchNewRole}
+      />
+
+      <UserActionsDialog
+        type="batchVerify"
+        isOpen={showBatchVerifyDialog}
+        onClose={() => setShowBatchVerifyDialog(false)}
+        onConfirm={handleBatchVerifyConfirm}
+        count={selectedUsers.length}
+      />
+
+      <UserActionsDialog
         type="changeRole"
         isOpen={showRoleDialog}
         onClose={() => setShowRoleDialog(false)}
@@ -201,7 +286,7 @@ function AdminPanel() {
         onRoleChange={setNewRole}
       />
 
-      <Footer/>
+      <Footer />
     </div>
   );
 }

@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Optional
 from app.auth.models import User
 from app.auth.schemas import UserRole
 from app.database.mixins import TimestampMixin
-from beanie import BackLink, Document, Link, before_event, Delete
+from beanie import BackLink, Delete, Document, Link, before_event
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -26,7 +26,6 @@ class StudentExamStatus(str, Enum):
     NOT_STARTED = "not_started"
     IN_PROGRESS = "in_progress"
     SUBMITTED = "submitted"
-    GRADED = "graded"
 
 
 class PassFailStatus(str, Enum):
@@ -52,6 +51,9 @@ class QuestionOption(BaseModel):
 
 
 class SecuritySettings(BaseModel):
+    # Shuffle questions and options
+    shuffle_questions: bool = False
+
     # Allow students to check their answers after submission
     allow_review: bool = True
 
@@ -198,14 +200,6 @@ class ExamInstance(Document, TimestampMixin):
     )
     assigned_students: List[StudentAssignment] = Field(default_factory=list)
 
-    # Back reference to student exams for this instance
-    # student_exams: List[BackLink["StudentExam"]] = Field(
-    #     default_factory=list,
-    #     json_schema_extra={
-    #         "original_field": "exam_instance_id",
-    #     },
-    # )
-
     class Settings:
         name = "exam_instances"
         use_state_management = True
@@ -232,6 +226,8 @@ class ExamInstance(Document, TimestampMixin):
                 "passing_score": 60,
                 "security_settings": {
                     "allow_review": True,
+                    "shuffle_questions": True,
+                    "allow_skipping_questions": False,
                     "prevent_tab_switching": False,
                     "tab_switch_limit": None,
                     "gaze_tracking": False,
@@ -249,101 +245,124 @@ class ExamInstance(Document, TimestampMixin):
     )
 
 
-class StudentExam(Document, TimestampMixin):
+class StudentResponse(Document, TimestampMixin):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    exam_instance_id: Link[ExamInstance]
-    student_id: Link[User]
-    attempts: int = 1
-    status: StudentExamStatus = StudentExamStatus.NOT_STARTED
-    questions: List[Dict[str, Any]] = Field(
-        default_factory=list
-    )  # Question IDs with their order
-    security_events: Dict[str, List[SecurityEvent]] = Field(default_factory=dict)
-    started_at: Optional[datetime] = None
-    submitted_at: Optional[datetime] = None
-    grade: Optional[float] = None
-    pass_fail: Optional[PassFailStatus] = None
-    graded_at: Optional[datetime] = None
-    last_auto_save: Optional[datetime] = None
-    confirmation_email_sent: bool = False
-
-    # Back reference to student responses
-    responses: List[BackLink["StudentResponse"]] = Field(
-        default_factory=list,
-        json_schema_extra={
-            "original_field": "student_exam_id",
-        },
-    )
+    attempt_id: Link["StudentAttempt"]  # Back reference to parent attempt
+    question_id: Link[Question]
+    selected_option_ids: List[str] = Field(default_factory=list)
+    text_response: Optional[str] = None
+    score: float = -1.0  # Default to -1 for ungraded
+    is_flagged: bool = False
+    option_order: Dict[str, int] = Field(
+        default_factory=dict
+    )  # Maps option_id -> position
 
     class Settings:
-        name = "student_exams"
+        name = "student_responses"
         use_state_management = True
-        indexes = [
-            "student_id",
-            "exam_instance_id",
-            "status",
-            "graded_at",
-            ("student_id", "exam_instance_id"),  # Compound index
-        ]
+        indexes = ["attempt_id", "question_id", "score"]
 
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
         json_schema_extra={
             "example": {
                 "id": "550e8400-e29b-41d4-a716-446655440004",
-                "exam_instance_id": "550e8400-e29b-41d4-a716-446655440003",
-                "student_id": "550e8400-e29b-41d4-a716-446655440005",  # Another user ID
-                "attempts": 1,
-                "status": "submitted",
-                "questions": [],
-                "security_events": {},
-                "started_at": "2025-04-20T09:15:00.000Z",
-                "submitted_at": "2025-04-20T10:45:00.000Z",
-                "grade": 85.5,
-                "pass_fail": "pass",
-                "graded_at": "2025-04-20T11:00:00.000Z",
-                "last_auto_save": "2025-04-20T10:30:00.000Z",
-                "confirmation_email_sent": True,
-                "created_at": "2025-04-16T11:01:29.000Z",
-                "updated_at": "2025-04-16T11:01:29.000Z",
+                "attempt_id": "550e8400-e29b-41d4-a716-446655440005",
+                "question_id": "550e8400-e29b-41d4-a716-446655440000",
+                "selected_option_ids": ["opt1"],
+                "text_response": None,
+                "score": 1.0,
+                "is_flagged": False,
+                "option_order": {"opt1": 2, "opt2": 0, "opt3": 1},
+                "created_at": "2025-04-20T09:15:30.000Z",
+                "updated_at": "2025-04-20T09:15:30.000Z",
             }
         },
     )
 
 
-class StudentResponse(Document, TimestampMixin):
+class StudentAttempt(Document, TimestampMixin):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    student_exam_id: Link[StudentExam]
-    question_id: Link[Question]
-    selected_option_ids: List[str] = Field(default_factory=list)
-    text_response: Optional[str] = None
-    score: float = 0
-    is_flagged: bool = False
+    student_exam_id: Link["StudentExam"]
+    status: StudentExamStatus = StudentExamStatus.NOT_STARTED
+    security_events: List[SecurityEvent] = Field(default_factory=list)
+    started_at: Optional[datetime] = None
     submitted_at: Optional[datetime] = None
+    grade: Optional[float] = None
+    pass_fail: Optional[PassFailStatus] = None
+    last_auto_save: Optional[datetime] = None
+    question_order: List[str] = Field(default_factory=list)
+
+    responses: List[BackLink[StudentResponse]] = Field(
+        default_factory=list, json_schema_extra={"original_field": "attempt_id"}
+    )
 
     class Settings:
-        name = "student_responses"
+        name = "student_attempts"
         use_state_management = True
-        indexes = [
-            "student_exam_id",
-            "question_id",
-            "is_flagged",
-        ]
+        indexes = ["student_exam_id", "status", "grade"]
+
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,
+        json_schema_extra={
+            "example": {
+                "id": "550e8400-e29b-41d4-a716-446655440005",
+                "student_exam_id": "550e8400-e29b-41d4-a716-446655440006",
+                "status": "in_progress",
+                "security_events": [
+                    {
+                        "timestamp": "2025-04-20T09:10:15.000Z",
+                        "details": {"event_type": "browser_focus_lost"},
+                    }
+                ],
+                "started_at": "2025-04-20T09:00:10.000Z",
+                "submitted_at": None,
+                "grade": None,
+                "pass_fail": None,
+                "last_auto_save": "2025-04-20T09:14:30.000Z",
+                "question_order": [
+                    "550e8400-e29b-41d4-a716-446655440010",
+                    "550e8400-e29b-41d4-a716-446655440011",
+                    "550e8400-e29b-41d4-a716-446655440012",
+                ],
+                "created_at": "2025-04-20T09:00:10.000Z",
+                "updated_at": "2025-04-20T09:14:30.000Z",
+            }
+        },
+    )
+
+
+class StudentExam(Document, TimestampMixin):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    exam_instance_id: Link[ExamInstance]
+    student_id: Link[User]
+    current_status: StudentExamStatus = StudentExamStatus.NOT_STARTED  # Overall status
+    latest_attempt_id: Link[StudentAttempt] | None = (
+        None
+    )
+    attempts_count: int = 0
+
+    attempts: List[BackLink[StudentAttempt]] = Field(
+        default_factory=list, json_schema_extra={"original_field": "student_exam_id"}
+    )
+
+    class Settings:
+        name = "student_exams"
+        use_state_management = True
+        indexes = ["exam_instance_id", "student_id", "current_status"]
 
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
         json_schema_extra={
             "example": {
                 "id": "550e8400-e29b-41d4-a716-446655440006",
-                "student_exam_id": "550e8400-e29b-41d4-a716-446655440004",
-                "question_id": "550e8400-e29b-41d4-a716-446655440000",
-                "selected_option_ids": ["opt1"],
-                "text_response": None,
-                "score": 1.0,
-                "is_flagged": False,
-                "submitted_at": "2025-04-20T10:20:00.000Z",
-                "created_at": "2025-04-16T11:01:29.000Z",
-                "updated_at": "2025-04-16T11:01:29.000Z",
+                "exam_instance_id": "550e8400-e29b-41d4-a716-446655440003",
+                "student_id": "550e8400-e29b-41d4-a716-446655440007",
+                "current_status": "in_progress",
+                "latest_attempt_id": "550e8400-e29b-41d4-a716-446655440005",
+                "attempts_count": 1,
+                "created_at": "2025-04-19T14:30:00.000Z",
+                "updated_at": "2025-04-20T09:00:10.000Z",
             }
         },
     )
@@ -360,7 +379,7 @@ async def cascade_delete_user(user_id: str, role: UserRole):
 
     # Delete all student exams and responses
     if role == UserRole.STUDENT:
-        #FIXME: Implement this logic
+        # TODO: Implement this logic
         pass
 
     print(f"Deleted all data related to user {user_id}")

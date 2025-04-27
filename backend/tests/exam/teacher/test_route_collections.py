@@ -243,3 +243,51 @@ class TestTeacherRouter:
         assert response.json()["message"] == "Question deleted successfully"
         assert response.json()["data"]["collection_id"] == test_collection.id
         assert response.json()["data"]["question_id"] == test_question.id
+
+    @patch("app.exam.teacher.services.CollectionService.get_public_collections")
+    async def test_get_public_collections(self, mock_service, client, auth_headers):
+        """Test retrieving public collections"""
+        # Create mock public collections data
+        mock_service.return_value = [
+            {
+                "id": str(uuid.uuid4()),
+                "title": "Public Collection 1",
+                "description": "A public collection for testing",
+                "status": "published",
+                "created_by": {
+                    "id": str(uuid.uuid4()),
+                    "email": "teacher@example.com",
+                    "first_name": "Test",
+                    "last_name": "Teacher",
+                    "role": "teacher",
+                    "receive_notifications": True,
+                },
+                "created_at": "2023-01-01T00:00:00",
+                "updated_at": "2023-01-01T00:00:00",
+            }
+        ]
+
+        # Test public collections endpoint with auth headers
+        response = await client.get(
+            "/v1/exam/teacher/collections/public", headers=auth_headers
+        )
+
+        assert response.status_code == 200
+        assert response.json()["message"] == "Public collections retrieved successfully"
+
+    @patch("app.exam.teacher.services.CollectionService.get_public_collections")
+    async def test_get_public_collections_empty(
+        self, mock_service, client, auth_headers
+    ):
+        """Test retrieving public collections when none exist"""
+        # Mock empty public collections
+        mock_service.return_value = []
+
+        # Test public collections endpoint with auth headers
+        response = await client.get(
+            "/v1/exam/teacher/collections/public", headers=auth_headers
+        )
+
+        assert response.status_code == 200
+        assert response.json()["message"] == "Public collections retrieved successfully"
+        assert len(response.json()["data"]) == 0

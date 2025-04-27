@@ -5,6 +5,7 @@ from typing import List
 from app.auth.repository import UserRepository
 from app.celery.tasks.email_tasks.tasks import exam_reminder_notification
 from app.core.exceptions import ForbiddenError, NotFoundError
+from app.core.utils import make_username
 from app.exam.models import ExamStatus
 from app.exam.repository import (
     CollectionRepository,
@@ -306,7 +307,7 @@ class ExamInstanceService:
             link = link.format(id=exam_instance_id)
             data = {
                 "recipient": user.email,
-                "username": f"{user.first_name} {user.last_name}",
+                "username": make_username(user),
                 "exam_title": exam_title,
                 "start_time": exam_start_time,
                 "end_time": exam_end_time,

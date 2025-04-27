@@ -1,7 +1,7 @@
 from datetime import timedelta
 
 from app.auth.repository import UserRepository
-from app.auth.schemas import UserCreate, UserLogin, UserResponse
+from app.auth.schemas import UserCreate, UserLogin, UserResponse, UserRole
 from app.auth.security import (
     TokenType,
     create_access_token,
@@ -146,3 +146,25 @@ class AuthService:
         user.hashed_password = hashed_password
         await self.user_repository.save(user)
 
+    async def initialize_admin(self):
+        """
+        Initialize the admin user if it doesn't exist.
+        """
+        admin_email = settings.ADMIN_EMAIL
+        admin_password = settings.ADMIN_PASSWORD
+
+        existing_admin = await self.user_repository.get_by_email(admin_email)
+        if existing_admin:
+            return
+
+        hashed_password = get_password_hash(admin_password)
+        admin_data = {
+            "email": admin_email,
+            "hashed_password": hashed_password,
+            "role": UserRole.ADMIN,
+            "first_name": "Super",
+            "last_name": "Admin",
+            "is_verified": True,
+        }
+
+        await self.user_repository.create(admin_data)

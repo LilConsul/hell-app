@@ -24,15 +24,26 @@ export function AdminProvider({children}) {
   const applyFilters = useCallback((userList, search, role, verification) => {
     let result = [...userList];
 
-    // Apply search filter
     if (search) {
       const searchLower = search.toLowerCase();
-      result = result.filter(
-        user =>
-          user.first_name?.toLowerCase().includes(searchLower) ||
-          user.last_name?.toLowerCase().includes(searchLower) ||
-          user.email?.toLowerCase().includes(searchLower)
-      );
+      const searchTerms = searchLower.split(' ').filter(term => term.length > 0);
+
+      result = result.filter(user => {
+        if (searchTerms.length > 1) {
+          const fullName = `${user.first_name || ''} ${user.last_name || ''}`.toLowerCase();
+
+          if (fullName.includes(searchLower)) {
+            return true;
+          }
+          return searchTerms.every(term => fullName.includes(term));
+        }
+
+        return (
+          (user.first_name?.toLowerCase().includes(searchLower)) ||
+          (user.last_name?.toLowerCase().includes(searchLower)) ||
+          (user.email?.toLowerCase().includes(searchLower))
+        );
+      });
     }
 
     if (role) {
@@ -314,14 +325,21 @@ export function AdminProvider({children}) {
 
   // Get user's full name
   const getUserFullName = useCallback((user) => {
-    return `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'Unknown';
+    // Trim individual names before concatenation and then trim the result
+    const firstName = (user.first_name || '').trim();
+    const lastName = (user.last_name || '').trim();
+    
+    // Only add a space between names if both exist
+    return firstName && lastName 
+      ? `${firstName} ${lastName}` 
+      : firstName || lastName || 'Unknown';
   }, []);
 
   const contextValue = useMemo(() => ({
     // User data
     filteredUsers,
     getUserFullName,
-    totalFilteredUsers: filteredData.length, // Add total count for pagination
+    totalFilteredUsers: filteredData.length,
 
     // Loading and error states
     isLoading,
@@ -359,7 +377,7 @@ export function AdminProvider({children}) {
     changeVerification,
   }), [
     filteredUsers,
-    filteredData.length, // Add dependency
+    filteredData.length,
     isLoading,
     operationLoading,
     error,
@@ -390,4 +408,5 @@ export function useAdmin() {
   }
   return context;
 }
+
 

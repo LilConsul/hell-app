@@ -251,18 +251,24 @@ class TestAuthRouter:
         assert response.status_code == 200
         assert response.json()["message"] == "Password reset successfully"
 
-    async def test_delete_user_endpoint(self, client, test_user):
+    @patch("app.users.services.decode_verification_token")
+    async def test_delete_user_endpoint(self, mock_decode_token, client, test_user):
         """Test delete user endpoint"""
         user, _ = test_user
 
-        # Create token for auth
+        # Create token for auth and mock verification token
         token = jwt.encode(
             {"sub": user.id}, settings.SECRET_KEY, algorithm=settings.ALGORITHM
         )
+        mock_decode_token.return_value = {"user_id": user.id, "type": "user_deletion"}
 
         # Send delete request
         headers = {"Authorization": f"Bearer {token}"}
-        response = await client.delete("/v1/users/me", headers=headers)
+        response = await client.delete(
+            "/v1/users/me", 
+            headers=headers, 
+            json={"token": "test-token"}
+        )
 
         # Verify response
         assert response.status_code == 200
@@ -271,3 +277,4 @@ class TestAuthRouter:
         # Verify user was deleted
         deleted_user = await User.find_one(User.id == user.id)
         assert deleted_user is None
+

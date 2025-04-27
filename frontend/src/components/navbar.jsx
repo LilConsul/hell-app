@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { AuthModals } from "@/components/auth-modals";
+import { AuthModals } from "@/components/auth/auth-modals";
 import { Button } from "@/components/ui/button";
 import { LogOut, Moon, Settings, Shield, Sun } from "lucide-react";
 import { Link } from "react-router-dom";

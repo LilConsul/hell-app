@@ -1,7 +1,7 @@
 import { useState } from "react"
-import { LoginModal } from "@/components/login-modal"
-import { RegisterModal } from "@/components/register-modal"
-import { ForgotPasswordModal } from "@/components/forgot-password-modal"
+import { LoginModal } from "@/components/auth/login-modal"
+import { RegisterModal } from "@/components/auth/register-modal"
+import { ForgotPasswordModal } from "@/components/auth/forgot-password-modal"
 
 
 export function AuthModals() {

@@ -12,7 +12,7 @@ import { PasswordInput } from "@/components/password/password-input";
 import { PasswordRequirements } from "@/components/password/password-requirements";
 import { usePasswordValidation } from "@/components/password/password-validation";
 
-export default function PasswordResetPage() {
+function PasswordResetPage() {
   const { token } = useParams();
   const navigate = useNavigate();
   const [password, setPassword] = useState("");
@@ -197,3 +197,5 @@ export default function PasswordResetPage() {
     </div>
   );
 }
+
+export default PasswordResetPage;

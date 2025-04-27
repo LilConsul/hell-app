@@ -1,13 +1,13 @@
-import {Button} from "@/components/ui/button"
-import {Navbar} from "@/components/navbar"
-import {Footer} from "@/components/footer"
-import {Link} from "react-router-dom"
-import {ArrowRight, Book, Building, CheckCircle, Clock, Monitor, School, Shield, Users} from "lucide-react"
-import {useRef} from "react"
-import {SectionHeader} from "@/components/section-header"
-import {SectionContainer} from "@/components/section-container"
-import {TestimonialCard} from "@/components/testimonial-card"
-import {FeatureCard} from "@/components/feature-card"
+import { Button } from "@/components/ui/button"
+import { Navbar } from "@/components/navbar"
+import { Footer } from "@/components/footer"
+import { Link } from "react-router-dom"
+import { ArrowRight, Book, Building, CheckCircle, Clock, Monitor, School, Shield, Users } from "lucide-react"
+import { useRef } from "react"
+import { SectionHeader } from "@/components/section-header"
+import { SectionContainer } from "@/components/section-container"
+import { TestimonialCard } from "@/components/testimonial-card"
+import { FeatureCard } from "@/components/feature-card"
 
 function Home() {
   const featuresRef = useRef(null)

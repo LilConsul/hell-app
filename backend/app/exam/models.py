@@ -26,7 +26,6 @@ class StudentExamStatus(str, Enum):
     NOT_STARTED = "not_started"
     IN_PROGRESS = "in_progress"
     SUBMITTED = "submitted"
-    GRADED = "graded"
 
 
 class PassFailStatus(str, Enum):
@@ -291,7 +290,6 @@ class StudentAttempt(Document, TimestampMixin):
     submitted_at: Optional[datetime] = None
     grade: Optional[float] = None
     pass_fail: Optional[PassFailStatus] = None
-    graded_at: Optional[datetime] = None
     last_auto_save: Optional[datetime] = None
     question_order: List[str] = Field(default_factory=list)
 
@@ -321,7 +319,6 @@ class StudentAttempt(Document, TimestampMixin):
                 "submitted_at": None,
                 "grade": None,
                 "pass_fail": None,
-                "graded_at": None,
                 "last_auto_save": "2025-04-20T09:14:30.000Z",
                 "question_order": [
                     "550e8400-e29b-41d4-a716-446655440010",

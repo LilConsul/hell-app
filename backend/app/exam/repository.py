@@ -97,6 +97,22 @@ class StudentResponseRepository(BaseRepository[StudentResponse]):
         )
         return response
 
+    async def find_by_attempt_id(self, attempt_id: str) -> List[StudentResponse] | None:
+        """
+        Find all student responses for a specific attempt.
+
+        Args:
+            attempt_id: ID of the student attempt
+
+        Returns:
+            List of student responses or None if not found
+        """
+        responses = await self.model_class.find(
+            {"attempt_id._id": attempt_id},
+            fetch_links=True,
+        ).to_list()
+        return responses
+
 
 class StudentAttemptRepository(BaseRepository[StudentAttempt]):
     """Repository for StudentAttempt model operations"""
@@ -133,16 +149,5 @@ class StudentExamRepository(BaseRepository[StudentExam]):
             fetch_links=fetch_links,
         )
         return student_exam
-
-    async def update_exam_status(
-        self, exam_id: str, attempt_id: str, attempts_count: int
-    ) -> None:
-        """Update exam status to in-progress with latest attempt."""
-        update_data = {
-            "current_status": StudentExamStatus.IN_PROGRESS,
-            "latest_attempt_id": attempt_id,
-            "attempts_count": attempts_count,
-        }
-        await self.update(exam_id, update_data)
 
 

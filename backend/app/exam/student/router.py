@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends
 
 from ...core.schemas import BaseReturn
 from .schemas import (
+    BaseExamAttemptSchema,
     BaseGetStudentExamSchema,
     BaseQuestionSchema,
     CurrentAttemptSchema,
@@ -100,13 +101,31 @@ async def save_answer(
     }
 
 
-@router.put("/exam/{student_exam_id}/flag_question", response_model=BaseReturn[None])
-async def flag_question(
+@router.put(
+    "/exam/{student_exam_id}/toggle_flag_question", response_model=BaseReturn[None]
+)
+async def toggle_flag_question(
     student_exam_id: str,
     question: QuestionBaseSchema,
     student_exam_service: StudentExamService = Depends(get_student_exam_service),
 ):
-    await student_exam_service.flag_question(student_exam_id, question.question_id)
+    await student_exam_service.toggle_flag_question(
+        student_exam_id, question.question_id
+    )
     return {
         "message": "Question flagged successfully",
+    }
+
+
+@router.post(
+    "/exam/{student_exam_id}/submit", response_model=BaseReturn[BaseExamAttemptSchema]
+)
+async def submit_exam(
+    student_exam_id: str,
+    student_exam_service: StudentExamService = Depends(get_student_exam_service),
+):
+    data = await student_exam_service.submit_exam(student_exam_id)
+    return {
+        "message": "Exam submitted successfully",
+        "data": data,
     }

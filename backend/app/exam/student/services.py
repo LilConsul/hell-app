@@ -3,13 +3,14 @@ from datetime import datetime, timezone
 from typing import List
 
 from app.core.exceptions import ForbiddenError
-from app.exam.models import QuestionType, StudentExamStatus
+from app.exam.models import PassFailStatus, QuestionType, StudentExamStatus
 from app.exam.repository import (
     StudentAttemptRepository,
     StudentExamRepository,
     StudentResponseRepository,
 )
 from app.exam.student.schemas import (
+    BaseExamAttemptSchema,
     BaseGetStudentExamSchema,
     BaseQuestionOptionSchema,
     BaseQuestionSchema,
@@ -88,7 +89,6 @@ class StudentExamService:
                     "submitted_at": attempt.submitted_at,
                     "grade": attempt.grade,
                     "pass_fail": attempt.pass_fail,
-                    "graded_at": attempt.graded_at,
                     "question_order": attempt.question_order,
                     "security_events": attempt.security_events,
                     "responses": [],
@@ -199,8 +199,12 @@ class StudentExamService:
             attempt, questions, option_orders
         )
 
-        await self.student_exam_repository.update_exam_status(
-            student_exam.id, attempt.id, student_exam.attempts_count + 1
+        await self.student_exam_repository.update(
+            student_exam.id,
+            {
+                "current_status": StudentExamStatus.IN_PROGRESS,
+                "latest_attempt_id": attempt.id,
+            },
         )
 
         return [
@@ -242,6 +246,11 @@ class StudentExamService:
             raise ForbiddenError("No active attempt found")
 
         attempt = await student_exam.latest_attempt_id.fetch()
+        if not attempt:
+            raise ForbiddenError("No active attempt found")
+
+        if attempt.status != StudentExamStatus.IN_PROGRESS:
+            raise ForbiddenError("Attempt is not in progress")
         return student_exam, attempt
 
     async def save_answer(self, student_exam_id: str, question: QuestionSetAnswer):
@@ -282,7 +291,7 @@ class StudentExamService:
             attempt.id, {"last_auto_save": datetime.now(timezone.utc)}
         )
 
-    async def flag_question(self, student_exam_id: str, question_id: str):
+    async def toggle_flag_question(self, student_exam_id: str, question_id: str):
         """Flag a question for review."""
         student_exam, attempt = await self._get_active_attempt(student_exam_id)
 
@@ -299,4 +308,89 @@ class StudentExamService:
         )
         await self.student_attempt_repository.update(
             attempt.id, {"last_auto_save": datetime.now(timezone.utc)}
+        )
+
+    async def submit_exam(self, student_exam_id: str) -> BaseExamAttemptSchema:
+        """Submit the exam for grading."""
+        student_exam, attempt = await self._get_active_attempt(student_exam_id)
+
+        if not attempt:
+            raise ForbiddenError("No active attempt found")
+
+        responses = await self.student_response_repository.find_by_attempt_id(
+            attempt.id
+        )
+        if not responses:
+            raise ForbiddenError("No responses found for this attempt")
+
+        total_weight = 0
+        weighted_score = 0
+        for response in responses:
+            question = response.question_id
+            question_weight = question.weight if question.weight else 1
+            total_weight += question_weight
+            score = 0
+
+            if question.type == QuestionType.MCQ:
+                correct_ids = set(
+                    [option.id for option in question.options if option.is_correct]
+                )
+                selected_ids = set(response.selected_option_ids)
+
+                if selected_ids == correct_ids and selected_ids:
+                    score = 1.0
+            elif question.type == QuestionType.SINGLECHOICE:
+                correct_option_ids = [
+                    opt.id for opt in question.options if opt.is_correct
+                ]
+                if (
+                    len(response.selected_option_ids) == 1
+                    and response.selected_option_ids[0] in correct_option_ids
+                ):
+                    score = 1.0
+
+            elif question.type == QuestionType.SHORTANSWER:
+                if response.text_response and question.correct_input_answer:
+                    if (
+                        response.text_response.strip().lower()
+                        == question.correct_input_answer.strip().lower()
+                    ):
+                        score = 1.0
+
+            await self.student_response_repository.update(response.id, {"score": score})
+
+            weighted_score += score * question_weight
+
+        # Calculate final grade as percentage
+        final_grade = weighted_score / total_weight * 100 if total_weight > 0 else 0
+        pass_fail = (
+            PassFailStatus.PASS
+            if final_grade >= student_exam.exam_instance_id.passing_score
+            else PassFailStatus.FAIL
+        )
+
+        submitted_at = datetime.now(timezone.utc)
+        await self.student_attempt_repository.update(
+            attempt.id,
+            {
+                "status": StudentExamStatus.SUBMITTED,
+                "submitted_at": submitted_at,
+                "grade": final_grade,
+                "pass_fail": pass_fail,
+            },
+        )
+
+        await self.student_exam_repository.update(
+            student_exam.id, {"current_status": StudentExamStatus.SUBMITTED}
+        )
+
+        return BaseExamAttemptSchema(
+            id=attempt.id,
+            exam_instance_id=str(student_exam.exam_instance_id.id),
+            student_exam_id=student_exam_id,
+            status=StudentExamStatus.SUBMITTED,
+            started_at=attempt.started_at,
+            submitted_at=submitted_at,
+            grade=final_grade,
+            pass_fail=pass_fail,
         )

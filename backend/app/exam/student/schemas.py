@@ -70,7 +70,6 @@ class StudentAttemptBasicSchema(BaseModel):
     submitted_at: Optional[datetime] = None
     grade: Optional[float] = None
     pass_fail: Optional[PassFailStatus] = None
-    graded_at: Optional[datetime] = None
 
 
 class DetailGetStudentExamSchema(BaseGetStudentExamSchema):
@@ -91,3 +90,14 @@ class QuestionBaseSchema(BaseModel):
 class QuestionSetAnswer(QuestionBaseSchema):
     answer: str | None = None
     option_ids: List[str] | None = None
+
+
+class BaseExamAttemptSchema(BaseModel):
+    id: str
+    exam_instance_id: str
+    student_exam_id: str
+    status: StudentExamStatus
+    started_at: Optional[datetime] = None
+    submitted_at: Optional[datetime] = None
+    grade: Optional[float] = None
+    pass_fail: Optional[PassFailStatus] = None

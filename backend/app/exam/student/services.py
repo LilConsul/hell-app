@@ -220,11 +220,12 @@ class StudentExamService:
             for question in questions
         ]
 
-    async def save_answer(
-        self, student_exam_id: str, question: QuestionSetAnswer
-    ):
-        """Save the answer for a question."""
-        # Get and validate student exam
+    async def _get_active_attempt(self, student_exam_id: str):
+        """
+        Get and validate the active attempt for a student exam.
+
+        Common validation logic for methods that require an in-progress exam.
+        """
         student_exam = await self.student_exam_repository.get_by_id(
             student_exam_id, fetch_links=True
         )
@@ -234,15 +235,18 @@ class StudentExamService:
         if student_exam.current_status != StudentExamStatus.IN_PROGRESS:
             raise ForbiddenError("Exam not in progress")
 
-        # Validate exam time
         exam_instance = student_exam.exam_instance_id
         self._validate_exam_time(exam_instance.start_date, exam_instance.end_date)
 
-        # Get the latest attempt
         if not student_exam.latest_attempt_id:
             raise ForbiddenError("No active attempt found")
 
         attempt = await student_exam.latest_attempt_id.fetch()
+        return student_exam, attempt
+
+    async def save_answer(self, student_exam_id: str, question: QuestionSetAnswer):
+        """Save the answer for a question."""
+        student_exam, attempt = await self._get_active_attempt(student_exam_id)
 
         response = await self.student_response_repository.find_by_attempt_and_question(
             attempt.id, question.question_id
@@ -274,6 +278,25 @@ class StudentExamService:
 
         await self.student_response_repository.update(response.id, update_data)
 
+        await self.student_attempt_repository.update(
+            attempt.id, {"last_auto_save": datetime.now(timezone.utc)}
+        )
+
+    async def flag_question(self, student_exam_id: str, question_id: str):
+        """Flag a question for review."""
+        student_exam, attempt = await self._get_active_attempt(student_exam_id)
+
+        response = await self.student_response_repository.find_by_attempt_and_question(
+            attempt.id, question_id
+        )
+
+        if not response:
+            raise ForbiddenError("Question not found in this attempt")
+
+        await self.student_response_repository.update(
+            response.id,
+            {"is_flagged": not response.is_flagged},
+        )
         await self.student_attempt_repository.update(
             attempt.id, {"last_auto_save": datetime.now(timezone.utc)}
         )

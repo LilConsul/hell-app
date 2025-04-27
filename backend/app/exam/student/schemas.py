@@ -84,7 +84,10 @@ class CurrentAttemptSchema(StudentAttemptBasicSchema):
     security_events: List[SecurityEvent] = []
 
 
-class QuestionSetAnswer(BaseModel):
+class QuestionBaseSchema(BaseModel):
     question_id: str
+
+
+class QuestionSetAnswer(QuestionBaseSchema):
     answer: str | None = None
     option_ids: List[str] | None = None

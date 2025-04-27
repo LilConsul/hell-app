@@ -11,6 +11,7 @@ from .schemas import (
     BaseQuestionSchema,
     CurrentAttemptSchema,
     DetailGetStudentExamSchema,
+    QuestionBaseSchema,
     QuestionSetAnswer,
 )
 
@@ -96,4 +97,16 @@ async def save_answer(
     await student_exam_service.save_answer(student_exam_id, question)
     return {
         "message": "Answer saved successfully",
+    }
+
+
+@router.put("/exam/{student_exam_id}/flag_question", response_model=BaseReturn[None])
+async def flag_question(
+    student_exam_id: str,
+    question: QuestionBaseSchema,
+    student_exam_service: StudentExamService = Depends(get_student_exam_service),
+):
+    await student_exam_service.flag_question(student_exam_id, question.question_id)
+    return {
+        "message": "Question flagged successfully",
     }

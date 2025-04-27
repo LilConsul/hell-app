@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<HTML lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Welcome to Hell App</title>
+  <title>Hell App Account Deletion</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
     
@@ -52,15 +52,17 @@
       letter-spacing: -0.5px;
     }
     
-    h2 {
-      font-size: 18px;
-      letter-spacing: -0.3px;
-      margin-top: 28px;
+    .info-box {
+      background-color: #f2f2f2;
+      border-left: 3px solid #000000;
+      padding: 16px 20px;
+      margin: 24px 0;
+      border-radius: 0 6px 6px 0;
     }
     
     .button {
       display: inline-block;
-      background-color: #000000;
+      background-color: #dc3545;
       color: white;
       text-decoration: none;
       padding: 12px 24px;
@@ -70,37 +72,7 @@
     }
     
     .button:hover {
-      background-color: #333333;
-    }
-    
-    .info-box {
-      background-color: #f2f2f2;
-      border-left: 3px solid #000000;
-      padding: 16px 20px;
-      margin: 24px 0;
-      border-radius: 0 6px 6px 0;
-    }
-    
-    .feature-section {
-      margin: 28px 0;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 16px;
-    }
-    
-    .feature {
-      flex: 1;
-      min-width: 150px;
-      padding: 16px;
-      background-color: #f9f9f9;
-      border-radius: 8px;
-    }
-    
-    .feature-icon {
-      font-family: monospace;
-      font-size: 20px;
-      margin-bottom: 12px;
-      color: #000000;
+      background-color: #bd2130;
     }
     
     .divider {
@@ -126,11 +98,16 @@
       color: #666;
     }
     
-    @media screen and (max-width: 100px) {
-      .feature {
-        flex: 100%;
-      }
-      
+    .security-notice {
+      font-size: 14px;
+      color: #666;
+      background-color: #f9f9f9;
+      padding: 12px;
+      border-radius: 6px;
+      margin-top: 24px;
+    }
+    
+    @media screen and (max-width: 480px) {
       .email-container {
         width: 100% !important;
         border-radius: 0;
@@ -138,6 +115,11 @@
       
       .content {
         padding: 24px 16px;
+      }
+      
+      .button {
+        display: block;
+        text-align: center;
       }
     }
   </style>
@@ -155,44 +137,30 @@
       <strong>User:</strong> {{username}}
     </div>
     
-    <h1>Welcome to Hell App</h1>
+    <h1>Account Deletion Request</h1>
     
     <p>Hello {{username}},</p>
     
-    <p>We're pleased to welcome you to Hell App, the secure examination platform designed to maintain academic
-       integrity through powerful anti-cheat technology.</p>
-    
-    <div class="info-box">
-      <strong>Your account is now active.</strong> You can access the examination platform using your credentials
-                                                   when your institution schedules an assessment.
-    </div>
+    <p>We received a request to delete your Hell App account. If you requested this action, please use the button below
+       to confirm the deletion of your account.</p>
     
     <div style="text-align: center;">
-      <a href="{{login_link}}" class="button">Login to Hell App</a>
+      <a href="{{deletion_link}}" class="button">Delete My Account</a>
+    </div>
+    <div class="security-notice">
+      <strong>Note:</strong> Account deletion will permanently remove all your data, including exam history, profiles,
+                             and personal information from our system.
     </div>
     
     <div class="divider"></div>
-    
-    <h2>Key Features of Hell App</h2>
-    
-    <div class="feature-section">
-      <div class="feature">
-        <div class="feature-icon">&#9719;</div>
-        <h3>Advanced Anti-Cheat</h3>
-        <p>Sophisticated monitoring system that ensures examination integrity.</p>
-      </div>
-      
-      <div class="feature">
-        <div class="feature-icon">&#9881;</div>
-        <h3>Intuitive Interface</h3>
-        <p>Clean, distraction-free environment for optimal focus during exams.</p>
-      </div>
-      
-      <div class="feature">
-        <div class="feature-icon">&#9782;</div>
-        <h3>Seamless Experience</h3>
-        <p>Reliable platform that works across devices and network conditions.</p>
-      </div>
+    <div class="info-box">
+      <strong>Important:</strong> This account deletion link will expire in 24 hours for security reasons. Once your
+                                  account is deleted, all your data will be permanently removed and cannot be recovered.
+    </div>
+    <div class="info-box" style="border-left: 3px solid #0d6efd;">
+      <strong>Security Notice:</strong> If you did not request an account deletion, please ignore this email. If you're
+                                        concerned about your account's security, please contact our support team
+                                        immediately.
     </div>
     
     <div class="divider"></div>
@@ -204,8 +172,8 @@
   <div class="footer">
     <p>© {{year}} Hell App. All rights reserved.</p>
     <p>This is an automated system email. Please do not reply.</p>
-    <p>This email was sent to you as a registered user of the Hell App examination platform.</p>
+    <p>This email was sent to you because an account deletion was requested for your Hell App account.</p>
   </div>
 </div>
 </body>
-</html>
+</HTML>

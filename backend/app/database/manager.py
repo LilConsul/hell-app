@@ -5,7 +5,14 @@ from motor.motor_asyncio import AsyncIOMotorClient
 
 async def init_db():
     from app.auth.models import User
-    from app.exam.models import Collection, ExamInstance, Question
+    from app.exam.models import (
+        Collection,
+        ExamInstance,
+        Question,
+        StudentAttempt,
+        StudentExam,
+        StudentResponse,
+    )
 
     client = AsyncIOMotorClient(settings.MONGODB_URL)
 
@@ -17,5 +24,8 @@ async def init_db():
             Collection,
             Question,
             ExamInstance,
+            StudentExam,
+            StudentAttempt,
+            StudentResponse,
         ],
     )

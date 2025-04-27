@@ -6,11 +6,12 @@ from app.auth.repository import UserRepository
 from app.celery.tasks.email_tasks.tasks import exam_reminder_notification
 from app.core.exceptions import ForbiddenError, NotFoundError
 from app.core.utils import make_username
-from app.exam.models import ExamStatus
+from app.exam.models import ExamStatus, NotificationSettings, QuestionType
 from app.exam.repository import (
     CollectionRepository,
     ExamInstanceRepository,
     QuestionRepository,
+    StudentExamRepository,
 )
 from app.exam.teacher.schemas import (
     CreateCollection,
@@ -59,15 +60,7 @@ class CollectionService:
         if not (is_owner or is_public):
             raise ForbiddenError("You don't have access to this collection")
 
-        # Create a dictionary with all the collection data
-        collection_data = collection.model_dump()
-        if "questions" in collection_data and collection_data["questions"]:
-            for question in collection_data["questions"]:
-                if "options" in question and question["options"]:
-                    question["options"] = [opt["text"] for opt in question["options"]]
-
-        # Return the validated model
-        return GetCollection.model_validate(collection_data)
+        return collection.model_dump()
 
     async def update_collection(
         self, collection_id: str, user_id: str, collection_data: UpdateCollection
@@ -94,6 +87,46 @@ class CollectionService:
 
         await self.collection_repository.delete(collection_id)
 
+    def _validate_question_by_type(self, question_data: dict) -> None:
+        """
+        Validate question data based on its type.
+
+        Args:
+            question_data: The question data to validate
+
+        Raises:
+            ValueError: If the question data is invalid for its type
+        """
+        question_type = question_data.get("type")
+        if not question_type:
+            raise ValueError("Question type is required")
+
+        # For MCQ and SINGLECHOICE: validate options
+        if question_type in [QuestionType.MCQ, QuestionType.SINGLECHOICE]:
+            options = question_data.get("options", [])
+            if not options:
+                raise ValueError(f"{question_type} question must have options")
+
+            # Check for correct answers
+            correct_count = sum(1 for opt in options if opt.get("is_correct"))
+
+            if correct_count == 0:
+                raise ValueError(
+                    f"{question_type} question must have at least one correct answer"
+                )
+
+            if question_type == QuestionType.SINGLECHOICE and correct_count > 1:
+                raise ValueError(
+                    f"{QuestionType.SINGLECHOICE} question must have exactly one correct answer"
+                )
+
+        # For SHORTANSWER: validate correct_input_answer
+        elif question_type == QuestionType.SHORTANSWER:
+            if not question_data.get("correct_input_answer"):
+                raise ValueError(
+                    f"{QuestionType.SHORTANSWER} question must have a correct_input_answer"
+                )
+
     async def add_question_to_collection(
         self, collection_id: str, user_id: str, question_data: QuestionSchema
     ) -> str:
@@ -102,32 +135,35 @@ class CollectionService:
             collection_id, fetch_links=True
         )
         if not collection:
-            raise NotFoundError("Collection not found")
+            raise NotFoundError(f"Collection with ID {collection_id} not found")
+
         if collection.created_by.id != user_id:
             raise ForbiddenError(
-                "You do not own this collection, can't add question to it"
+                "You don't have permission to add questions to this collection"
             )
 
-        # Create the question
+        # Prepare question data
         question_data_dict = question_data.model_dump()
         question_data_dict["_id"] = str(uuid.uuid4())
-
-        if (
-            isinstance(question_data_dict.get("options"), list)
-            and question_data_dict["options"]
-        ):
-            if isinstance(question_data_dict["options"][0], str):
-                question_data_dict["options"] = [
-                    {"id": str(uuid.uuid4()), "text": opt, "is_correct": False}
-                    for opt in question_data_dict["options"]
-                ]
-
         question_data_dict["created_by"] = user_id
-        question = await self.question_repository.create(question_data_dict)
 
-        # Add the question reference to the collection as a Link
+        if "options" in question_data_dict:
+            question_data_dict["options"] = [
+                {
+                    "id": str(uuid.uuid4()),
+                    "text": opt["text"],
+                    "is_correct": opt["is_correct"],
+                }
+                for opt in question_data_dict["options"]
+            ]
+
+        self._validate_question_by_type(question_data_dict)
+
+        # Create question
+        question = await self.question_repository.create(question_data_dict)
         collection.questions.append(question)
         await self.collection_repository.save(collection)
+
         return question.id
 
     async def edit_question(
@@ -148,13 +184,20 @@ class CollectionService:
         if "_id" in update_data:
             del update_data["_id"]
 
-        # Transform options from strings to QuestionOption objects if needed
-        if isinstance(update_data.get("options"), list) and update_data["options"]:
-            if isinstance(update_data["options"][0], str):
-                update_data["options"] = [
-                    {"id": str(uuid.uuid4()), "text": opt, "is_correct": False}
-                    for opt in update_data["options"]
-                ]
+        if "options" in update_data:
+            update_data["options"] = [
+                {
+                    "id": str(uuid.uuid4()),
+                    "text": opt["text"],
+                    "is_correct": opt["is_correct"],
+                }
+                for opt in update_data["options"]
+            ]
+
+        merged_data = question.model_dump()
+        merged_data.update(update_data)
+
+        self._validate_question_by_type(merged_data)
 
         # Update the question
         await self.question_repository.update(question_id, update_data)
@@ -172,8 +215,6 @@ class CollectionService:
     async def get_public_collections(self) -> List[JustCollection] | []:
         """Get all published collections that are publicly available."""
         collections = await self.collection_repository.get_published()
-        if not collections:
-            return []
         return [
             JustCollection.model_validate(
                 {**collection.model_dump(), "questions": None}
@@ -208,10 +249,12 @@ class ExamInstanceService:
         exam_instance_repository: ExamInstanceRepository,
         collection_repository: CollectionRepository,
         user_repository: UserRepository,
+        student_exam_repository: StudentExamRepository,
     ):
         self.exam_instance_repository = exam_instance_repository
         self.collection_repository = collection_repository
         self.user_repository = user_repository
+        self.student_exam_repository = student_exam_repository
 
     async def get_by_creator(self, user_id: str) -> List[GetExamInstance]:
         """Get all exam instances created by a specific teacher."""
@@ -275,7 +318,7 @@ class ExamInstanceService:
 
     async def _send_notification(
         self,
-        users_id: List[str],
+        users_id: List[dict],
         reminders: List[str],
         exam_title: str,
         exam_start_time: datetime,
@@ -316,14 +359,97 @@ class ExamInstanceService:
             # Send notification immediately
             exam_reminder_notification.apply_async(kwargs=data)
 
+            exam_id_str = str(exam_instance_id)
+            if exam_id_str not in user.notifications_tasks_id:
+                user.notifications_tasks_id[exam_id_str] = []
+
             for delta in reminder_times:
                 notification_time = exam_start_time - delta
                 if notification_time > current_time:
                     result = exam_reminder_notification.apply_async(
                         kwargs=data, eta=notification_time
                     )
-                    user.notifications_tasks_id.append(result.id)
+                    user.notifications_tasks_id[exam_id_str].append(result.id)
             await self.user_repository.save(user)
+
+    async def _create_student_exam(
+        self, users_id: List[dict], exam_instance_id: str
+    ) -> None:
+        """Create a new StudentExam instance."""
+        for user_id in users_id:
+            student_exam_data = {
+                "student_id": user_id["student_id"],
+                "exam_instance_id": exam_instance_id,
+            }
+            await self.student_exam_repository.create(student_exam_data)
+
+    async def _add_students_to_exam(
+        self,
+        students: List[dict],
+        exam_instance_id: str,
+        max_attempts: int,
+        exam_title: str,
+        start_date: datetime,
+        end_date: datetime,
+        notification_settings: dict,
+    ) -> None:
+        """Add students to an exam instance, create StudentExam instances, and send notifications."""
+        await self._create_student_exam(students, exam_instance_id)
+
+        if (
+            notification_settings["reminder_enabled"]
+            and notification_settings["reminders"]
+        ):
+            await self._send_notification(
+                students,
+                notification_settings["reminders"],
+                exam_title,
+                start_date,
+                end_date,
+                exam_instance_id,
+            )
+
+    async def _remove_students_from_exam(
+        self, students: List[dict], exam_instance_id: str
+    ) -> None:
+        """
+        Remove students from an exam instance, delete their StudentExam instances,
+        and revoke any pending notification tasks.
+        """
+        for student in students:
+            student_exam = await self.student_exam_repository.get_by_student_and_exam(
+                student["student_id"], exam_instance_id
+            )
+            if student_exam:
+                await self.student_exam_repository.delete(student_exam.id)
+
+            user = await self.user_repository.get_by_id(student["student_id"])
+            exam_id_str = str(exam_instance_id)
+            if user and exam_id_str in user.notifications_tasks_id:
+                task_ids = user.notifications_tasks_id[exam_id_str]
+                for task_id in task_ids:
+                    exam_reminder_notification.AsyncResult(task_id).revoke(
+                        terminate=True
+                    )
+
+                del user.notifications_tasks_id[exam_id_str]
+                await self.user_repository.save(user)
+
+    @staticmethod
+    async def check_datetime(
+        start_date: datetime,
+        end_date: datetime,
+    ):
+        """Check if the start and end dates are valid."""
+        if start_date.tzinfo is None:
+            start_date = start_date.replace(tzinfo=timezone.utc)
+        if end_date.tzinfo is None:
+            end_date = end_date.replace(tzinfo=timezone.utc)
+
+        if start_date < datetime.now(timezone.utc):
+            raise ForbiddenError("Start date must be in the future")
+        if end_date < start_date:
+            raise ForbiddenError("End date must be after start date")
 
     async def create_exam_instance(
         self,
@@ -331,7 +457,6 @@ class ExamInstanceService:
         instance_data: CreateExamInstanceSchema,
     ) -> str:
         """Create a new exam instance."""
-
         collection = await self.collection_repository.get_by_id(
             instance_data.collection_id, fetch_links=True
         )
@@ -346,20 +471,22 @@ class ExamInstanceService:
 
         instance_data = instance_data.model_dump()
         instance_data["created_by"] = user_id
+        await self.check_datetime(
+            instance_data["start_date"], instance_data["end_date"]
+        )
 
         exam_instance = await self.exam_instance_repository.create(instance_data)
 
-        notification_settings = instance_data.get("notification_settings", {})
-        if notification_settings.get("reminder_enabled") and notification_settings.get(
-            "reminders"
-        ):
-            await self._send_notification(
-                instance_data.get("assigned_students", []),
-                notification_settings["reminders"],
+        students = instance_data.get("assigned_students", [])
+        if students:
+            await self._add_students_to_exam(
+                students,
+                exam_instance.id,
+                instance_data.get("max_attempts", 1),
                 instance_data["title"],
                 instance_data["start_date"],
                 instance_data["end_date"],
-                exam_instance.id,
+                instance_data.get("notification_settings", NotificationSettings()),
             )
 
         return exam_instance.id
@@ -371,15 +498,60 @@ class ExamInstanceService:
         instance_data: UpdateExamInstanceSchema,
     ) -> None:
         """Update an existing exam instance."""
-        instance = await self.exam_instance_repository.get_by_id(instance_id)
+        instance = await self.exam_instance_repository.get_by_id(
+            instance_id, fetch_links=True
+        )
         if not instance:
             raise NotFoundError("Exam instance not found")
 
-        usr_obj = await instance.created_by.fetch()
-        if usr_obj.id != user_id:
+        if instance.created_by.id != user_id:
             raise ForbiddenError("You do not own this exam instance")
-
         update_data = instance_data.model_dump(exclude_unset=True)
+
+        if "start_date" in update_data and "end_date" in update_data:
+            start_date = update_data["start_date"]
+            end_date = update_data["end_date"]
+            await self.check_datetime(start_date, end_date)
+
+        if "assigned_students" in update_data:
+            current_students = [
+                {"student_id": await self._extract_student_id(student.student_id)}
+                for student in instance.assigned_students
+            ]
+
+            new_students = update_data.get("assigned_students", [])
+
+            current_student_ids = {
+                student["student_id"] for student in current_students
+            }
+            new_student_ids = {student["student_id"] for student in new_students}
+
+            added_students = [
+                student
+                for student in new_students
+                if student["student_id"] not in current_student_ids
+            ]
+
+            removed_students = [
+                student
+                for student in current_students
+                if student["student_id"] not in new_student_ids
+            ]
+
+            if added_students:
+                await self._add_students_to_exam(
+                    added_students,
+                    instance_id,
+                    instance.max_attempts,
+                    instance.title,
+                    start_date,
+                    end_date,
+                    instance.notification_settings.model_dump(),
+                )
+
+            if removed_students:
+                await self._remove_students_from_exam(removed_students, instance_id)
+
         await self.exam_instance_repository.update(instance_id, update_data)
 
     async def delete_exam_instance(self, user_id: str, instance_id: str) -> None:
@@ -391,5 +563,12 @@ class ExamInstanceService:
         usr_obj = await instance.created_by.fetch()
         if usr_obj.id != user_id:
             raise ForbiddenError("You do not own this exam instance")
+
+        if instance.assigned_students:
+            students = [
+                {"student_id": await self._extract_student_id(student.student_id)}
+                for student in instance.assigned_students
+            ]
+            await self._remove_students_from_exam(students, instance_id)
 
         await self.exam_instance_repository.delete(instance_id)

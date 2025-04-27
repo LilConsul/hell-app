@@ -1,9 +1,9 @@
 import uuid
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from app.auth.schemas import UserRole
 from app.database.mixins import TimestampMixin
-from beanie import Document, Indexed, Link, before_event, Delete
+from beanie import Delete, Document, Indexed, Link, before_event
 from pydantic import ConfigDict, EmailStr, Field
 
 
@@ -16,7 +16,7 @@ class User(Document, TimestampMixin):
     is_verified: bool = False
     role: UserRole = UserRole.STUDENT
     receive_notifications: bool = True
-    notifications_tasks_id: List[str] = []
+    notifications_tasks_id: Dict[str, List[str]] = Field(default_factory=dict)
 
     # Add a back-reference to social connections
     # social_connections: List[BackLink["SocialConnection"]] = Field(

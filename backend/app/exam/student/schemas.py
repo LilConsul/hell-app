@@ -93,16 +93,15 @@ class QuestionSetAnswer(QuestionBaseSchema):
 
 
 class ReviewResponseSchema(StudentResponseSchema):
-    """Extended schema for student responses when in review mode"""
+    """Schema for responses when review is allowed, showing correct answers"""
 
     is_correct: bool = False
     correct_option_ids: List[str] = []
     correct_text_answer: Optional[str] = None
-    explanation: Optional[str] = None
 
 
 class ReviewAttemptSchema(CurrentAttemptSchema):
-    """Schema for reviewing an attempt with correct answers shown"""
+    """Schema for an attempt when review is allowed"""
 
     responses: List[ReviewResponseSchema] = []
-    allow_review: bool = False
+    allow_review: bool = True

@@ -9,7 +9,6 @@ from ...core.schemas import BaseReturn
 from .schemas import (
     BaseGetStudentExamSchema,
     BaseQuestionSchema,
-    CurrentAttemptSchema,
     DetailGetStudentExamSchema,
     QuestionBaseSchema,
     QuestionSetAnswer,
@@ -59,7 +58,7 @@ async def get_student_exam(
 
 @router.get(
     "/exam/{attempt_id}",
-    response_model=BaseReturn[Union[CurrentAttemptSchema, ReviewAttemptSchema]],
+    response_model=BaseReturn[Union[ReviewAttemptSchema, StudentAttemptBasicSchema]],
 )
 async def get_student_attempt(
     attempt_id: str,
@@ -68,7 +67,8 @@ async def get_student_attempt(
 ):
     """
     Get a specific attempt for a student.
-    If review is allowed, includes detailed information about correct answers.
+    If allow_review is true, includes detailed information about correct answers.
+    Otherwise returns basic attempt info without correct answers.
     """
     data = await student_exam_service.get_student_attempt(student_id, attempt_id)
     return {

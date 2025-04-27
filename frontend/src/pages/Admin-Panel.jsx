@@ -27,7 +27,8 @@ function AdminPanel() {
     batchChangeUserRole,
     batchVerifyUsers,
     changeVerification,
-    getUserFullName
+    getUserFullName,
+    totalFilteredUsers
   } = useAdmin();
 
   const [selectedUser, setSelectedUser] = useState(null);
@@ -164,7 +165,7 @@ function AdminPanel() {
                 </div>
               </div>
               <CardDescription>
-                {pagination.totalItems} {pagination.totalItems === 1 ? "user" : "users"} found
+                {totalFilteredUsers} {totalFilteredUsers === 1 ? "user" : "users"} found
                 {selectedUsers.length > 0 && ` (${selectedUsers.length} selected)`}
               </CardDescription>
             </CardHeader>

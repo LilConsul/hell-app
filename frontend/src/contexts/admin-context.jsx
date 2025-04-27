@@ -65,10 +65,6 @@ export function AdminProvider({children}) {
     });
   }, []);
 
-  const applyPagination = useCallback((userList, {currentPage, itemsPerPage}) => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    return userList.slice(startIndex, startIndex + itemsPerPage);
-  }, []);
 
   const filteredData = useMemo(() => {
     return applyFilters(users, searchTerm, roleFilter, verificationFilter);
@@ -79,9 +75,8 @@ export function AdminProvider({children}) {
   }, [filteredData.length]);
 
   const processedUsers = useMemo(() => {
-    const sorted = applySorting(filteredData, sortConfig);
-    return applyPagination(sorted, pagination);
-  }, [filteredData, sortConfig, pagination, applySorting, applyPagination]);
+    return applySorting(filteredData, sortConfig);
+  }, [filteredData, sortConfig, applySorting]);
 
   useEffect(() => {
     setFilteredUsers(processedUsers);
@@ -326,6 +321,7 @@ export function AdminProvider({children}) {
     // User data
     filteredUsers,
     getUserFullName,
+    totalFilteredUsers: filteredData.length, // Add total count for pagination
 
     // Loading and error states
     isLoading,
@@ -363,6 +359,7 @@ export function AdminProvider({children}) {
     changeVerification,
   }), [
     filteredUsers,
+    filteredData.length, // Add dependency
     isLoading,
     operationLoading,
     error,

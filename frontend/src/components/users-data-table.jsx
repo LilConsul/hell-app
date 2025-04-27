@@ -15,6 +15,7 @@ import {ArrowDown, ArrowUp, CheckCircle2, Loader2, MoreHorizontal, Shield, Trash
 import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from "@/components/ui/dropdown-menu";
 import {Skeleton} from "@/components/ui/skeleton";
 import {useAdmin} from "@/contexts/admin-context";
+import {cn} from "@/lib/utils";
 
 export function UsersDataTable({
                                  data = [],
@@ -26,7 +27,7 @@ export function UsersDataTable({
                                }) {
   const [sortField, setSortField] = useState("last_name");
   const [sortDirection, setSortDirection] = useState("asc");
-  const {toggleUserSelection, toggleSelectAll, selectedUsers, operationLoading} = useAdmin();
+  const {toggleUserSelection, toggleSelectAll, selectedUsers, operationLoading, totalFilteredUsers} = useAdmin();
 
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
@@ -36,6 +37,15 @@ export function UsersDataTable({
       minute: '2-digit'
     });
   };
+
+  // Check if all displayed users are selected
+  const areAllCurrentPageSelected = data.length > 0 &&
+    data.every(user => selectedUsers.includes(user.id));
+
+  // Check if some but not all displayed users are selected
+  const areSomeCurrentPageSelected = data.length > 0 &&
+    data.some(user => selectedUsers.includes(user.id)) &&
+    !areAllCurrentPageSelected;
 
   // Column definitions
   const columns = [
@@ -49,6 +59,19 @@ export function UsersDataTable({
     {id: 'updated_at', header: 'Updated at', sortable: true, size: 160},
     {id: 'actions', header: '', sortable: false, size: 80},
   ];
+
+  const handleSelectAllCurrentPage = (checked) => {
+    const currentPageUserIds = data.map(user => user.id);
+
+    currentPageUserIds.forEach(userId => {
+      const isCurrentlySelected = selectedUsers.includes(userId);
+      if (checked && !isCurrentlySelected) {
+        toggleUserSelection(userId);
+      } else if (!checked && isCurrentlySelected) {
+        toggleUserSelection(userId);
+      }
+    });
+  };
 
   const handleSort = (field) => {
     if (field === sortField) {
@@ -74,10 +97,17 @@ export function UsersDataTable({
     return sortDirection === "asc" ? comparison : -comparison;
   });
 
-  const totalPages = Math.ceil(pagination.totalItems / pagination.itemsPerPage);
+  // Compute pagination values based on totalFilteredUsers from context
+  const totalItems = totalFilteredUsers ?? data.length;
+  const totalPages = Math.ceil(totalItems / pagination.itemsPerPage);
   const currentPage = pagination.currentPage;
+  
+  // Calculate start and end indexes for pagination
   const startIndex = (currentPage - 1) * pagination.itemsPerPage;
-  const paginatedData = sortedData.slice(startIndex, startIndex + pagination.itemsPerPage);
+  const endIndex = startIndex + pagination.itemsPerPage;
+  
+  // Apply pagination to the sorted data
+  const paginatedData = sortedData.slice(startIndex, endIndex);
 
   const paginationItems = [];
   if (totalPages > 0) {
@@ -110,21 +140,33 @@ export function UsersDataTable({
                   className={column.sortable ? "cursor-pointer select-none" : ""}
                   onClick={column.sortable ? () => handleSort(column.id) : undefined}
                 >
-                  <div className="flex items-center">
-                    {column.id === 'select' ? (
+                  {column.id === 'select' ? (
+                    <div
+                      className="flex items-center justify-center h-full w-full p-4"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleSelectAllCurrentPage(!areAllCurrentPageSelected);
+                      }}
+                    >
                       <Checkbox
-                        checked={data.length > 0 && selectedUsers.length === data.length}
-                        onCheckedChange={toggleSelectAll}
+                        checked={areAllCurrentPageSelected}
+                        indeterminate={areSomeCurrentPageSelected}
+                        className="rounded-sm data-[state=checked]:bg-primary data-[state=indeterminate]:bg-primary/80 cursor-pointer"
+                        aria-label="Select all on current page"
                       />
-                    ) : column.header}
-                    {column.sortable && sortField === column.id && (
-                      <div className="ml-1">
-                        {sortDirection === "asc" ?
-                          <ArrowUp className="h-4 w-4"/> :
-                          <ArrowDown className="h-4 w-4"/>}
-                      </div>
-                    )}
-                  </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center">
+                      {column.header}
+                      {column.sortable && sortField === column.id && (
+                        <div className="ml-1">
+                          {sortDirection === "asc" ?
+                            <ArrowUp className="h-4 w-4"/> :
+                            <ArrowDown className="h-4 w-4"/>}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </TableHead>
               ))}
             </TableRow>
@@ -154,17 +196,30 @@ export function UsersDataTable({
             ) : paginatedData.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={9} className="text-center p-4 text-muted-foreground">
-                  No users found
+                  {totalItems > 0 ? "No users found on this page" : "No users found"}
                 </TableCell>
               </TableRow>
             ) : (
               paginatedData.map((row) => (
-                <TableRow key={row.id}>
-                  <TableCell>
-                    <Checkbox
-                      checked={selectedUsers.includes(row.id)}
-                      onCheckedChange={() => toggleUserSelection(row.id)}
-                    />
+                <TableRow
+                  key={row.id}
+                  className={cn(
+                    "transition-colors",
+                    selectedUsers.includes(row.id) && "bg-muted/50",
+                    "hover:bg-muted/30"
+                  )}
+                >
+                  <TableCell className="p-0">
+                    <div
+                      className="flex items-center justify-center h-full w-full p-4 cursor-pointer"
+                      onClick={() => toggleUserSelection(row.id)}
+                    >
+                      <Checkbox
+                        checked={selectedUsers.includes(row.id)}
+                        className="rounded-sm data-[state=checked]:bg-primary cursor-pointer"
+                        aria-label={`Select user ${row.first_name} ${row.last_name}`}
+                      />
+                    </div>
                   </TableCell>
                   <TableCell>
                     <span className="font-medium">{row.first_name || '-'}</span>
@@ -293,3 +348,4 @@ export function UsersDataTable({
     </div>
   );
 }
+

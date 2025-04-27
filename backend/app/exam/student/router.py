@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Union
 
 from app.auth.dependencies import get_current_student_id
 from app.exam.student.dependencies import get_student_exam_service
@@ -7,13 +7,13 @@ from fastapi import APIRouter, Depends
 
 from ...core.schemas import BaseReturn
 from .schemas import (
-    BaseExamAttemptSchema,
     BaseGetStudentExamSchema,
     BaseQuestionSchema,
-    CurrentAttemptSchema,
     DetailGetStudentExamSchema,
     QuestionBaseSchema,
     QuestionSetAnswer,
+    ReviewAttemptSchema,
+    StudentAttemptBasicSchema,
 )
 
 router = APIRouter(
@@ -58,7 +58,7 @@ async def get_student_exam(
 
 @router.get(
     "/exam/{attempt_id}",
-    response_model=BaseReturn[CurrentAttemptSchema],
+    response_model=BaseReturn[Union[ReviewAttemptSchema, StudentAttemptBasicSchema]],
 )
 async def get_student_attempt(
     attempt_id: str,
@@ -67,6 +67,8 @@ async def get_student_attempt(
 ):
     """
     Get a specific attempt for a student.
+    If allow_review is true, includes detailed information about correct answers.
+    Otherwise returns basic attempt info without correct answers.
     """
     data = await student_exam_service.get_student_attempt(student_id, attempt_id)
     return {
@@ -118,7 +120,7 @@ async def toggle_flag_question(
 
 
 @router.post(
-    "/exam/{student_exam_id}/submit", response_model=BaseReturn[BaseExamAttemptSchema]
+    "/exam/{student_exam_id}/submit", response_model=BaseReturn[StudentAttemptBasicSchema]
 )
 async def submit_exam(
     student_exam_id: str,
@@ -129,3 +131,4 @@ async def submit_exam(
         "message": "Exam submitted successfully",
         "data": data,
     }
+

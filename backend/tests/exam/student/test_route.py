@@ -8,23 +8,18 @@ from app.auth.models import User
 from app.auth.schemas import UserRole
 from app.auth.security import get_password_hash
 from app.exam.models import (
-    Collection,
-    ExamInstance,
     ExamStatus,
     PassFailStatus,
-    Question,
-    SecurityEvent,
     StudentAttempt,
     StudentExam,
     StudentExamStatus,
 )
 from app.exam.student.schemas import (
-    BaseExamAttemptSchema,
     BaseGetStudentExamSchema,
     BaseQuestionSchema,
     CurrentAttemptSchema,
     DetailGetStudentExamSchema,
-    QuestionSetAnswer,
+    StudentAttemptBasicSchema,
 )
 from app.settings import settings
 
@@ -193,6 +188,7 @@ class TestStudentRouter:
         assert response.status_code == 200
         assert response.json()["message"] == "Exam retrieved successfully"
         assert response.json()["data"]["id"] == test_student_exam.id
+
     @patch("app.exam.student.services.StudentExamService.get_student_attempt")
     async def test_get_student_attempt(
         self, mock_service, client, auth_headers, test_student_attempt
@@ -283,10 +279,8 @@ class TestStudentRouter:
     ):
         """Test submitting an exam"""
         # Mock return value for the service method
-        mock_service.return_value = BaseExamAttemptSchema(
+        mock_service.return_value = StudentAttemptBasicSchema(
             id=str(uuid.uuid4()),
-            exam_instance_id=str(uuid.uuid4()),
-            student_exam_id=test_student_exam.id,
             status=StudentExamStatus.SUBMITTED,
             started_at=datetime.now(timezone.utc),
             submitted_at=datetime.now(timezone.utc),
@@ -299,5 +293,4 @@ class TestStudentRouter:
         )
         assert response.status_code == 200
         assert response.json()["message"] == "Exam submitted successfully"
-        assert response.json()["data"]["student_exam_id"] == test_student_exam.id
         assert response.json()["data"]["status"] == "submitted"

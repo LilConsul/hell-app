@@ -1,6 +1,6 @@
 import random
 from datetime import datetime, timezone
-from typing import List
+from typing import List, Union
 
 from app.core.exceptions import ForbiddenError
 from app.exam.models import PassFailStatus, QuestionType, StudentExamStatus
@@ -10,14 +10,12 @@ from app.exam.repository import (
     StudentResponseRepository,
 )
 from app.exam.student.schemas import (
-    BaseExamAttemptSchema,
     BaseGetStudentExamSchema,
-    BaseQuestionOptionSchema,
     BaseQuestionSchema,
-    CurrentAttemptSchema,
     DetailGetStudentExamSchema,
     QuestionSetAnswer,
-    StudentResponseSchema,
+    ReviewAttemptSchema,
+    StudentAttemptBasicSchema,
 )
 
 
@@ -38,20 +36,12 @@ class StudentExamService:
         """
         Get all exams for a student.
         """
-        data = await self.student_exam_repository.get_all(
+        exam = await self.student_exam_repository.get_all(
             {"student_id._id": student_id}, fetch_links=True
         )
-        if not data:
+        if not exam:
             return []
-        return [
-            BaseGetStudentExamSchema.model_validate(
-                {
-                    **exam.model_dump(),
-                    "exam_instance_id": exam.exam_instance_id.model_dump(),
-                }
-            )
-            for exam in data
-        ]
+        return [BaseGetStudentExamSchema.model_validate(exam) for exam in exam]
 
     async def get_student_exam(
         self, student_id: str, student_exam_id: str
@@ -59,81 +49,47 @@ class StudentExamService:
         """
         Get a specific exam for a student.
         """
-        data = await self.student_exam_repository.get_by_id(
+        exams = await self.student_exam_repository.get_by_id(
             student_exam_id, fetch_links=True
         )
-        if not data:
+        if not exams:
             raise ForbiddenError("Exam not found")
 
-        if data.student_id.id != student_id:
+        if exams.student_id.id != student_id:
             raise ForbiddenError("You do not have permission to access this exam")
-        print(data.attempts)
-
-        # Create exam dictionary with basic fields
-        exam_dict = {
-            "id": data.id,
-            "exam_instance_id": data.exam_instance_id.model_dump(),
-            "current_status": data.current_status,
-            "attempts_count": data.attempts_count,
-            "attempts": [],
-            "last_attempt": None,
-        }
-
-        # Process attempts
-        if hasattr(data, "attempts") and data.attempts:
-            for attempt in data.attempts:
-                attempt_dict = {
-                    "id": attempt.id,
-                    "status": attempt.status,
-                    "started_at": attempt.started_at,
-                    "submitted_at": attempt.submitted_at,
-                    "grade": attempt.grade,
-                    "pass_fail": attempt.pass_fail,
-                    "question_order": attempt.question_order,
-                    "security_events": attempt.security_events,
-                    "responses": [],
-                }
-
-                exam_dict["attempts"].append(attempt_dict)
-
-                # Set as last_attempt if this is the latest attempt
-                if data.latest_attempt_id:
-                    latest_id = (
-                        data.latest_attempt_id.id
-                        if hasattr(data.latest_attempt_id, "id")
-                        else str(data.latest_attempt_id)
-                    )
-                    if attempt.id == latest_id:
-                        exam_dict["last_attempt"] = attempt_dict
-
-        return DetailGetStudentExamSchema.model_validate(exam_dict)
+        exams.latest_attempt_id = exams.latest_attempt_id.ref.id
+        return DetailGetStudentExamSchema.model_validate(exams)
 
     async def get_student_attempt(
         self, student_id: str, attempt_id: str
-    ) -> CurrentAttemptSchema:
+    ) -> Union[ReviewAttemptSchema, StudentAttemptBasicSchema]:
         """
         Get a specific attempt for a student.
+        If allow_review is true, returns ReviewAttemptSchema with correct answers.
+        Otherwise returns StudentAttemptBasicSchema with basic information.
         """
-        data = await self.student_attempt_repository.get_by_id(
+        attempt = await self.student_attempt_repository.get_by_id(
             attempt_id, fetch_links=True
         )
-        if not data:
+        if not attempt:
             raise ForbiddenError("Attempt not found")
 
-        if data.student_exam_id.student_id.id != student_id:
+        if attempt.student_exam_id.student_id.id != student_id:
             raise ForbiddenError("You do not have permission to access this attempt")
 
-        # if data.status == StudentExamStatus.IN_PROGRESS:
-        #     raise ForbiddenError("Attempt is still in progress")
+        # For in-progress attempts, raise an error as they can't be reviewed
+        if attempt.status == StudentExamStatus.IN_PROGRESS:
+            raise ForbiddenError("Attempt is still in progress")
 
-        attempt_dict = data.model_dump()
-        if hasattr(data, "responses") and data.responses:
-            attempt_dict["responses"] = [
-                StudentResponseSchema.model_validate(response.model_dump())
-                for response in data.responses
-            ]
+        # Get exam security settings to check if review is allowed
+        exam_instance = attempt.student_exam_id.exam_instance_id
+        allow_review = exam_instance.security_settings.allow_review
 
-        return CurrentAttemptSchema.model_validate(attempt_dict)
+        # If review is not allowed, return basic schema
+        if not allow_review:
+            return StudentAttemptBasicSchema.model_validate(attempt)
+
+        return ReviewAttemptSchema.model_validate(attempt)
 
     def _validate_exam_time(self, start_date, end_date):
         """Validate if the current time is within the exam time range."""
@@ -204,25 +160,11 @@ class StudentExamService:
             {
                 "current_status": StudentExamStatus.IN_PROGRESS,
                 "latest_attempt_id": attempt.id,
+                "attempts_count": student_exam.attempts_count + 1,
             },
         )
 
-        return [
-            BaseQuestionSchema(
-                id=question.id,
-                question_text=question.question_text,
-                type=question.type,
-                has_katex=getattr(question, "has_katex", False),
-                weight=getattr(question, "weight", 1),
-                options=[
-                    BaseQuestionOptionSchema(id=option.id, text=option.text)
-                    for option in question.options
-                ]
-                if question.options
-                else None,
-            )
-            for question in questions
-        ]
+        return [BaseQuestionSchema.model_validate(question) for question in questions]
 
     async def _get_active_attempt(self, student_exam_id: str):
         """
@@ -310,7 +252,7 @@ class StudentExamService:
             attempt.id, {"last_auto_save": datetime.now(timezone.utc)}
         )
 
-    async def submit_exam(self, student_exam_id: str) -> BaseExamAttemptSchema:
+    async def submit_exam(self, student_exam_id: str) -> StudentAttemptBasicSchema:
         """Submit the exam for grading."""
         student_exam, attempt = await self._get_active_attempt(student_exam_id)
 
@@ -337,8 +279,13 @@ class StudentExamService:
                 )
                 selected_ids = set(response.selected_option_ids)
 
-                if selected_ids == correct_ids and selected_ids:
-                    score = 1.0
+                total_correct_options = len(correct_ids)
+                if total_correct_options > 0:
+                    correct_selections = len(correct_ids.intersection(selected_ids))
+                    score = correct_selections / total_correct_options
+                else:
+                    score = 0.0
+
             elif question.type == QuestionType.SINGLECHOICE:
                 correct_option_ids = [
                     opt.id for opt in question.options if opt.is_correct
@@ -384,10 +331,8 @@ class StudentExamService:
             student_exam.id, {"current_status": StudentExamStatus.SUBMITTED}
         )
 
-        return BaseExamAttemptSchema(
+        return StudentAttemptBasicSchema(
             id=attempt.id,
-            exam_instance_id=str(student_exam.exam_instance_id.id),
-            student_exam_id=student_exam_id,
             status=StudentExamStatus.SUBMITTED,
             started_at=attempt.started_at,
             submitted_at=submitted_at,

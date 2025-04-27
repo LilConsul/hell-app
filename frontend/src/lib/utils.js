@@ -9,6 +9,7 @@ export const apiRequest = async (url, options = {}) => {
   const response = await fetch(url, {
     headers: {
       "Content-Type": "application/json",
+      "X-Timezone": Intl.DateTimeFormat().resolvedOptions().timeZone,
       ...(options.headers || {})
     },
     ...options

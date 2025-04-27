@@ -1,9 +1,9 @@
 import {createContext, useCallback, useContext, useEffect, useMemo, useState} from "react";
 import {apiRequest} from "@/lib/utils";
-// Create the admin context
+
 const AdminContext = createContext(null);
 
-// Admin context provider
+
 export function AdminProvider({children}) {
   const [users, setUsers] = useState([]);
   const [filteredUsers, setFilteredUsers] = useState([]);
@@ -21,7 +21,6 @@ export function AdminProvider({children}) {
   });
   const [selectedUsers, setSelectedUsers] = useState([]);
 
-  // Apply filters to users
   const applyFilters = useCallback((userList, search, role, verification) => {
     let result = [...userList];
 
@@ -36,21 +35,22 @@ export function AdminProvider({children}) {
       );
     }
 
-    // Apply role filter
     if (role) {
       result = result.filter(user => user.role === role);
     }
 
-    // Apply verification filter
     if (verification) {
-      const isVerified = verification === "verified";
-      result = result.filter(user => user.is_verified === isVerified);
+      // Use strict comparison with the string values
+      if (verification === "verified") {
+        result = result.filter(user => user.is_verified === true);
+      } else if (verification === "unverified") {
+        result = result.filter(user => user.is_verified === false);
+      }
     }
 
     return result;
   }, []);
 
-  // Apply sorting to filtered users
   const applySorting = useCallback((userList, {key, direction}) => {
     if (!key) return userList;
 
@@ -109,12 +109,10 @@ export function AdminProvider({children}) {
 
   useEffect(() => {
     fetchUsers().catch(err => {
-      // Error is already set in state, this catch prevents unhandled promise rejections
       console.error("Error in initial user fetch:", err);
     });
   }, [fetchUsers]);
 
-  // Handle sorting change
   const handleSort = useCallback((key) => {
     setSortConfig(currentConfig => ({
       key,
@@ -125,7 +123,6 @@ export function AdminProvider({children}) {
     }));
   }, []);
 
-  // Change user role with loading state for the specific user
   const changeUserRole = async (userId, newRole) => {
     setOperationLoading(prev => ({...prev, [userId]: true}));
 
@@ -142,14 +139,11 @@ export function AdminProvider({children}) {
       );
 
       return data;
-    } catch (err) {
-      throw err; // Let the component handle the error
     } finally {
       setOperationLoading(prev => ({...prev, [userId]: false}));
     }
   };
 
-  // Delete user with loading state for the specific user
   const deleteUser = async (userId) => {
     setOperationLoading(prev => ({...prev, [userId]: true}));
 
@@ -159,27 +153,26 @@ export function AdminProvider({children}) {
         {method: "DELETE"}
       );
 
-      // Remove user from the list
       setUsers(prevUsers => prevUsers.filter(user => user.id !== userId));
-      // Remove from selected users if present
       setSelectedUsers(prev => prev.filter(id => id !== userId));
 
       return data;
-    } catch (err) {
-      throw err; // Let the component handle the error
     } finally {
       setOperationLoading(prev => ({...prev, [userId]: false}));
     }
   };
 
   // Batch delete selected users
-  const batchDeleteUsers = async () => {
+  const batchDeleteUsers = async (useConfirmation = true) => {
     if (selectedUsers.length === 0) {
       throw new Error("No users selected for deletion");
     }
 
-    const confirmation = window.confirm(`Are you sure you want to delete ${selectedUsers.length} users?`);
-    if (!confirmation) return;
+    // Only show confirmation if useConfirmation is true
+    if (useConfirmation) {
+      const confirmation = window.confirm(`Are you sure you want to delete ${selectedUsers.length} users?`);
+      if (!confirmation) return;
+    }
 
     setIsLoading(true);
     const failed = [];
@@ -203,14 +196,11 @@ export function AdminProvider({children}) {
       if (failed.length > 0) {
         throw new Error(`Failed to delete ${failed.length} out of ${selectedUsers.length} users`);
       }
-    } catch (err) {
-      throw err; // Let the component handle the error
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Change user verification with loading state for the specific user
   const changeVerification = async (userId) => {
     setOperationLoading(prev => ({...prev, [userId]: true}));
 
@@ -227,14 +217,11 @@ export function AdminProvider({children}) {
       );
 
       return data;
-    } catch (err) {
-      throw err; // Let the component handle the error
     } finally {
       setOperationLoading(prev => ({...prev, [userId]: false}));
     }
   };
 
-  // Handle user selection for batch operations
   const toggleUserSelection = useCallback((userId) => {
     setSelectedUsers(prev =>
       prev.includes(userId)
@@ -259,10 +246,7 @@ export function AdminProvider({children}) {
 
   const contextValue = useMemo(() => ({
     // User data
-    users,
     filteredUsers,
-    allUsersCount: users.length,
-    filteredUsersCount: filteredData.length,
     getUserFullName,
 
     // Loading and error states
@@ -298,9 +282,7 @@ export function AdminProvider({children}) {
     batchDeleteUsers,
     changeVerification,
   }), [
-    users,
     filteredUsers,
-    filteredData.length,
     isLoading,
     operationLoading,
     error,
@@ -331,3 +313,4 @@ export function useAdmin() {
   }
   return context;
 }
+

@@ -83,17 +83,34 @@ export function UsersDataTable({
   };
 
   const sortedData = [...data].sort((a, b) => {
-    if (!a[sortField] && !b[sortField]) return 0;
-    if (!a[sortField]) return 1;
-    if (!b[sortField]) return -1;
+    // Handle null or undefined values
+    if (!a[sortField] && a[sortField] !== false) return 1;
+    if (!b[sortField] && b[sortField] !== false) return -1;
 
     const aValue = a[sortField];
     const bValue = b[sortField];
 
-    const comparison = typeof aValue === 'string'
-      ? aValue.localeCompare(bValue)
-      : aValue - bValue;
+    // If both values are equal, don't change order
+    if (aValue === bValue) return 0;
 
+    // Special handling for boolean values (like is_verified)
+    if (typeof aValue === 'boolean' && typeof bValue === 'boolean') {
+      // For boolean values in ascending order, true comes before false
+      // For descending order, false comes before true
+      return sortDirection === "asc"
+        ? (aValue ? -1 : 1)
+        : (aValue ? 1 : -1);
+    }
+
+    // String comparison for string values
+    if (typeof aValue === 'string' && typeof bValue === 'string') {
+      return sortDirection === "asc"
+        ? aValue.localeCompare(bValue)
+        : bValue.localeCompare(aValue);
+    }
+
+    // Numeric comparison for numeric values
+    const comparison = aValue < bValue ? -1 : 1;
     return sortDirection === "asc" ? comparison : -comparison;
   });
 
@@ -348,4 +365,5 @@ export function UsersDataTable({
     </div>
   );
 }
+
 

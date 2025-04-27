@@ -12,50 +12,79 @@ from app.exam.teacher.schemas import ExamInstanceBase
 from pydantic import BaseModel, ConfigDict
 
 
-class ExamInstanceBaseEtc(ExamInstanceBase):
+# Option schemas
+class QuestionOptionBase(BaseModel):
+    id: str
+    text: str
+
+
+class QuestionOptionFull(QuestionOptionBase):
+    is_correct: bool
+
+
+# Question schemas
+class QuestionBase(BaseModel):
+    id: str
+    question_text: str
+    type: QuestionType
+    has_katex: bool = False
+    weight: int = 1
+
+
+class QuestionWithOptions(QuestionBase):
+    options: List[QuestionOptionBase] | None = None
+
+
+class QuestionFull(QuestionBase):
+    options: List[QuestionOptionFull] | None = None
+    correct_input_answer: str | None = None
+
+
+# Exam instance schemas
+class ExamInstanceBasic(ExamInstanceBase):
     id: str
     created_by: UserResponse
 
 
-class BaseStudentExamSchema(BaseModel):
+# Student exam schemas
+class StudentExamBase(BaseModel):
     id: str
-    exam_instance_id: ExamInstanceBaseEtc
+    exam_instance_id: ExamInstanceBasic
     current_status: StudentExamStatus
     attempts_count: int
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
-class BaseGetStudentExamSchema(BaseStudentExamSchema):
-    pass
+class StudentExamDetail(StudentExamBase):
+    latest_attempt_id: Optional[str] = None
+    attempts: List["StudentAttemptBasic"] = []
 
 
-class BaseQuestionOptionSchema(BaseModel):
+# Attempt schemas
+class StudentAttemptBase(BaseModel):
     id: str
-    text: str
+    status: StudentExamStatus
+    started_at: Optional[datetime] = None
+    submitted_at: Optional[datetime] = None
 
 
-class FullQuestionOptionSchema(BaseQuestionOptionSchema):
-    is_correct: bool
+class StudentAttemptBasic(StudentAttemptBase):
+    grade: Optional[float] = None
+    pass_fail: Optional[PassFailStatus] = None
 
 
-class BaseQuestionSchema(BaseModel):
+class StudentAttemptDetail(StudentAttemptBase):
+    grade: Optional[float] = None
+    pass_fail: Optional[PassFailStatus] = None
+    question_order: List[str] = []
+    security_events: List[SecurityEvent] = []
+
+
+# Response schemas
+class StudentResponseBase(BaseModel):
     id: str
-    question_text: str
-    type: QuestionType
-    has_katex: bool = False
-    options: List[BaseQuestionOptionSchema] | None = None
-    weight: int = 1
-
-
-class FullQuestionSchema(BaseQuestionSchema):
-    options: List[FullQuestionOptionSchema] | None = None
-    correct_input_answer: str | None = None
-
-
-class StudentResponseSchema(BaseModel):
-    id: str
-    question_id: FullQuestionSchema
+    question_id: QuestionFull
     selected_option_ids: List[str] = []
     text_response: Optional[str] = None
     score: float = -1.0
@@ -63,45 +92,43 @@ class StudentResponseSchema(BaseModel):
     option_order: Dict[str, int] = {}
 
 
-class StudentAttemptBasicSchema(BaseModel):
-    id: str
-    status: StudentExamStatus
-    started_at: Optional[datetime] = None
-    submitted_at: Optional[datetime] = None
-    grade: Optional[float] = None
-    pass_fail: Optional[PassFailStatus] = None
-
-
-class DetailGetStudentExamSchema(BaseGetStudentExamSchema):
-    latest_attempt_id: Optional[str] = None
-    attempts: List[StudentAttemptBasicSchema] = []
-
-
-class CurrentAttemptSchema(StudentAttemptBasicSchema):
-    question_order: List[str] = []
-    responses: List[StudentResponseSchema] = []
-    security_events: List[SecurityEvent] = []
-
-
-class QuestionBaseSchema(BaseModel):
-    question_id: str
-
-
-class QuestionSetAnswer(QuestionBaseSchema):
-    answer: str | None = None
-    option_ids: List[str] | None = None
-
-
-class ReviewResponseSchema(StudentResponseSchema):
-    """Schema for responses when review is allowed, showing correct answers"""
-
+class ReviewResponse(StudentResponseBase):
     is_correct: bool = False
     correct_option_ids: List[str] = []
     correct_text_answer: Optional[str] = None
 
 
-class ReviewAttemptSchema(CurrentAttemptSchema):
-    """Schema for an attempt when review is allowed"""
+# Request schemas
+class QuestionIdentifier(BaseModel):
+    question_id: str
 
-    responses: List[ReviewResponseSchema] = []
+
+class AnswerSubmission(QuestionIdentifier):
+    answer: str | None = None
+    option_ids: List[str] | None = None
+
+
+# Combined schemas for API responses
+class CurrentAttempt(StudentAttemptDetail):
+    responses: List[StudentResponseBase] = []
+
+
+class ReviewAttempt(StudentAttemptDetail):
+    responses: List[ReviewResponse] = []
     allow_review: bool = True
+
+
+# Aliases for backward compatibility
+BaseGetStudentExamSchema = StudentExamBase
+DetailGetStudentExamSchema = StudentExamDetail
+BaseQuestionOptionSchema = QuestionOptionBase
+FullQuestionOptionSchema = QuestionOptionFull
+BaseQuestionSchema = QuestionWithOptions
+FullQuestionSchema = QuestionFull
+StudentAttemptBasicSchema = StudentAttemptBasic
+StudentResponseSchema = StudentResponseBase
+QuestionBaseSchema = QuestionIdentifier
+QuestionSetAnswer = AnswerSubmission
+ReviewResponseSchema = ReviewResponse
+CurrentAttemptSchema = CurrentAttempt
+ReviewAttemptSchema = ReviewAttempt

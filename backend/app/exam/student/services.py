@@ -13,13 +13,11 @@ from app.exam.student.schemas import (
     BaseGetStudentExamSchema,
     BaseQuestionOptionSchema,
     BaseQuestionSchema,
-    CurrentAttemptSchema,
     DetailGetStudentExamSchema,
     QuestionSetAnswer,
     ReviewAttemptSchema,
     ReviewResponseSchema,
     StudentAttemptBasicSchema,
-    StudentResponseSchema,
 )
 
 

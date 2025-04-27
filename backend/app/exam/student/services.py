@@ -43,15 +43,7 @@ class StudentExamService:
         )
         if not data:
             return []
-        return [
-            BaseGetStudentExamSchema.model_validate(
-                {
-                    **exam.model_dump(),
-                    "exam_instance_id": exam.exam_instance_id.model_dump(),
-                }
-            )
-            for exam in data
-        ]
+        return [BaseGetStudentExamSchema.model_validate(exam) for exam in data]
 
     async def get_student_exam(
         self, student_id: str, student_exam_id: str
@@ -67,36 +59,8 @@ class StudentExamService:
 
         if data.student_id.id != student_id:
             raise ForbiddenError("You do not have permission to access this exam")
-        print(data.attempts)
-
-        # Create exam dictionary with basic fields
-        exam_dict = {
-            "id": data.id,
-            "exam_instance_id": data.exam_instance_id.model_dump(),
-            "current_status": data.current_status,
-            "attempts_count": data.attempts_count,
-            "attempts": [],
-            "latest_attempt_id": data.latest_attempt_id.ref.id,
-        }
-
-        # Process attempts
-        if hasattr(data, "attempts") and data.attempts:
-            for attempt in data.attempts:
-                attempt_dict = {
-                    "id": attempt.id,
-                    "status": attempt.status,
-                    "started_at": attempt.started_at,
-                    "submitted_at": attempt.submitted_at,
-                    "grade": attempt.grade,
-                    "pass_fail": attempt.pass_fail,
-                    "question_order": attempt.question_order,
-                    "security_events": attempt.security_events,
-                    "responses": [],
-                }
-
-                exam_dict["attempts"].append(attempt_dict)
-
-        return DetailGetStudentExamSchema.model_validate(exam_dict)
+        data.latest_attempt_id = data.latest_attempt_id.ref.id
+        return DetailGetStudentExamSchema.model_validate(data)
 
     async def get_student_attempt(
         self, student_id: str, attempt_id: str

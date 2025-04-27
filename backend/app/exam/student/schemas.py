@@ -17,9 +17,13 @@ class QuestionOptionBase(BaseModel):
     id: str
     text: str
 
+    model_config = ConfigDict(arbitrary_types_allowed=True, from_attributes=True)
+
 
 class QuestionOptionFull(QuestionOptionBase):
     is_correct: bool
+
+    model_config = ConfigDict(arbitrary_types_allowed=True, from_attributes=True)
 
 
 # Question schemas
@@ -30,20 +34,28 @@ class QuestionBase(BaseModel):
     has_katex: bool = False
     weight: int = 1
 
+    model_config = ConfigDict(arbitrary_types_allowed=True, from_attributes=True)
+
 
 class QuestionWithOptions(QuestionBase):
     options: List[QuestionOptionBase] | None = None
+
+    model_config = ConfigDict(arbitrary_types_allowed=True, from_attributes=True)
 
 
 class QuestionFull(QuestionBase):
     options: List[QuestionOptionFull] | None = None
     correct_input_answer: str | None = None
 
+    model_config = ConfigDict(arbitrary_types_allowed=True, from_attributes=True)
+
 
 # Exam instance schemas
 class ExamInstanceBasic(ExamInstanceBase):
     id: str
     created_by: UserResponse
+
+    model_config = ConfigDict(arbitrary_types_allowed=True, from_attributes=True)
 
 
 # Student exam schemas
@@ -53,12 +65,14 @@ class StudentExamBase(BaseModel):
     current_status: StudentExamStatus
     attempts_count: int
 
-    model_config = ConfigDict(arbitrary_types_allowed=True)
+    model_config = ConfigDict(arbitrary_types_allowed=True, from_attributes=True)
 
 
 class StudentExamDetail(StudentExamBase):
     latest_attempt_id: Optional[str] = None
     attempts: List["StudentAttemptBasic"] = []
+
+    model_config = ConfigDict(arbitrary_types_allowed=True, from_attributes=True)
 
 
 # Attempt schemas
@@ -68,10 +82,14 @@ class StudentAttemptBase(BaseModel):
     started_at: Optional[datetime] = None
     submitted_at: Optional[datetime] = None
 
+    model_config = ConfigDict(arbitrary_types_allowed=True, from_attributes=True)
+
 
 class StudentAttemptBasic(StudentAttemptBase):
     grade: Optional[float] = None
     pass_fail: Optional[PassFailStatus] = None
+
+    model_config = ConfigDict(arbitrary_types_allowed=True, from_attributes=True)
 
 
 class StudentAttemptDetail(StudentAttemptBase):
@@ -79,6 +97,8 @@ class StudentAttemptDetail(StudentAttemptBase):
     pass_fail: Optional[PassFailStatus] = None
     question_order: List[str] = []
     security_events: List[SecurityEvent] = []
+
+    model_config = ConfigDict(arbitrary_types_allowed=True, from_attributes=True)
 
 
 # Response schemas
@@ -91,31 +111,43 @@ class StudentResponseBase(BaseModel):
     is_flagged: bool = False
     option_order: Dict[str, int] = {}
 
+    model_config = ConfigDict(arbitrary_types_allowed=True, from_attributes=True)
+
 
 class ReviewResponse(StudentResponseBase):
     is_correct: bool = False
     correct_option_ids: List[str] = []
     correct_text_answer: Optional[str] = None
 
+    model_config = ConfigDict(arbitrary_types_allowed=True, from_attributes=True)
+
 
 # Request schemas
 class QuestionIdentifier(BaseModel):
     question_id: str
+
+    model_config = ConfigDict(arbitrary_types_allowed=True, from_attributes=True)
 
 
 class AnswerSubmission(QuestionIdentifier):
     answer: str | None = None
     option_ids: List[str] | None = None
 
+    model_config = ConfigDict(arbitrary_types_allowed=True, from_attributes=True)
+
 
 # Combined schemas for API responses
 class CurrentAttempt(StudentAttemptDetail):
     responses: List[StudentResponseBase] = []
 
+    model_config = ConfigDict(arbitrary_types_allowed=True, from_attributes=True)
+
 
 class ReviewAttempt(StudentAttemptDetail):
     responses: List[ReviewResponse] = []
     allow_review: bool = True
+
+    model_config = ConfigDict(arbitrary_types_allowed=True, from_attributes=True)
 
 
 # Aliases for backward compatibility

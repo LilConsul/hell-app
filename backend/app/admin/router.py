@@ -8,7 +8,7 @@ from app.admin.service import AdminService
 from app.auth.dependencies import get_current_admin_id
 from app.auth.schemas import UserRole
 from app.core.schemas import BaseReturn
-from app.users.schemas import UserSchema
+from app.admin.schemas import UserSchema
 
 router = APIRouter(
     prefix="/admin", tags=["admin"], dependencies=[Depends(get_current_admin_id)]

@@ -2,7 +2,7 @@ from typing import List
 
 from app.auth.repository import UserRepository
 from app.auth.schemas import UserRole
-from app.users.schemas import UserSchema
+from app.admin.schemas import UserSchema
 
 
 class AdminService:
@@ -20,7 +20,7 @@ class AdminService:
         if not user:
             raise ValueError("User not found")
         user.role = role
-        await self.user_repository.update(user_id, dict(user))
+        await self.user_repository.save(user)
         return UserSchema.model_validate(user)
 
     async def delete_user(self, user_id: str) -> UserSchema:

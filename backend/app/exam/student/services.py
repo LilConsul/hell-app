@@ -10,13 +10,15 @@ from app.exam.repository import (
     StudentResponseRepository,
 )
 from app.exam.student.schemas import (
-    BaseExamAttemptSchema,
     BaseGetStudentExamSchema,
     BaseQuestionOptionSchema,
     BaseQuestionSchema,
     CurrentAttemptSchema,
     DetailGetStudentExamSchema,
     QuestionSetAnswer,
+    ReviewAttemptSchema,
+    ReviewResponseSchema,
+    StudentAttemptBasicSchema,
     StudentResponseSchema,
 )
 
@@ -76,7 +78,7 @@ class StudentExamService:
             "current_status": data.current_status,
             "attempts_count": data.attempts_count,
             "attempts": [],
-            "last_attempt": None,
+            "latest_attempt_id": data.latest_attempt_id.ref.id,
         }
 
         # Process attempts
@@ -96,21 +98,11 @@ class StudentExamService:
 
                 exam_dict["attempts"].append(attempt_dict)
 
-                # Set as last_attempt if this is the latest attempt
-                if data.latest_attempt_id:
-                    latest_id = (
-                        data.latest_attempt_id.id
-                        if hasattr(data.latest_attempt_id, "id")
-                        else str(data.latest_attempt_id)
-                    )
-                    if attempt.id == latest_id:
-                        exam_dict["last_attempt"] = attempt_dict
-
         return DetailGetStudentExamSchema.model_validate(exam_dict)
 
     async def get_student_attempt(
         self, student_id: str, attempt_id: str
-    ) -> CurrentAttemptSchema:
+    ) -> CurrentAttemptSchema | ReviewAttemptSchema:
         """
         Get a specific attempt for a student.
         """
@@ -123,15 +115,73 @@ class StudentExamService:
         if data.student_exam_id.student_id.id != student_id:
             raise ForbiddenError("You do not have permission to access this attempt")
 
-        # if data.status == StudentExamStatus.IN_PROGRESS:
-        #     raise ForbiddenError("Attempt is still in progress")
+        if data.status == StudentExamStatus.IN_PROGRESS:
+            raise ForbiddenError("Attempt is still in progress")
+
+        exam_instance = data.student_exam_id.exam_instance_id
+        allow_review = exam_instance.security_settings.allow_review
 
         attempt_dict = data.model_dump()
+
         if hasattr(data, "responses") and data.responses:
-            attempt_dict["responses"] = [
-                StudentResponseSchema.model_validate(response.model_dump())
-                for response in data.responses
-            ]
+            if allow_review and data.status == StudentExamStatus.SUBMITTED:
+                # Create detailed review responses with correct answers
+                review_responses = []
+                for response in data.responses:
+                    question = response.question_id
+                    review_response = response.model_dump()
+
+                    # Determine if the answer is correct and add correct answer info
+                    is_correct = False
+                    correct_option_ids = []
+                    correct_text_answer = None
+
+                    if question.type in [QuestionType.MCQ, QuestionType.SINGLECHOICE]:
+                        correct_option_ids = [
+                            opt.id for opt in question.options if opt.is_correct
+                        ]
+
+                        if question.type == QuestionType.MCQ:
+                            is_correct = set(response.selected_option_ids) == set(
+                                correct_option_ids
+                            )
+                        else:  # SINGLECHOICE
+                            is_correct = (
+                                len(response.selected_option_ids) == 1
+                                and response.selected_option_ids[0]
+                                in correct_option_ids
+                            )
+
+                    elif question.type == QuestionType.SHORTANSWER:
+                        correct_text_answer = question.correct_input_answer
+                        is_correct = (
+                            response.text_response
+                            and correct_text_answer
+                            and response.text_response.strip().lower()
+                            == correct_text_answer.strip().lower()
+                        )
+
+                    review_response.update(
+                        {
+                            "is_correct": is_correct,
+                            "correct_option_ids": correct_option_ids,
+                            "correct_text_answer": correct_text_answer,
+                        }
+                    )
+
+                    review_responses.append(
+                        ReviewResponseSchema.model_validate(review_response)
+                    )
+
+                attempt_dict["responses"] = review_responses
+                attempt_dict["allow_review"] = True
+                return ReviewAttemptSchema.model_validate(attempt_dict)
+            else:
+                # Standard response format without showing correct answers
+                attempt_dict["responses"] = [
+                    StudentResponseSchema.model_validate(response.model_dump())
+                    for response in data.responses
+                ]
 
         return CurrentAttemptSchema.model_validate(attempt_dict)
 
@@ -204,6 +254,7 @@ class StudentExamService:
             {
                 "current_status": StudentExamStatus.IN_PROGRESS,
                 "latest_attempt_id": attempt.id,
+                "attempts_count": student_exam.attempts_count + 1,
             },
         )
 
@@ -310,7 +361,7 @@ class StudentExamService:
             attempt.id, {"last_auto_save": datetime.now(timezone.utc)}
         )
 
-    async def submit_exam(self, student_exam_id: str) -> BaseExamAttemptSchema:
+    async def submit_exam(self, student_exam_id: str) -> StudentAttemptBasicSchema:
         """Submit the exam for grading."""
         student_exam, attempt = await self._get_active_attempt(student_exam_id)
 
@@ -384,10 +435,8 @@ class StudentExamService:
             student_exam.id, {"current_status": StudentExamStatus.SUBMITTED}
         )
 
-        return BaseExamAttemptSchema(
+        return StudentAttemptBasicSchema(
             id=attempt.id,
-            exam_instance_id=str(student_exam.exam_instance_id.id),
-            student_exam_id=student_exam_id,
             status=StudentExamStatus.SUBMITTED,
             started_at=attempt.started_at,
             submitted_at=submitted_at,

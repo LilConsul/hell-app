@@ -73,7 +73,7 @@ class StudentAttemptBasicSchema(BaseModel):
 
 
 class DetailGetStudentExamSchema(BaseGetStudentExamSchema):
-    last_attempt_id: Optional[str] = None
+    latest_attempt_id: Optional[str] = None
     attempts: List[StudentAttemptBasicSchema] = []
 
 
@@ -92,12 +92,17 @@ class QuestionSetAnswer(QuestionBaseSchema):
     option_ids: List[str] | None = None
 
 
-class BaseExamAttemptSchema(BaseModel):
-    id: str
-    exam_instance_id: str
-    student_exam_id: str
-    status: StudentExamStatus
-    started_at: Optional[datetime] = None
-    submitted_at: Optional[datetime] = None
-    grade: Optional[float] = None
-    pass_fail: Optional[PassFailStatus] = None
+class ReviewResponseSchema(StudentResponseSchema):
+    """Extended schema for student responses when in review mode"""
+
+    is_correct: bool = False
+    correct_option_ids: List[str] = []
+    correct_text_answer: Optional[str] = None
+    explanation: Optional[str] = None
+
+
+class ReviewAttemptSchema(CurrentAttemptSchema):
+    """Schema for reviewing an attempt with correct answers shown"""
+
+    responses: List[ReviewResponseSchema] = []
+    allow_review: bool = False

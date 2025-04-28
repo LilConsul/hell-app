@@ -148,19 +148,3 @@ class ReviewAttempt(StudentAttemptDetail):
     allow_review: bool = True
 
     model_config = ConfigDict(arbitrary_types_allowed=True, from_attributes=True)
-
-
-# Aliases for backward compatibility
-BaseGetStudentExamSchema = StudentExamBase
-DetailGetStudentExamSchema = StudentExamDetail
-BaseQuestionOptionSchema = QuestionOptionBase
-FullQuestionOptionSchema = QuestionOptionFull
-BaseQuestionSchema = QuestionWithOptions
-FullQuestionSchema = QuestionFull
-StudentAttemptBasicSchema = StudentAttemptBasic
-StudentResponseSchema = StudentResponseBase
-QuestionBaseSchema = QuestionIdentifier
-QuestionSetAnswer = AnswerSubmission
-ReviewResponseSchema = ReviewResponse
-CurrentAttemptSchema = CurrentAttempt
-ReviewAttemptSchema = ReviewAttempt

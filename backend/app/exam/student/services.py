@@ -10,12 +10,12 @@ from app.exam.repository import (
     StudentResponseRepository,
 )
 from app.exam.student.schemas import (
-    BaseGetStudentExamSchema,
-    BaseQuestionSchema,
-    DetailGetStudentExamSchema,
-    QuestionSetAnswer,
-    ReviewAttemptSchema,
-    StudentAttemptBasicSchema,
+    AnswerSubmission,
+    QuestionWithOptions,
+    ReviewAttempt,
+    StudentAttemptBasic,
+    StudentExamBase,
+    StudentExamDetail,
 )
 
 
@@ -32,7 +32,7 @@ class StudentExamService:
 
     async def get_student_exams(
         self, student_id: str
-    ) -> List[BaseGetStudentExamSchema]:
+    ) -> List[StudentExamBase]:
         """
         Get all exams for a student.
         """
@@ -41,11 +41,11 @@ class StudentExamService:
         )
         if not exam:
             return []
-        return [BaseGetStudentExamSchema.model_validate(exam) for exam in exam]
+        return [StudentExamBase.model_validate(exam) for exam in exam]
 
     async def get_student_exam(
         self, student_id: str, student_exam_id: str
-    ) -> DetailGetStudentExamSchema:
+    ) -> StudentExamDetail:
         """
         Get a specific exam for a student.
         """
@@ -58,15 +58,15 @@ class StudentExamService:
         if exams.student_id.id != student_id:
             raise ForbiddenError("You do not have permission to access this exam")
         exams.latest_attempt_id = exams.latest_attempt_id.ref.id
-        return DetailGetStudentExamSchema.model_validate(exams)
+        return StudentExamDetail.model_validate(exams)
 
     async def get_student_attempt(
         self, student_id: str, attempt_id: str
-    ) -> Union[ReviewAttemptSchema, StudentAttemptBasicSchema]:
+    ) -> Union[ReviewAttempt, StudentAttemptBasic]:
         """
         Get a specific attempt for a student.
-        If allow_review is true, returns ReviewAttemptSchema with correct answers.
-        Otherwise returns StudentAttemptBasicSchema with basic information.
+        If allow_review is true, returns ReviewAttempt with correct answers.
+        Otherwise returns StudentAttemptBasic with basic information.
         """
         attempt = await self.student_attempt_repository.get_by_id(
             attempt_id, fetch_links=True
@@ -87,9 +87,9 @@ class StudentExamService:
 
         # If review is not allowed, return basic schema
         if not allow_review:
-            return StudentAttemptBasicSchema.model_validate(attempt)
+            return StudentAttemptBasic.model_validate(attempt)
 
-        return ReviewAttemptSchema.model_validate(attempt)
+        return ReviewAttempt.model_validate(attempt)
 
     def _validate_exam_time(self, start_date, end_date):
         """Validate if the current time is within the exam time range."""
@@ -102,7 +102,7 @@ class StudentExamService:
         if current_time > end_date_aware:
             raise ForbiddenError("Exam has already ended")
 
-    async def start_exam(self, student_exam_id: str) -> List[BaseQuestionSchema]:
+    async def start_exam(self, student_exam_id: str) -> List[QuestionWithOptions]:
         """Start an exam for a student."""
         student_exam = await self.student_exam_repository.get_by_id(
             student_exam_id, fetch_links=True
@@ -164,7 +164,7 @@ class StudentExamService:
             },
         )
 
-        return [BaseQuestionSchema.model_validate(question) for question in questions]
+        return [QuestionWithOptions.model_validate(question) for question in questions]
 
     async def _get_active_attempt(self, student_exam_id: str):
         """
@@ -195,7 +195,7 @@ class StudentExamService:
             raise ForbiddenError("Attempt is not in progress")
         return student_exam, attempt
 
-    async def save_answer(self, student_exam_id: str, question: QuestionSetAnswer):
+    async def save_answer(self, student_exam_id: str, question: AnswerSubmission):
         """Save the answer for a question."""
         student_exam, attempt = await self._get_active_attempt(student_exam_id)
 
@@ -252,7 +252,7 @@ class StudentExamService:
             attempt.id, {"last_auto_save": datetime.now(timezone.utc)}
         )
 
-    async def submit_exam(self, student_exam_id: str) -> StudentAttemptBasicSchema:
+    async def submit_exam(self, student_exam_id: str) -> StudentAttemptBasic:
         """Submit the exam for grading."""
         student_exam, attempt = await self._get_active_attempt(student_exam_id)
 
@@ -331,7 +331,7 @@ class StudentExamService:
             student_exam.id, {"current_status": StudentExamStatus.SUBMITTED}
         )
 
-        return StudentAttemptBasicSchema(
+        return StudentAttemptBasic(
             id=attempt.id,
             status=StudentExamStatus.SUBMITTED,
             started_at=attempt.started_at,

@@ -15,11 +15,12 @@ from app.exam.models import (
     StudentExamStatus,
 )
 from app.exam.student.schemas import (
-    BaseGetStudentExamSchema,
-    BaseQuestionSchema,
-    CurrentAttemptSchema,
-    DetailGetStudentExamSchema,
-    StudentAttemptBasicSchema,
+    CurrentAttempt,
+    QuestionWithOptions,
+    ReviewAttempt,
+    StudentAttemptBasic,
+    StudentExamBase,
+    StudentExamDetail,
 )
 from app.settings import settings
 
@@ -129,7 +130,7 @@ class TestStudentRouter:
             "attempts_count": 0,
         }
 
-        mock_service.return_value = [BaseGetStudentExamSchema.model_validate(mock_data)]
+        mock_service.return_value = [StudentExamBase.model_validate(mock_data)]
 
         response = await client.get("/v1/exam/student/exams", headers=auth_headers)
         assert response.status_code == 200
@@ -177,10 +178,10 @@ class TestStudentRouter:
             "current_status": StudentExamStatus.NOT_STARTED,
             "attempts_count": 0,
             "attempts": [],
-            "last_attempt_id": None,
+            "latest_attempt_id": None,
         }
 
-        mock_service.return_value = DetailGetStudentExamSchema.model_validate(mock_data)
+        mock_service.return_value = StudentExamDetail.model_validate(mock_data)
 
         response = await client.get(
             f"/v1/exam/student/exams/{test_student_exam.id}", headers=auth_headers
@@ -195,7 +196,7 @@ class TestStudentRouter:
     ):
         """Test getting a specific attempt for a student"""
         # Mock return value for the service method
-        mock_service.return_value = CurrentAttemptSchema(
+        mock_service.return_value = CurrentAttempt(
             id=test_student_attempt.id,
             status=StudentExamStatus.IN_PROGRESS,
             started_at=datetime.now(timezone.utc),
@@ -221,7 +222,7 @@ class TestStudentRouter:
         """Test starting an exam"""
         # Mock return value for the service method
         mock_service.return_value = [
-            BaseQuestionSchema(
+            QuestionWithOptions(
                 id="q1",
                 question_text="What is 2+2?",
                 type="mcq",
@@ -279,7 +280,7 @@ class TestStudentRouter:
     ):
         """Test submitting an exam"""
         # Mock return value for the service method
-        mock_service.return_value = StudentAttemptBasicSchema(
+        mock_service.return_value = StudentAttemptBasic(
             id=str(uuid.uuid4()),
             status=StudentExamStatus.SUBMITTED,
             started_at=datetime.now(timezone.utc),

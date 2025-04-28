@@ -26,9 +26,16 @@ class UserResetPassword(BaseModel):
     token: str
 
 
-class UserLogin(BaseModel):
-    email: EmailStr
+class UserLogin(UserBase):
     password: str
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "email": "user@example.com",
+                "password": "stringst",
+            }
+        },
+    )
 
 
 class UserResponse(UserBase):

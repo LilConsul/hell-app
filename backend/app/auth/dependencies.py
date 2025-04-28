@@ -66,8 +66,8 @@ async def get_current_student_id(
     if not token_data.get("sub"):
         raise AuthenticationError("Invalid token")
     if (
-        not token_data.get("role") == UserRole.STUDENT
-        or token_data.get("role") == UserRole.ADMIN
+        token_data.get("role") != UserRole.STUDENT
+        and token_data.get("role") != UserRole.ADMIN
     ):
         raise ForbiddenError("Only students can access this resource")
     return token_data.get("sub")
@@ -79,8 +79,8 @@ async def get_current_teacher_id(
     if not token_data.get("sub"):
         raise AuthenticationError("Invalid token")
     if (
-        not token_data.get("role") == UserRole.TEACHER
-        or token_data.get("role") == UserRole.ADMIN
+        token_data.get("role") != UserRole.TEACHER
+        and token_data.get("role") != UserRole.ADMIN
     ):
         raise ForbiddenError("Only teachers can access this resource")
     return token_data.get("sub")

@@ -6,7 +6,8 @@ import { AdminProvider } from "./contexts/admin-context.jsx";
 import { AuthProvider } from './contexts/auth-context';
 
 import Home from './pages/Home';
-import Dashboard from './pages/Dashboard';
+import Dashboard from './pages/teacher/Dashboard';
+import Collections from './pages/teacher/Collections';
 import Exams from './pages/Exams';
 import Students from './pages/Students';
 import Reports from './pages/Reports';
@@ -48,6 +49,7 @@ export default function App() {
           <Route path="/students" element={<ProtectedRoute element={<Students />} allowedRoles={['teacher', 'admin']} />} />
           <Route path="/reports" element={<ProtectedRoute element={<Reports />} allowedRoles={['teacher', 'admin']} />} />
           <Route path="/settings" element={<ProtectedRoute element={<Settings/>}/>}/>
+          <Route path="/collections" element={<ProtectedRoute element={<Collections />} allowedRoles={['teacher', 'admin']} />} />
 
           {/*Admin routes*/}
           <Route path="/admin" element={<ProtectedRoute element={

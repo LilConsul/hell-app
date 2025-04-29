@@ -108,4 +108,3 @@ class UserService:
         await self.user_repository.update(
             user_id, {"hashed_password": get_password_hash(new_password)}
         )
-

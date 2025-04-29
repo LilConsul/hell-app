@@ -120,7 +120,8 @@ async def toggle_flag_question(
 
 
 @router.post(
-    "/exam/{student_exam_id}/submit", response_model=BaseReturn[StudentAttemptBasicSchema]
+    "/exam/{student_exam_id}/submit",
+    response_model=BaseReturn[StudentAttemptBasicSchema],
 )
 async def submit_exam(
     student_exam_id: str,
@@ -131,4 +132,3 @@ async def submit_exam(
         "message": "Exam submitted successfully",
         "data": data,
     }
-

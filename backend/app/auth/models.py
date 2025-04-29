@@ -34,6 +34,7 @@ class User(Document, TimestampMixin):
         # await SocialConnection.find(SocialConnection.user.id == self.id).delete()
 
         from app.exam.models import cascade_delete_user
+
         await cascade_delete_user(self.id, self.role)
 
     class Settings:
@@ -71,4 +72,3 @@ class SocialConnection(Document, TimestampMixin):
             "provider_user_id",
             ("provider", "provider_user_id"),  # Compound index
         ]
-    

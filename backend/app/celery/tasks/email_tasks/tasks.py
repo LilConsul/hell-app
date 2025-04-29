@@ -136,4 +136,3 @@ def user_deleted_notification(
         },
     )
     async_to_sync(mail.send_message)(message, "account_deleted.html")
-    

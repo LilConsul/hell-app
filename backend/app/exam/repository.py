@@ -149,5 +149,3 @@ class StudentExamRepository(BaseRepository[StudentExam]):
             fetch_links=fetch_links,
         )
         return student_exam
-
-

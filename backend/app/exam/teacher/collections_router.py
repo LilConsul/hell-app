@@ -49,7 +49,9 @@ async def get_teacher_collections(
     )
 
 
-@router.get("/public", response_model=BaseReturn[List[JustCollection]] | BaseReturn[List[None]])
+@router.get(
+    "/public", response_model=BaseReturn[List[JustCollection]] | BaseReturn[List[None]]
+)
 async def get_public_collections(
     collection_service: CollectionService = Depends(get_collection_service),
 ):

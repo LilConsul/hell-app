@@ -50,7 +50,7 @@ class QuestionSchema(QuestionBase):
                     {"text": "Paris", "is_correct": True},
                     {"text": "London", "is_correct": False},
                 ],
-                "correct_input_answer": "Correct input answer, if type:shortanswer"
+                "correct_input_answer": "Correct input answer, if type:shortanswer",
             }
         },
     )

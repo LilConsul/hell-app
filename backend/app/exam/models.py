@@ -337,9 +337,7 @@ class StudentExam(Document, TimestampMixin):
     exam_instance_id: Link[ExamInstance]
     student_id: Link[User]
     current_status: StudentExamStatus = StudentExamStatus.NOT_STARTED  # Overall status
-    latest_attempt_id: Link[StudentAttempt] | None = (
-        None
-    )
+    latest_attempt_id: Link[StudentAttempt] | None = None
     attempts_count: int = 0
 
     attempts: List[BackLink[StudentAttempt]] = Field(

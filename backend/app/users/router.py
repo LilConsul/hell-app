@@ -113,4 +113,3 @@ async def get_student_mails(
         message="Students retrieved successfully",
         data=students,
     )
-

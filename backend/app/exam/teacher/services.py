@@ -69,7 +69,7 @@ class CollectionService:
         collection = await self.collection_repository.get_by_id(collection_id)
         if not collection:
             raise NotFoundError("Collection not found")
-        if collection.created_by.id != user_id:
+        if collection.created_by.ref.id != user_id:
             raise ForbiddenError("You do not own this collection")
 
         update_data = collection_data.model_dump(exclude_unset=True)
@@ -80,9 +80,7 @@ class CollectionService:
         collection = await self.collection_repository.get_by_id(collection_id)
         if not collection:
             raise NotFoundError("Collection not found")
-        user_obj = await collection.created_by.fetch()
-        print(user_obj)
-        if user_obj.id != user_id:
+        if collection.created_by.ref.id != user_id:
             raise ForbiddenError("You do not own this collection")
 
         await self.collection_repository.delete(collection_id)
@@ -387,7 +385,6 @@ class ExamInstanceService:
         self,
         students: List[dict],
         exam_instance_id: str,
-        max_attempts: int,
         exam_title: str,
         start_date: datetime,
         end_date: datetime,
@@ -482,7 +479,6 @@ class ExamInstanceService:
             await self._add_students_to_exam(
                 students,
                 exam_instance.id,
-                instance_data.get("max_attempts", 1),
                 instance_data["title"],
                 instance_data["start_date"],
                 instance_data["end_date"],
@@ -542,7 +538,6 @@ class ExamInstanceService:
                 await self._add_students_to_exam(
                     added_students,
                     instance_id,
-                    instance.max_attempts,
                     instance.title,
                     start_date,
                     end_date,
@@ -560,8 +555,7 @@ class ExamInstanceService:
         if not instance:
             raise NotFoundError("Exam instance not found")
 
-        usr_obj = await instance.created_by.fetch()
-        if usr_obj.id != user_id:
+        if instance.created_by.ref.id != user_id:
             raise ForbiddenError("You do not own this exam instance")
 
         if instance.assigned_students:

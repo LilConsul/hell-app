@@ -226,6 +226,15 @@ class ExamInstanceService:
         if end_date < start_date:
             raise ForbiddenError("End date must be after start date")
 
+    async def _validate_students_exist(self, students: List[dict]) -> None:
+        """Check if all students exist in the user repository."""
+        for student in students:
+            student_id = student.get("student_id")
+            if student_id:
+                user = await self.user_repository.get_by_id(student_id)
+                if not user:
+                    raise NotFoundError(f"Student with ID {student_id} not found")
+
     async def create_exam_instance(
         self,
         user_id: str,
@@ -253,9 +262,12 @@ class ExamInstanceService:
             instance_data["start_date"], instance_data["end_date"]
         )
 
+        students = instance_data.get("assigned_students", [])
+        if students:
+            await self._validate_students_exist(students)
+
         exam_instance = await self.exam_instance_repository.create(instance_data)
 
-        students = instance_data.get("assigned_students", [])
         if students:
             await self._add_students_to_exam(
                 students,
@@ -298,6 +310,9 @@ class ExamInstanceService:
 
             new_students = update_data.get("assigned_students", [])
 
+            # Validate that all new students exist
+            await self._validate_students_exist(new_students)
+
             current_student_ids = {
                 student["student_id"] for student in current_students
             }
@@ -320,8 +335,8 @@ class ExamInstanceService:
                     added_students,
                     instance_id,
                     instance.title,
-                    start_date,
-                    end_date,
+                    instance.start_date if "start_date" not in update_data else start_date,
+                    instance.end_date if "end_date" not in update_data else end_date,
                     instance.notification_settings.model_dump(),
                 )
 
@@ -339,11 +354,3 @@ class ExamInstanceService:
         if instance.created_by.ref.id != user_id:
             raise ForbiddenError("You do not own this exam instance")
 
-        if instance.assigned_students:
-            students = [
-                {"student_id": await self._extract_student_id(student.student_id)}
-                for student in instance.assigned_students
-            ]
-            await self._remove_students_from_exam(students, instance_id)
-
-        await self.exam_instance_repository.delete(instance_id)

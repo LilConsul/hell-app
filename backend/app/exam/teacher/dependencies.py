@@ -4,15 +4,21 @@ from app.exam.dependencies import (
     get_collection_repository,
     get_exam_instance_repository,
     get_question_repository,
+    get_student_attempt_repository,
     get_student_exam_repository,
 )
 from app.exam.repository import (
     CollectionRepository,
     ExamInstanceRepository,
     QuestionRepository,
+    StudentAttemptRepository,
     StudentExamRepository,
 )
-from app.exam.teacher.services import CollectionService, ExamInstanceService
+from app.exam.teacher.services import (
+    CollectionService,
+    ExamInstanceService,
+    ReportService,
+)
 from fastapi import Depends
 
 
@@ -31,4 +37,20 @@ def get_exam_instance_service(
 ) -> ExamInstanceService:
     return ExamInstanceService(
         exam_ins_repo, collection_repo, user_repository, student_exam_repo
+    )
+
+
+def get_report_service(
+    student_exam_repository: StudentExamRepository = Depends(
+        get_student_exam_repository
+    ),
+    exam_instance_repository: ExamInstanceRepository = Depends(
+        get_exam_instance_repository
+    ),
+    student_attempt_repository: StudentAttemptRepository = Depends(
+        get_student_attempt_repository
+    ),
+) -> ReportService:
+    return ReportService(
+        student_exam_repository, student_attempt_repository, exam_instance_repository
     )

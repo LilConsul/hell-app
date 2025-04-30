@@ -244,6 +244,9 @@ class ExamInstanceService:
         if not (is_owner or is_public):
             raise ForbiddenError("You do not have access to this collection")
 
+        if not collection.questions:
+            raise NotFoundError("Collection does not contain any questions. Please add questions to the collection before creating an exam instance.")
+
         instance_data = instance_data.model_dump()
         instance_data["created_by"] = user_id
         await self.check_datetime(

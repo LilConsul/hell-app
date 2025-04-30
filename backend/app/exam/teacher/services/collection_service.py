@@ -5,9 +5,9 @@ from app.core.exceptions import ForbiddenError, NotFoundError
 from app.exam.models import ExamStatus, QuestionType
 from app.exam.repository import CollectionRepository, QuestionRepository
 from app.exam.teacher.schemas import (
+    CollectionQuestionCount,
     CreateCollection,
     GetCollection,
-    JustCollection,
     QuestionSchema,
     UpdateCollection,
     UpdateQuestionSchema,
@@ -187,25 +187,31 @@ class CollectionService:
         # Update the question
         await self.question_repository.update(question_id, update_data)
 
-    async def get_teacher_collections(self, user_id: str) -> List[JustCollection]:
+    async def get_teacher_collections(
+        self, user_id: str
+    ) -> List[CollectionQuestionCount] | []:
         """Get all collections created by a specific teacher."""
         collections = await self.collection_repository.get_by_creator(user_id)
-        return [
-            JustCollection.model_validate(
-                {**collection.model_dump(), "questions": None}
-            )
-            for collection in collections
-        ]
+        return await self._process_collections(collections)
 
-    async def get_public_collections(self) -> List[JustCollection] | []:
+    async def get_public_collections(self) -> List[CollectionQuestionCount] | []:
         """Get all published collections that are publicly available."""
         collections = await self.collection_repository.get_published()
-        return [
-            JustCollection.model_validate(
-                {**collection.model_dump(), "questions": None}
+        return await self._process_collections(collections)
+
+    @staticmethod
+    async def _process_collections(collections) -> List[CollectionQuestionCount] | []:
+        """Process collection data and add question count."""
+        result = []
+        for collection in collections:
+            collection_dict = collection.model_dump()
+            collection_dict["question_count"] = (
+                len(collection.questions)
+                if hasattr(collection, "questions") and collection.questions
+                else 0
             )
-            for collection in collections
-        ]
+            result.append(CollectionQuestionCount.model_validate(collection_dict))
+        return result
 
     async def delete_question(self, question_id: str, user_id: str) -> None:
         """Delete an existing question by its ID."""
@@ -224,5 +230,4 @@ class CollectionService:
                 collection.questions.remove(question)
                 await self.collection_repository.save(collection)
 
-        # Delete the question
         await self.question_repository.delete(question_id)

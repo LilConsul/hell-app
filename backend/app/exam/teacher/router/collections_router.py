@@ -4,13 +4,12 @@ from app.auth.dependencies import get_current_teacher_id
 from app.core.schemas import BaseReturn
 from app.exam.teacher.dependencies import get_collection_service
 from app.exam.teacher.schemas import (
+    CollectionQuestionCount,
     CreateCollection,
     GetCollection,
-    CollectionNoQuestions,
     QuestionSchema,
     UpdateCollection,
     UpdateQuestionSchema,
-    CollectionQuestionCount,
 )
 from app.exam.teacher.services import CollectionService
 from fastapi import APIRouter, Depends, status

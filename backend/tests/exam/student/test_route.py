@@ -17,7 +17,7 @@ from app.exam.models import (
 from app.exam.student.schemas import (
     CurrentAttempt,
     QuestionWithOptions,
-    ReviewAttempt,
+    QuestionWithUserResponse,
     StudentAttemptBasic,
     StudentExamBase,
     StudentExamDetail,
@@ -295,3 +295,66 @@ class TestStudentRouter:
         assert response.status_code == 200
         assert response.json()["message"] == "Exam submitted successfully"
         assert response.json()["data"]["status"] == "submitted"
+
+    @patch("app.exam.student.services.StudentExamService.reload_exam")
+    async def test_reload_exam(
+        self, mock_service, client, auth_headers, test_student_exam, student_user
+    ):
+        """Test reloading an in-progress exam with user responses"""
+        # Mock return value with properly structured question data
+        mock_service.return_value = [
+            QuestionWithUserResponse(
+                id="q1",
+                question_text="What is 2+2?",
+                type="mcq",
+                has_katex=False,
+                weight=1,
+                options=[
+                    {"id": "opt1", "text": "3"},
+                    {"id": "opt2", "text": "4"},
+                    {"id": "opt3", "text": "5"},
+                ],
+                user_selected_options=["opt2"],
+                user_text_response=None,
+                is_flagged=False,
+            ),
+            QuestionWithUserResponse(
+                id="q2",
+                question_text="Explain the concept of gravity",
+                type="shortanswer",
+                has_katex=False,
+                weight=2,
+                options=None,
+                user_selected_options=[],
+                user_text_response="Gravity is a force that attracts objects",
+                is_flagged=True,
+            ),
+        ]
+
+        response = await client.get(
+            f"/v1/exam/student/exam/{test_student_exam.id}/reload", headers=auth_headers
+        )
+
+        assert response.status_code == 200
+        assert response.json()["message"] == "Exam reloaded successfully"
+
+        # Verify the response data structure
+        data = response.json()["data"]
+        assert len(data) == 2
+
+        # Check first question (MCQ)
+        assert data[0]["id"] == "q1"
+        assert data[0]["type"] == "mcq"
+        assert data[0]["user_selected_options"] == ["opt2"]
+        assert data[0]["is_flagged"] == False
+
+        # Check second question (short answer)
+        assert data[1]["id"] == "q2"
+        assert data[1]["type"] == "shortanswer"
+        assert (
+            data[1]["user_text_response"] == "Gravity is a force that attracts objects"
+        )
+        assert data[1]["is_flagged"] == True
+
+        # Verify service was called with correct parameters - using positional arguments
+        mock_service.assert_called_once_with(str(student_user.id), test_student_exam.id)

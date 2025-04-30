@@ -50,7 +50,7 @@ class ReportService:
         if not exam_instance:
             raise NotFoundError("Exam instance not found")
 
-        if filters.subject and filters.subject.lower() != exam_instance.title.lower():
+        if filters.title and filters.title.lower() != exam_instance.title.lower():
             return ExamReportResponse(
                 exam_title=exam_instance.title,
                 total_students=0,
@@ -128,7 +128,7 @@ class ReportService:
             student_exams = [
                 exam
                 for exam in student_exams
-                if str(exam.student_id.ref.id) in student_ids
+                if str(exam.student_id.id) in student_ids
             ]
 
         all_attempts = []

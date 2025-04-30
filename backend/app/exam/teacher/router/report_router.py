@@ -17,12 +17,16 @@ router = APIRouter(
 @router.get("/{exam_instance_id}", response_model=BaseReturn[ExamReportResponse])
 async def get_exam_report(
     exam_instance_id: str,
-    start_date: Optional[datetime] = None,
-    end_date: Optional[datetime] = None,
-    group_ids: Optional[str] = Query(
+    start_date: Optional[datetime] = Query(
+        None, description="Date from which search on submitted attempts starts"
+    ),
+    end_date: Optional[datetime] = Query(
+        None, description="Date until which search on submitted attempts ends"
+    ),
+    student_ids: Optional[str] = Query(
         None, description="Comma-separated list of student IDs"
     ),
-    subject: Optional[str] = None,
+    title: Optional[str] = None,
     only_last_attempt: Optional[bool] = True,
     report_service: ReportService = Depends(get_report_service),
 ):
@@ -31,14 +35,14 @@ async def get_exam_report(
     Supports filtering by date range, student group, and subject (exam title).
     """
     # Parse group IDs if provided
-    student_ids = group_ids.split(",") if group_ids else None
+    student_ids = student_ids.split(",") if student_ids else None
 
     # Create filter object for the service
     filters = ExamReportFilter(
         start_date=start_date,
         end_date=end_date,
         student_ids=student_ids,
-        subject=subject,
+        title=title,
         only_last_attempt=only_last_attempt,
     )
 

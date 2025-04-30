@@ -67,10 +67,13 @@ async def export_exam_report_pdf(
     ),
     title: Optional[str] = None,
     only_last_attempt: Optional[bool] = True,
+    include_visualizations: bool = True,
     report_service: ReportService = Depends(get_report_service),
 ):
     """
-    Export exam report as PDF with statistics and student performance breakdown.
+    Export exam report as PDF with statistics, visualizations, and student performance breakdown.
+    Includes timeline and histogram charts when include_visualizations is True.
+    When only_last_attempt is False, all attempts for each student are grouped together.
     """
     # Parse student IDs if provided
     student_ids = student_ids.split(",") if student_ids else None
@@ -84,9 +87,11 @@ async def export_exam_report_pdf(
         only_last_attempt=only_last_attempt,
     )
 
-    # Generate the PDF
+    # Generate the PDF with visualization options
     pdf_content = await report_service.generate_exam_report_pdf(
-        exam_instance_id=exam_instance_id, filters=filters
+        exam_instance_id=exam_instance_id,
+        filters=filters,
+        include_visualizations=include_visualizations
     )
 
     # Create a downloadable response

@@ -272,6 +272,7 @@ class ReportService:
         self,
         exam_instance_id: str,
         filters: ExamReportFilter,
+        include_visualizations: bool = True,
     ) -> bytes:
         """Generate a PDF report for an exam instance."""
         # Get the report data
@@ -359,7 +360,6 @@ class ReportService:
                     ("ALIGN", (0, 0), (-1, -1), "CENTER"),
                     ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
                     ("BOTTOMPADDING", (0, 0), (-1, 0), 12),
-                    ("BACKGROUND", (0, 1), (-1, -1), colors.beige),
                     ("GRID", (0, 0), (-1, -1), 1, colors.black),
                 ]
             )
@@ -368,51 +368,178 @@ class ReportService:
         story.append(summary_table)
         story.append(Spacer(1, 0.5 * inch))
 
+        # Add visualizations if requested
+        if (
+            include_visualizations
+            and report_data.histogram_data
+            and report_data.timeline_data
+        ):
+            # Add histogram
+            story.append(Paragraph("Score Distribution", heading_style))
+
+            # Create histogram data for chart
+            from reportlab.graphics.charts.barcharts import VerticalBarChart
+            from reportlab.graphics.shapes import Drawing
+
+            histogram_drawing = Drawing(500, 200)
+            histogram_chart = VerticalBarChart()
+            histogram_chart.x = 50
+            histogram_chart.y = 50
+            histogram_chart.height = 125
+            histogram_chart.width = 400
+
+            # Extract data from histogram_data
+            histogram_ranges = [h.range for h in report_data.histogram_data]
+            histogram_counts = [h.count for h in report_data.histogram_data]
+
+            histogram_chart.data = [histogram_counts]
+            histogram_chart.categoryAxis.categoryNames = histogram_ranges
+            histogram_chart.categoryAxis.labels.boxAnchor = "ne"
+            histogram_chart.categoryAxis.labels.angle = 30
+            histogram_chart.bars[0].fillColor = colors.steelblue
+
+            histogram_drawing.add(histogram_chart)
+            story.append(histogram_drawing)
+            story.append(Spacer(1, 0.25 * inch))
+
+            # Add timeline chart
+            story.append(Paragraph("Performance Over Time", heading_style))
+
+            from reportlab.graphics.charts.lineplots import LinePlot
+
+            timeline_drawing = Drawing(500, 200)
+            timeline_chart = LinePlot()
+            timeline_chart.x = 50
+            timeline_chart.y = 50
+            timeline_chart.height = 125
+            timeline_chart.width = 400
+
+            # Extract data from timeline_data
+            timeline_dates = [t.date for t in report_data.timeline_data]
+            timeline_scores = [
+                (i, t.average_score) for i, t in enumerate(report_data.timeline_data)
+            ]
+
+            timeline_chart.data = [timeline_scores]
+            timeline_chart.lines[0].strokeColor = colors.green
+
+            # X-axis labels
+            timeline_chart.xValueAxis.valueMin = 0
+            timeline_chart.xValueAxis.valueMax = len(timeline_dates) - 1
+            timeline_chart.xValueAxis.valueSteps = list(range(len(timeline_dates)))
+            timeline_chart.xValueAxis.labelTextFormat = (
+                lambda x: timeline_dates[int(x)] if x < len(timeline_dates) else ""
+            )
+
+            timeline_drawing.add(timeline_chart)
+            story.append(timeline_drawing)
+            story.append(Spacer(1, 0.5 * inch))
+
         # Add student performance breakdown
         story.append(Paragraph("Student Performance", heading_style))
 
-        if student_data:
-            # Prepare student data for the table
-            student_table_data = [
-                ["Student Name", "Email", "Score", "Status", "Attempt Date"]
-            ]
-
+        # Special handling for multiple attempts
+        if not filters.only_last_attempt and student_data:
+            # Group student data by student email
+            student_groups = {}
             for student in student_data:
-                student_table_data.append(
-                    [
-                        student["name"],
-                        student["email"],
-                        f"{student['score']:.1f}"
-                        if student["score"] is not None
-                        else "N/A",
-                        student["status"].value if student["status"] else "N/A",
-                        student["attempt_date"],
-                    ]
+                email = student["email"]
+                if email not in student_groups:
+                    student_groups[email] = []
+                student_groups[email].append(student)
+
+            # Create a table for each student with all their attempts
+            for email, attempts in student_groups.items():
+                # Sort attempts by date
+                attempts.sort(key=lambda x: x["attempt_date"], reverse=True)
+
+                # Add student name header
+                student_name = attempts[0]["name"]
+                story.append(
+                    Paragraph(f"Student: {student_name} ({email})", styles["Heading4"])
                 )
 
-            # Create the student table
-            student_table = Table(student_table_data, colWidths=[doc.width / 5.0] * 5)
-            student_table.setStyle(
-                TableStyle(
-                    [
-                        ("BACKGROUND", (0, 0), (-1, 0), colors.grey),
-                        ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
-                        ("ALIGN", (0, 0), (-1, -1), "LEFT"),
-                        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-                        ("BOTTOMPADDING", (0, 0), (-1, 0), 12),
-                        ("GRID", (0, 0), (-1, -1), 1, colors.black),
-                        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-                    ]
-                )
-            )
+                # Create table with all attempts
+                attempt_table_data = [["Attempt #", "Score", "Status", "Date"]]
 
-            story.append(student_table)
+                for i, attempt in enumerate(attempts, 1):
+                    attempt_table_data.append(
+                        [
+                            f"Attempt {i}",
+                            f"{attempt['score']:.1f}"
+                            if attempt["score"] is not None
+                            else "N/A",
+                            attempt["status"].value if attempt["status"] else "N/A",
+                            attempt["attempt_date"],
+                        ]
+                    )
+
+                # Create and style the attempt table
+                attempt_table = Table(attempt_table_data)
+                attempt_table.setStyle(
+                    TableStyle(
+                        [
+                            ("BACKGROUND", (0, 0), (-1, 0), colors.grey),
+                            ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
+                            ("ALIGN", (0, 0), (-1, -1), "LEFT"),
+                            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                            (
+                                "BACKGROUND",
+                                (0, 1),
+                                (-1, 1),
+                                colors.lightblue,
+                            ),  # Highlight latest attempt
+                            ("GRID", (0, 0), (-1, -1), 1, colors.black),
+                        ]
+                    )
+                )
+
+                story.append(attempt_table)
+                story.append(Spacer(1, 0.25 * inch))
         else:
-            story.append(
-                Paragraph(
-                    "No student data available for the selected filters.", normal_style
+            # Original single attempt per student code
+            if student_data:
+                student_table_data = [
+                    ["Student Name", "Email", "Score", "Status", "Attempt Date"]
+                ]
+
+                for student in student_data:
+                    student_table_data.append(
+                        [
+                            student["name"],
+                            student["email"],
+                            f"{student['score']:.1f}"
+                            if student["score"] is not None
+                            else "N/A",
+                            student["status"].value if student["status"] else "N/A",
+                            student["attempt_date"],
+                        ]
+                    )
+
+                student_table = Table(
+                    student_table_data, colWidths=[doc.width / 5.0] * 5
                 )
-            )
+                student_table.setStyle(
+                    TableStyle(
+                        [
+                            ("BACKGROUND", (0, 0), (-1, 0), colors.grey),
+                            ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
+                            ("ALIGN", (0, 0), (-1, -1), "LEFT"),
+                            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                            ("BOTTOMPADDING", (0, 0), (-1, 0), 12),
+                            ("GRID", (0, 0), (-1, -1), 1, colors.black),
+                        ]
+                    )
+                )
+
+                story.append(student_table)
+            else:
+                story.append(
+                    Paragraph(
+                        "No student data available for the selected filters.",
+                        normal_style,
+                    )
+                )
 
         # Generate the PDF
         doc.build(story)

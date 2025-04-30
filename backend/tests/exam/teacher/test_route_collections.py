@@ -122,7 +122,8 @@ class TestTeacherRouter:
                     "role": "teacher",
                     "receive_notifications": True,
                 },
-                "questions": None,
+                "questions": [],  # Add this field
+                "question_count": 0,  # Add this field
                 "created_at": "2023-01-01T00:00:00",
                 "updated_at": "2023-01-01T00:00:00",
             }
@@ -262,6 +263,8 @@ class TestTeacherRouter:
                     "role": "teacher",
                     "receive_notifications": True,
                 },
+                "questions": [],  # Add this field
+                "question_count": 0,  # Add this field
                 "created_at": "2023-01-01T00:00:00",
                 "updated_at": "2023-01-01T00:00:00",
             }

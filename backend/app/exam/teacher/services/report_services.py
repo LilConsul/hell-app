@@ -18,9 +18,8 @@ from app.exam.teacher.schemas import (
     TimelineDataPoint,
 )
 from reportlab.lib import colors
-from reportlab.lib.pagesizes import A4, landscape
+from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet
-from reportlab.lib.units import inch
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
 
@@ -274,7 +273,7 @@ class ReportService:
         filters: ExamReportFilter,
         include_visualizations: bool = True,
     ) -> bytes:
-        """Generate a PDF report for an exam instance."""
+        """Generate a modern PDF report for an exam instance with shadcn inspired design."""
         # Get the report data
         report_data = await self.get_exam_report(
             exam_instance_id=exam_instance_id, filters=filters
@@ -288,92 +287,154 @@ class ReportService:
         # Create a buffer for the PDF content
         buffer = BytesIO()
 
-        # Get the A4 dimensions and create landscape format
-        # A4 is 210mm × 297mm (8.27in × 11.69in)
-        a4_width, a4_height = A4  # Default A4 size (portrait)
-        a4_landscape = landscape(A4)  # Swap width and height
-
-        # Set up the document with explicit landscape A4 format
+        # Set up the document with PORTRAIT A4 format (changed from landscape)
         doc = SimpleDocTemplate(
             buffer,
-            pagesize=a4_landscape,
-            rightMargin=72,
-            leftMargin=72,
-            topMargin=72,
-            bottomMargin=72,
+            pagesize=A4,  # Changed to portrait A4
+            rightMargin=40,
+            leftMargin=40,
+            topMargin=50,
+            bottomMargin=40,
         )
 
-        # Get styles
+        # Shadcn-inspired neutral color palette
+        primary_color = colors.HexColor("#18181B")      # zinc-900
+        secondary_color = colors.HexColor("#71717A")    # zinc-500
+        accent_color = colors.HexColor("#3F3F46")       # zinc-700
+        background_color = colors.HexColor("#F4F4F5")   # zinc-100
+        muted_color = colors.HexColor("#E4E4E7")        # zinc-200
+        border_color = colors.HexColor("#D4D4D8")       # zinc-300
+        text_color = colors.HexColor("#27272A")         # zinc-800
+        success_color = colors.HexColor("#16A34A")      # green-600
+        error_color = colors.HexColor("#DC2626")        # red-600
+
+        # Get styles and customize for shadcn look
         styles = getSampleStyleSheet()
         title_style = styles["Title"]
+        title_style.textColor = primary_color
+        title_style.fontSize = 22
+        title_style.fontName = "Helvetica-Bold"
+        title_style.spaceAfter = 8
+
         heading_style = styles["Heading2"]
+        heading_style.textColor = primary_color
+        heading_style.fontSize = 16
+        heading_style.fontName = "Helvetica-Bold"
+        heading_style.spaceAfter = 8
+
         normal_style = styles["Normal"]
+        normal_style.textColor = text_color
+        normal_style.fontSize = 10
+        normal_style.fontName = "Helvetica"
+
+        subheading_style = styles["Heading4"]
+        subheading_style.textColor = accent_color
+        subheading_style.fontSize = 12
+        subheading_style.fontName = "Helvetica-Bold"
+
+        # White title style specifically for the exam title
+        white_title_style = styles["Title"].clone('WhiteTitle')
+        white_title_style.textColor = colors.white
+        white_title_style.fontSize = 18
+        white_title_style.fontName = "Helvetica-Bold"
+        white_title_style.alignment = 1  # Center alignment
 
         # Create story (content elements)
         story = []
 
-        # Add title
-        story.append(Paragraph(f"Exam Report: {report_data.exam_title}", title_style))
-        story.append(Spacer(1, 0.25 * inch))
-
-        # Add date
-        current_date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-        story.append(Paragraph(f"Generated on: {current_date}", normal_style))
-        story.append(Spacer(1, 0.25 * inch))
-
-        # Add summary statistics
-        story.append(Paragraph("Summary Statistics", heading_style))
-
-        # Create a summary table with width adjusted for landscape A4
-        available_width = a4_landscape[0] - 2 * 72  # Total width minus margins
-        summary_data = [
+        # Create modern header
+        header_data = [
             [
-                "Total Students",
-                "Attempts",
-                "Average",
-                "Median",
-                "Min",
-                "Max",
-                "Pass Rate",
-            ],
-            [
-                str(report_data.total_students),
-                str(report_data.attempts_count),
-                f"{report_data.statistics.mean:.1f}"
-                if report_data.statistics.mean is not None
-                else "N/A",
-                f"{report_data.statistics.median:.1f}"
-                if report_data.statistics.median is not None
-                else "N/A",
-                f"{report_data.statistics.min:.1f}"
-                if report_data.statistics.min is not None
-                else "N/A",
-                f"{report_data.statistics.max:.1f}"
-                if report_data.statistics.max is not None
-                else "N/A",
-                f"{report_data.pass_rate:.1f}%"
-                if report_data.pass_rate is not None
-                else "N/A",
-            ],
+                Paragraph("<b>EXAM REPORT</b>", title_style),
+                Paragraph(
+                    f"<i>Generated: {datetime.now(timezone.utc).strftime('%Y-%m-%d')}</i>",
+                    normal_style,
+                ),
+            ]
         ]
-
-        col_width = available_width / 7.0
-        summary_table = Table(summary_data, colWidths=[col_width] * 7)
-        summary_table.setStyle(
+        header_table = Table(header_data, colWidths=[doc.width / 2.0] * 2)
+        header_table.setStyle(
             TableStyle(
                 [
-                    ("BACKGROUND", (0, 0), (-1, 0), colors.grey),
-                    ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
-                    ("ALIGN", (0, 0), (-1, -1), "CENTER"),
-                    ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-                    ("BOTTOMPADDING", (0, 0), (-1, 0), 12),
-                    ("GRID", (0, 0), (-1, -1), 1, colors.black),
+                    ("BACKGROUND", (0, 0), (-1, 0), colors.white),
+                    ("TEXTCOLOR", (0, 0), (-1, 0), text_color),
+                    ("ALIGN", (0, 0), (0, 0), "LEFT"),
+                    ("ALIGN", (1, 0), (1, 0), "RIGHT"),
+                    ("LINEBELOW", (0, 0), (-1, 0), 1, border_color),
+                    ("TOPPADDING", (0, 0), (-1, 0), 16),
+                    ("BOTTOMPADDING", (0, 0), (-1, 0), 16),
                 ]
             )
         )
+        story.append(header_table)
+        story.append(Spacer(1, 20))
 
+        # Add exam title in a modern card with white text centered
+        title_text = f"{report_data.exam_title}"
+        title_table = Table(
+            [[Paragraph(title_text, white_title_style)]], colWidths=[doc.width]
+        )
+        title_table.setStyle(
+            TableStyle(
+                [
+                    ("BACKGROUND", (0, 0), (-1, -1), primary_color),
+                    ("TEXTCOLOR", (0, 0), (-1, -1), colors.white),
+                    ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                    ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                    ("PADDING", (0, 0), (-1, -1), 28),  # Taller rectangle
+                    ("ROUNDEDCORNERS", [6, 6, 6, 6]),
+                ]
+            )
+        )
+        story.append(title_table)
+        story.append(Spacer(1, 20))
+
+        # Add summary statistics in shadcn card style
+        story.append(Paragraph("Summary Statistics", heading_style))
+        story.append(Spacer(1, 8))
+
+        # Adjust for portrait mode - use 3 rows of stats instead of 1 row
+        summary_data = [
+            ["Total Students", str(report_data.total_students), "Attempts", str(report_data.attempts_count)],
+            ["Average", f"{report_data.statistics.mean:.1f}" if report_data.statistics.mean is not None else "N/A", 
+             "Median", f"{report_data.statistics.median:.1f}" if report_data.statistics.median is not None else "N/A"],
+            ["Min", f"{report_data.statistics.min:.1f}" if report_data.statistics.min is not None else "N/A", 
+             "Max", f"{report_data.statistics.max:.1f}" if report_data.statistics.max is not None else "N/A"],
+            ["Pass Rate", f"{report_data.pass_rate:.1f}%" if report_data.pass_rate is not None else "N/A", "", ""],
+        ]
+
+        available_width = doc.width
+        col_width = available_width / 4.0
+        summary_table = Table(summary_data, colWidths=[col_width] * 4)
+        summary_table.setStyle(
+            TableStyle(
+                [
+                    # Label columns (0, 2)
+                    ("BACKGROUND", (0, 0), (0, -1), background_color),
+                    ("BACKGROUND", (2, 0), (2, -2), background_color),
+                    ("TEXTCOLOR", (0, 0), (0, -1), primary_color),
+                    ("TEXTCOLOR", (2, 0), (2, -2), primary_color),
+                    ("ALIGN", (0, 0), (-1, -1), "LEFT"),
+                    ("FONTNAME", (0, 0), (0, -1), "Helvetica-Bold"),
+                    ("FONTNAME", (2, 0), (2, -2), "Helvetica-Bold"),
+                    # Value columns (1, 3) 
+                    ("ALIGN", (1, 0), (1, -1), "LEFT"),
+                    ("ALIGN", (3, 0), (3, -1), "LEFT"),
+                    # All cells
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 10),
+                    ("TOPPADDING", (0, 0), (-1, -1), 10),
+                    ("LEFTPADDING", (0, 0), (-1, -1), 15),
+                    # Borders
+                    ("BOX", (0, 0), (-1, -1), 1, border_color),
+                    ("ROUNDEDCORNERS", [4, 4, 4, 4]),
+                    # Specific for pass rate row
+                    ("SPAN", (1, 3), (3, 3)),  # Span the last row
+                    ("BACKGROUND", (0, 3), (0, 3), background_color),
+                ]
+            )
+        )
         story.append(summary_table)
-        story.append(Spacer(1, 0.5 * inch))
+        story.append(Spacer(1, 20))
 
         # Add visualizations if requested
         if (
@@ -381,19 +442,36 @@ class ReportService:
             and report_data.histogram_data
             and report_data.timeline_data
         ):
-            # Add histogram optimized for landscape
-            story.append(Paragraph("Score Distribution", heading_style))
+            # Add section divider
+            story.append(Paragraph("Data Visualizations", heading_style))
+            story.append(Spacer(1, 8))
 
+            # Create histogram with title inside the rectangle
             from reportlab.graphics.charts.barcharts import VerticalBarChart
-            from reportlab.graphics.shapes import Drawing
+            from reportlab.graphics.shapes import Drawing, Rect, String
 
-            # Larger drawing width for landscape
-            histogram_drawing = Drawing(600, 200)
+            # Create drawing with background - adjusted for portrait
+            histogram_drawing = Drawing(500, 220)
+            
+            # Add background rectangle with rounded corners
+            bg_rect = Rect(0, 0, 500, 220, rx=6, ry=6)
+            bg_rect.fillColor = colors.white
+            bg_rect.strokeColor = border_color
+            bg_rect.strokeWidth = 1
+            histogram_drawing.add(bg_rect)
+            
+            # Add title inside the rectangle
+            title_string = String(250, 200, "Score Distribution", textAnchor='middle')
+            title_string.fontName = "Helvetica-Bold"
+            title_string.fontSize = 12
+            title_string.fillColor = accent_color
+            histogram_drawing.add(title_string)
+            
             histogram_chart = VerticalBarChart()
             histogram_chart.x = 50
-            histogram_chart.y = 50
+            histogram_chart.y = 30  # Lower to make room for title
             histogram_chart.height = 125
-            histogram_chart.width = 500  # Wider chart for landscape
+            histogram_chart.width = 380  # Narrower chart for portrait
 
             # Extract data from histogram_data
             histogram_ranges = [h.range for h in report_data.histogram_data]
@@ -403,23 +481,43 @@ class ReportService:
             histogram_chart.categoryAxis.categoryNames = histogram_ranges
             histogram_chart.categoryAxis.labels.boxAnchor = "ne"
             histogram_chart.categoryAxis.labels.angle = 30
-            histogram_chart.bars[0].fillColor = colors.steelblue
+            histogram_chart.valueAxis.visibleGrid = True
+            histogram_chart.valueAxis.gridStrokeColor = border_color
+            histogram_chart.valueAxis.gridStrokeWidth = 0.5
+
+            # Shadcn-inspired color styling
+            histogram_chart.bars[0].fillColor = accent_color
 
             histogram_drawing.add(histogram_chart)
             story.append(histogram_drawing)
-            story.append(Spacer(1, 0.25 * inch))
+            story.append(Spacer(1, 16))
 
-            # Add timeline chart optimized for landscape
-            story.append(Paragraph("Performance Over Time", heading_style))
-
+            # Create timeline chart with title inside rectangle
             from reportlab.graphics.charts.lineplots import LinePlot
+            from reportlab.graphics.widgets.markers import makeMarker
 
-            timeline_drawing = Drawing(600, 200)
+            # Create drawing with background - adjusted for portrait
+            timeline_drawing = Drawing(500, 220)
+            
+            # Add background rectangle with rounded corners
+            bg_rect = Rect(0, 0, 500, 220, rx=6, ry=6)
+            bg_rect.fillColor = colors.white
+            bg_rect.strokeColor = border_color
+            bg_rect.strokeWidth = 1
+            timeline_drawing.add(bg_rect)
+            
+            # Add title inside the rectangle
+            title_string = String(250, 200, "Performance Over Time", textAnchor='middle')
+            title_string.fontName = "Helvetica-Bold"
+            title_string.fontSize = 12
+            title_string.fillColor = accent_color
+            timeline_drawing.add(title_string)
+            
             timeline_chart = LinePlot()
             timeline_chart.x = 50
-            timeline_chart.y = 50
+            timeline_chart.y = 30  # Lower to make room for title
             timeline_chart.height = 125
-            timeline_chart.width = 500  # Wider chart for landscape
+            timeline_chart.width = 380  # Narrower chart for portrait
 
             # Extract data from timeline_data
             timeline_dates = [t.date for t in report_data.timeline_data]
@@ -428,7 +526,19 @@ class ReportService:
             ]
 
             timeline_chart.data = [timeline_scores]
-            timeline_chart.lines[0].strokeColor = colors.green
+            timeline_chart.lines[0].strokeColor = primary_color
+            timeline_chart.lines[0].strokeWidth = 2
+            timeline_chart.lines[0].symbol = makeMarker("FilledCircle")
+            timeline_chart.lines[0].symbol.fillColor = primary_color
+            timeline_chart.lines[0].symbol.size = 4
+
+            # Add grid lines
+            timeline_chart.xValueAxis.visibleGrid = True
+            timeline_chart.xValueAxis.gridStrokeColor = border_color
+            timeline_chart.xValueAxis.gridStrokeWidth = 0.5
+            timeline_chart.yValueAxis.visibleGrid = True
+            timeline_chart.yValueAxis.gridStrokeColor = border_color
+            timeline_chart.yValueAxis.gridStrokeWidth = 0.5
 
             # X-axis labels
             timeline_chart.xValueAxis.valueMin = 0
@@ -440,10 +550,11 @@ class ReportService:
 
             timeline_drawing.add(timeline_chart)
             story.append(timeline_drawing)
-            story.append(Spacer(1, 0.5 * inch))
+            story.append(Spacer(1, 20))
 
-        # Add student performance breakdown
+        # Add student performance breakdown - adjusted for portrait mode
         story.append(Paragraph("Student Performance", heading_style))
+        story.append(Spacer(1, 8))
 
         # Special handling for multiple attempts
         if not filters.only_last_attempt and student_data:
@@ -462,11 +573,13 @@ class ReportService:
 
                 # Add student name header
                 student_name = attempts[0]["name"]
-                story.append(
-                    Paragraph(f"Student: {student_name} ({email})", styles["Heading4"])
+                student_header = Paragraph(
+                    f"<b>{student_name}</b> ({email})", subheading_style
                 )
+                story.append(student_header)
+                story.append(Spacer(1, 4))
 
-                # Create table with all attempts
+                # Create table with all attempts - adjusted for portrait
                 attempt_table_data = [["Attempt #", "Score", "Status", "Date"]]
 
                 for i, attempt in enumerate(attempts, 1):
@@ -481,81 +594,170 @@ class ReportService:
                         ]
                     )
 
-                # Create and style the attempt table with landscape-appropriate widths
+                # Adjusted column widths for portrait
                 col_widths = [available_width * w for w in [0.15, 0.15, 0.3, 0.4]]
                 attempt_table = Table(attempt_table_data, colWidths=col_widths)
-                attempt_table.setStyle(
-                    TableStyle(
-                        [
-                            ("BACKGROUND", (0, 0), (-1, 0), colors.grey),
-                            ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
-                            ("ALIGN", (0, 0), (-1, -1), "LEFT"),
-                            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-                            (
-                                "BACKGROUND",
-                                (0, 1),
-                                (-1, 1),
-                                colors.lightblue,
-                            ),  # Highlight latest attempt
-                            ("GRID", (0, 0), (-1, -1), 1, colors.black),
-                        ]
+
+                # Apply modern shadcn-inspired styling
+                table_style = [
+                    # Header row
+                    ("BACKGROUND", (0, 0), (-1, 0), background_color),
+                    ("TEXTCOLOR", (0, 0), (-1, 0), primary_color),
+                    ("ALIGN", (0, 0), (-1, -1), "LEFT"),
+                    ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                    ("BOTTOMPADDING", (0, 0), (-1, 0), 10),
+                    ("TOPPADDING", (0, 0), (-1, 0), 10),
+                    # Borders and lines
+                    ("BOX", (0, 0), (-1, -1), 1, border_color),
+                    ("LINEBELOW", (0, 0), (-1, 0), 1, border_color),
+                    # Data rows
+                    ("BOTTOMPADDING", (0, 1), (-1, -1), 8),
+                    ("TOPPADDING", (0, 1), (-1, -1), 8),
+                    # Rounded corners
+                    ("ROUNDEDCORNERS", [4, 4, 4, 4]),
+                ]
+
+                # Add subtle row dividers
+                for i in range(1, len(attempt_table_data)):
+                    table_style.append(
+                        ("LINEBELOW", (0, i), (-1, i), 0.5, muted_color)
                     )
+
+                # Highlight the latest attempt with subtle background
+                table_style.append(
+                    ("BACKGROUND", (0, 1), (-1, 1), muted_color)
                 )
 
+                attempt_table.setStyle(TableStyle(table_style))
                 story.append(attempt_table)
-                story.append(Spacer(1, 0.25 * inch))
+                story.append(Spacer(1, 16))
         else:
-            # Original single attempt per student code
+            # Original single attempt per student code - adjusted for portrait
             if student_data:
+                # For portrait, show fewer columns to maintain readability
                 student_table_data = [
-                    ["Student Name", "Email", "Score", "Status", "Attempt Date"]
+                    ["Student Name", "Score", "Status", "Date"]
                 ]
 
                 for student in student_data:
+                    # Determine status color
+                    status_text = student["status"].value if student["status"] else "N/A"
+                    
                     student_table_data.append(
                         [
                             student["name"],
-                            student["email"],
                             f"{student['score']:.1f}"
                             if student["score"] is not None
                             else "N/A",
-                            student["status"].value if student["status"] else "N/A",
+                            status_text,
                             student["attempt_date"],
                         ]
                     )
 
-                # Adjust column widths for landscape orientation
+                # Adjusted column widths for portrait orientation
                 col_widths = [
-                    available_width * w for w in [0.25, 0.25, 0.15, 0.15, 0.2]
+                    available_width * w for w in [0.35, 0.15, 0.2, 0.3]
                 ]
                 student_table = Table(student_table_data, colWidths=col_widths)
-                student_table.setStyle(
-                    TableStyle(
-                        [
-                            ("BACKGROUND", (0, 0), (-1, 0), colors.grey),
-                            ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
-                            ("ALIGN", (0, 0), (-1, -1), "LEFT"),
-                            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-                            ("BOTTOMPADDING", (0, 0), (-1, 0), 12),
-                            ("GRID", (0, 0), (-1, -1), 1, colors.black),
-                        ]
-                    )
-                )
 
+                # Modern shadcn-inspired table styling
+                table_style = [
+                    # Header row
+                    ("BACKGROUND", (0, 0), (-1, 0), background_color),
+                    ("TEXTCOLOR", (0, 0), (-1, 0), primary_color),
+                    ("ALIGN", (0, 0), (-1, -1), "LEFT"),
+                    ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                    ("BOTTOMPADDING", (0, 0), (-1, 0), 10),
+                    ("TOPPADDING", (0, 0), (-1, 0), 10),
+                    # Borders
+                    ("BOX", (0, 0), (-1, -1), 1, border_color),
+                    ("LINEBELOW", (0, 0), (-1, 0), 1, border_color),
+                    # Data rows
+                    ("BOTTOMPADDING", (0, 1), (-1, -1), 8),
+                    ("TOPPADDING", (0, 1), (-1, -1), 8),
+                    # Rounded corners
+                    ("ROUNDEDCORNERS", [4, 4, 4, 4]),
+                ]
+
+                # Add subtle row dividers
+                for i in range(1, len(student_table_data) - 1):
+                    table_style.append(
+                        ("LINEBELOW", (0, i), (-1, i), 0.5, muted_color)
+                    )
+
+                # Apply alternating row background for better readability
+                for i in range(1, len(student_table_data)):
+                    if i % 2 == 0:
+                        table_style.append(
+                            ("BACKGROUND", (0, i), (-1, i), muted_color)
+                        )
+
+                student_table.setStyle(TableStyle(table_style))
                 story.append(student_table)
             else:
-                story.append(
-                    Paragraph(
-                        "No student data available for the selected filters.",
-                        normal_style,
-                    )
+                # Empty state message
+                empty_message = Paragraph(
+                    "No student data available for the selected filters.",
+                    normal_style,
                 )
+                empty_table = Table(
+                    [[empty_message]], 
+                    colWidths=[doc.width]
+                )
+                empty_table.setStyle(
+                    TableStyle([
+                        ("BACKGROUND", (0, 0), (0, 0), background_color),
+                        ("ALIGN", (0, 0), (0, 0), "CENTER"),
+                        ("VALIGN", (0, 0), (0, 0), "MIDDLE"),
+                        ("PADDING", (0, 0), (0, 0), 20),
+                        ("ROUNDEDCORNERS", [4, 4, 4, 4]),
+                        ("BOX", (0, 0), (0, 0), 1, border_color),
+                    ])
+                )
+                story.append(empty_table)
 
-        # Generate the PDF
-        doc.build(story)
+        from reportlab.pdfgen import canvas as reportlab_canvas
+
+        # Create a numbered canvas for proper page counting
+        class NumberedCanvas(reportlab_canvas.Canvas):
+            def __init__(self, *args, **kwargs):
+                reportlab_canvas.Canvas.__init__(self, *args, **kwargs)
+                self._saved_page_states = []
+
+            def showPage(self):
+                self._saved_page_states.append(dict(self.__dict__))
+                self._startPage()
+
+            def save(self):
+                num_pages = len(self._saved_page_states)
+                for i, state in enumerate(self._saved_page_states):
+                    self.__dict__.update(state)
+                    self.draw_page_number(i + 1, num_pages)
+                    reportlab_canvas.Canvas.showPage(self)
+                reportlab_canvas.Canvas.save(self)
+
+            def draw_page_number(self, page_num, total_pages):
+                self.saveState()
+                self.setFont("Helvetica", 9)
+                self.setFillColor(secondary_color)
+                page_text = f"Page {page_num} of {total_pages}"
+                self.drawRightString(doc.width + 40, 30, page_text)
+
+                # Add footer line
+                self.setStrokeColor(border_color)
+                self.line(40, 40, doc.width + 40, 40)
+
+                # Add report ID
+                self.setFont("Helvetica", 8)
+                self.drawString(40, 30, f"Report ID: {exam_instance_id}")
+                self.restoreState()
+
+        # Build the document
+        doc.build(story, canvasmaker=NumberedCanvas)
 
         # Get the PDF content
         pdf_content = buffer.getvalue()
         buffer.close()
 
         return pdf_content
+

@@ -1,20 +1,20 @@
 from typing import List, Union
 
 from app.auth.dependencies import get_current_student_id
+from app.core.schemas import BaseReturn
 from app.exam.student.dependencies import get_student_exam_service
-from app.exam.student.services import StudentExamService
-from fastapi import APIRouter, Depends
-
-from ...core.schemas import BaseReturn
-from .schemas import (
+from app.exam.student.schemas import (
     AnswerSubmission,
     QuestionIdentifier,
     QuestionWithOptions,
+    QuestionWithUserResponse,
     ReviewAttempt,
     StudentAttemptBasic,
     StudentExamBase,
     StudentExamDetail,
 )
+from app.exam.student.services import StudentExamService
+from fastapi import APIRouter, Depends
 
 router = APIRouter(
     prefix="/student",
@@ -38,9 +38,7 @@ async def get_student_exams(
     }
 
 
-@router.get(
-    "/exams/{student_exam_id}", response_model=BaseReturn[StudentExamDetail]
-)
+@router.get("/exams/{student_exam_id}", response_model=BaseReturn[StudentExamDetail])
 async def get_student_exam(
     student_exam_id: str,
     student_id: str = Depends(get_current_student_id),
@@ -78,13 +76,15 @@ async def get_student_attempt(
 
 
 @router.post(
-    "/exam/{student_exam_id}/start", response_model=BaseReturn[List[QuestionWithOptions]]
+    "/exam/{student_exam_id}/start",
+    response_model=BaseReturn[List[QuestionWithOptions]],
 )
 async def start_exam(
     student_exam_id: str,
+    student_id: str = Depends(get_current_student_id),
     student_exam_service: StudentExamService = Depends(get_student_exam_service),
 ):
-    data = await student_exam_service.start_exam(student_exam_id)
+    data = await student_exam_service.start_exam(student_id, student_exam_id)
     return {
         "message": "Exam started successfully",
         "data": data,
@@ -95,9 +95,10 @@ async def start_exam(
 async def save_answer(
     student_exam_id: str,
     question: AnswerSubmission,
+    student_id: str = Depends(get_current_student_id),
     student_exam_service: StudentExamService = Depends(get_student_exam_service),
 ):
-    await student_exam_service.save_answer(student_exam_id, question)
+    await student_exam_service.save_answer(student_id, student_exam_id, question)
     return {
         "message": "Answer saved successfully",
     }
@@ -109,13 +110,30 @@ async def save_answer(
 async def toggle_flag_question(
     student_exam_id: str,
     question: QuestionIdentifier,
+    student_id: str = Depends(get_current_student_id),
     student_exam_service: StudentExamService = Depends(get_student_exam_service),
 ):
     await student_exam_service.toggle_flag_question(
-        student_exam_id, question.question_id
+        student_id, student_exam_id, question.question_id
     )
     return {
         "message": "Question flagged successfully",
+    }
+
+
+@router.get(
+    "/exam/{student_exam_id}/reload",
+    response_model=BaseReturn[List[QuestionWithUserResponse]],
+)
+async def reload_exam(
+    student_exam_id: str,
+    student_id: str = Depends(get_current_student_id),
+    student_exam_service: StudentExamService = Depends(get_student_exam_service),
+):
+    data = await student_exam_service.reload_exam(student_id, student_exam_id)
+    return {
+        "message": "Exam reloaded successfully",
+        "data": data,
     }
 
 
@@ -124,9 +142,10 @@ async def toggle_flag_question(
 )
 async def submit_exam(
     student_exam_id: str,
+    student_id: str = Depends(get_current_student_id),
     student_exam_service: StudentExamService = Depends(get_student_exam_service),
 ):
-    data = await student_exam_service.submit_exam(student_exam_id)
+    data = await student_exam_service.submit_exam(student_id, student_exam_id)
     return {
         "message": "Exam submitted successfully",
         "data": data,

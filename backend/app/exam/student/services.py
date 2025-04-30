@@ -10,12 +10,13 @@ from app.exam.repository import (
     StudentResponseRepository,
 )
 from app.exam.student.schemas import (
-    BaseGetStudentExamSchema,
-    BaseQuestionSchema,
-    DetailGetStudentExamSchema,
-    QuestionSetAnswer,
-    ReviewAttemptSchema,
-    StudentAttemptBasicSchema,
+    AnswerSubmission,
+    QuestionWithOptions,
+    QuestionWithUserResponse,
+    ReviewAttempt,
+    StudentAttemptBasic,
+    StudentExamBase,
+    StudentExamDetail,
 )
 
 
@@ -30,9 +31,7 @@ class StudentExamService:
         self.student_attempt_repository = student_attempt_repository
         self.student_response_repository = student_response_repository
 
-    async def get_student_exams(
-        self, student_id: str
-    ) -> List[BaseGetStudentExamSchema]:
+    async def get_student_exams(self, student_id: str) -> List[StudentExamBase]:
         """
         Get all exams for a student.
         """
@@ -41,11 +40,11 @@ class StudentExamService:
         )
         if not exam:
             return []
-        return [BaseGetStudentExamSchema.model_validate(exam) for exam in exam]
+        return [StudentExamBase.model_validate(exam) for exam in exam]
 
     async def get_student_exam(
         self, student_id: str, student_exam_id: str
-    ) -> DetailGetStudentExamSchema:
+    ) -> StudentExamDetail:
         """
         Get a specific exam for a student.
         """
@@ -58,15 +57,15 @@ class StudentExamService:
         if exams.student_id.id != student_id:
             raise ForbiddenError("You do not have permission to access this exam")
         exams.latest_attempt_id = exams.latest_attempt_id.ref.id
-        return DetailGetStudentExamSchema.model_validate(exams)
+        return StudentExamDetail.model_validate(exams)
 
     async def get_student_attempt(
         self, student_id: str, attempt_id: str
-    ) -> Union[ReviewAttemptSchema, StudentAttemptBasicSchema]:
+    ) -> Union[ReviewAttempt, StudentAttemptBasic]:
         """
         Get a specific attempt for a student.
-        If allow_review is true, returns ReviewAttemptSchema with correct answers.
-        Otherwise returns StudentAttemptBasicSchema with basic information.
+        If allow_review is true, returns ReviewAttempt with correct answers.
+        Otherwise returns StudentAttemptBasic with basic information.
         """
         attempt = await self.student_attempt_repository.get_by_id(
             attempt_id, fetch_links=True
@@ -87,9 +86,9 @@ class StudentExamService:
 
         # If review is not allowed, return basic schema
         if not allow_review:
-            return StudentAttemptBasicSchema.model_validate(attempt)
+            return StudentAttemptBasic.model_validate(attempt)
 
-        return ReviewAttemptSchema.model_validate(attempt)
+        return ReviewAttempt.model_validate(attempt)
 
     def _validate_exam_time(self, start_date, end_date):
         """Validate if the current time is within the exam time range."""
@@ -102,13 +101,18 @@ class StudentExamService:
         if current_time > end_date_aware:
             raise ForbiddenError("Exam has already ended")
 
-    async def start_exam(self, student_exam_id: str) -> List[BaseQuestionSchema]:
+    async def start_exam(
+        self, student_id: str, student_exam_id: str
+    ) -> List[QuestionWithOptions]:
         """Start an exam for a student."""
         student_exam = await self.student_exam_repository.get_by_id(
             student_exam_id, fetch_links=True
         )
         if not student_exam:
             raise ForbiddenError("Exam not found")
+
+        if student_exam.student_id.id != student_id:
+            raise ForbiddenError("You do not have permission to access this exam")
 
         if student_exam.current_status == StudentExamStatus.IN_PROGRESS:
             raise ForbiddenError("Exam already started")
@@ -164,9 +168,9 @@ class StudentExamService:
             },
         )
 
-        return [BaseQuestionSchema.model_validate(question) for question in questions]
+        return [QuestionWithOptions.model_validate(question) for question in questions]
 
-    async def _get_active_attempt(self, student_exam_id: str):
+    async def _get_active_attempt(self, student_id: str, student_exam_id: str):
         """
         Get and validate the active attempt for a student exam.
 
@@ -177,6 +181,9 @@ class StudentExamService:
         )
         if not student_exam:
             raise ForbiddenError("Exam not found")
+
+        if student_exam.student_id.id != student_id:
+            raise ForbiddenError("You do not have permission to access this exam")
 
         if student_exam.current_status != StudentExamStatus.IN_PROGRESS:
             raise ForbiddenError("Exam not in progress")
@@ -195,9 +202,13 @@ class StudentExamService:
             raise ForbiddenError("Attempt is not in progress")
         return student_exam, attempt
 
-    async def save_answer(self, student_exam_id: str, question: QuestionSetAnswer):
+    async def save_answer(
+        self, student_id: str, student_exam_id: str, question: AnswerSubmission
+    ):
         """Save the answer for a question."""
-        student_exam, attempt = await self._get_active_attempt(student_exam_id)
+        student_exam, attempt = await self._get_active_attempt(
+            student_id, student_exam_id
+        )
 
         response = await self.student_response_repository.find_by_attempt_and_question(
             attempt.id, question.question_id
@@ -233,9 +244,13 @@ class StudentExamService:
             attempt.id, {"last_auto_save": datetime.now(timezone.utc)}
         )
 
-    async def toggle_flag_question(self, student_exam_id: str, question_id: str):
+    async def toggle_flag_question(
+        self, student_id: str, student_exam_id: str, question_id: str
+    ):
         """Flag a question for review."""
-        student_exam, attempt = await self._get_active_attempt(student_exam_id)
+        student_exam, attempt = await self._get_active_attempt(
+            student_id, student_exam_id
+        )
 
         response = await self.student_response_repository.find_by_attempt_and_question(
             attempt.id, question_id
@@ -252,9 +267,13 @@ class StudentExamService:
             attempt.id, {"last_auto_save": datetime.now(timezone.utc)}
         )
 
-    async def submit_exam(self, student_exam_id: str) -> StudentAttemptBasicSchema:
+    async def submit_exam(
+        self, student_id: str, student_exam_id: str
+    ) -> StudentAttemptBasic:
         """Submit the exam for grading."""
-        student_exam, attempt = await self._get_active_attempt(student_exam_id)
+        student_exam, attempt = await self._get_active_attempt(
+            student_id, student_exam_id
+        )
 
         if not attempt:
             raise ForbiddenError("No active attempt found")
@@ -331,7 +350,7 @@ class StudentExamService:
             student_exam.id, {"current_status": StudentExamStatus.SUBMITTED}
         )
 
-        return StudentAttemptBasicSchema(
+        return StudentAttemptBasic(
             id=attempt.id,
             status=StudentExamStatus.SUBMITTED,
             started_at=attempt.started_at,
@@ -339,3 +358,64 @@ class StudentExamService:
             grade=final_grade,
             pass_fail=pass_fail,
         )
+
+    async def reload_exam(
+        self, student_id: str, student_exam_id: str
+    ) -> List[QuestionWithUserResponse]:
+        """Reload the exam questions with user's previous answers."""
+        student_exam, attempt = await self._get_active_attempt(
+            student_id, student_exam_id
+        )
+
+        exam_instance = student_exam.exam_instance_id
+        collection = exam_instance.collection_id
+        all_questions = {q.id: q for q in collection.questions}
+
+        question_order = attempt.question_order
+
+        responses = await self.student_response_repository.find_by_attempt_id(
+            attempt.id
+        )
+        response_map = {resp.question_id.id: resp for resp in responses}
+
+        # Get questions in the correct order with user responses
+        questions_with_responses = []
+        for q_id in question_order:
+            if q_id in all_questions:
+                question = all_questions[q_id]
+
+                # If there's a response with option ordering for this question
+                if q_id in response_map and question.options:
+                    response = response_map[q_id]
+                    option_order = response.option_order
+
+                    # Sort options according to the stored order
+                    if option_order:
+                        sorted_options = sorted(
+                            question.options,
+                            key=lambda opt: option_order.get(opt.id, 0),
+                        )
+                        question.options = sorted_options
+
+                # Create base question with options
+                question_with_options = QuestionWithOptions.model_validate(question)
+
+                # Add user response data
+                user_response = response_map.get(q_id)
+                question_with_user_response = QuestionWithUserResponse(
+                    **question_with_options.model_dump(),
+                    user_selected_options=user_response.selected_option_ids
+                    if user_response
+                    else [],
+                    user_text_response=user_response.text_response
+                    if user_response
+                    else None,
+                    is_flagged=user_response.is_flagged if user_response else False,
+                )
+
+                questions_with_responses.append(question_with_user_response)
+
+        if not questions_with_responses:
+            raise ForbiddenError("No questions found for this attempt")
+
+        return questions_with_responses

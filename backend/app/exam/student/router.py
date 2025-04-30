@@ -1,20 +1,20 @@
 from typing import List, Union
 
 from app.auth.dependencies import get_current_student_id
+from app.core.schemas import BaseReturn
 from app.exam.student.dependencies import get_student_exam_service
+from app.exam.student.schemas import (
+    AnswerSubmission,
+    QuestionIdentifier,
+    QuestionWithOptions,
+    QuestionWithUserResponse,
+    ReviewAttempt,
+    StudentAttemptBasic,
+    StudentExamBase,
+    StudentExamDetail,
+)
 from app.exam.student.services import StudentExamService
 from fastapi import APIRouter, Depends
-
-from ...core.schemas import BaseReturn
-from .schemas import (
-    BaseGetStudentExamSchema,
-    BaseQuestionSchema,
-    DetailGetStudentExamSchema,
-    QuestionBaseSchema,
-    QuestionSetAnswer,
-    ReviewAttemptSchema,
-    StudentAttemptBasicSchema,
-)
 
 router = APIRouter(
     prefix="/student",
@@ -23,7 +23,7 @@ router = APIRouter(
 )
 
 
-@router.get("/exams", response_model=BaseReturn[List[BaseGetStudentExamSchema]])
+@router.get("/exams", response_model=BaseReturn[List[StudentExamBase]])
 async def get_student_exams(
     student_id: str = Depends(get_current_student_id),
     student_exam_service: StudentExamService = Depends(get_student_exam_service),
@@ -38,9 +38,7 @@ async def get_student_exams(
     }
 
 
-@router.get(
-    "/exams/{student_exam_id}", response_model=BaseReturn[DetailGetStudentExamSchema]
-)
+@router.get("/exams/{student_exam_id}", response_model=BaseReturn[StudentExamDetail])
 async def get_student_exam(
     student_exam_id: str,
     student_id: str = Depends(get_current_student_id),
@@ -58,7 +56,7 @@ async def get_student_exam(
 
 @router.get(
     "/exam/{attempt_id}",
-    response_model=BaseReturn[Union[ReviewAttemptSchema, StudentAttemptBasicSchema]],
+    response_model=BaseReturn[Union[ReviewAttempt, StudentAttemptBasic]],
 )
 async def get_student_attempt(
     attempt_id: str,
@@ -78,13 +76,15 @@ async def get_student_attempt(
 
 
 @router.post(
-    "/exam/{student_exam_id}/start", response_model=BaseReturn[List[BaseQuestionSchema]]
+    "/exam/{student_exam_id}/start",
+    response_model=BaseReturn[List[QuestionWithOptions]],
 )
 async def start_exam(
     student_exam_id: str,
+    student_id: str = Depends(get_current_student_id),
     student_exam_service: StudentExamService = Depends(get_student_exam_service),
 ):
-    data = await student_exam_service.start_exam(student_exam_id)
+    data = await student_exam_service.start_exam(student_id, student_exam_id)
     return {
         "message": "Exam started successfully",
         "data": data,
@@ -94,10 +94,11 @@ async def start_exam(
 @router.put("/exam/{student_exam_id}/save_answer", response_model=BaseReturn[None])
 async def save_answer(
     student_exam_id: str,
-    question: QuestionSetAnswer,
+    question: AnswerSubmission,
+    student_id: str = Depends(get_current_student_id),
     student_exam_service: StudentExamService = Depends(get_student_exam_service),
 ):
-    await student_exam_service.save_answer(student_exam_id, question)
+    await student_exam_service.save_answer(student_id, student_exam_id, question)
     return {
         "message": "Answer saved successfully",
     }
@@ -108,26 +109,43 @@ async def save_answer(
 )
 async def toggle_flag_question(
     student_exam_id: str,
-    question: QuestionBaseSchema,
+    question: QuestionIdentifier,
+    student_id: str = Depends(get_current_student_id),
     student_exam_service: StudentExamService = Depends(get_student_exam_service),
 ):
     await student_exam_service.toggle_flag_question(
-        student_exam_id, question.question_id
+        student_id, student_exam_id, question.question_id
     )
     return {
         "message": "Question flagged successfully",
     }
 
 
+@router.get(
+    "/exam/{student_exam_id}/reload",
+    response_model=BaseReturn[List[QuestionWithUserResponse]],
+)
+async def reload_exam(
+    student_exam_id: str,
+    student_id: str = Depends(get_current_student_id),
+    student_exam_service: StudentExamService = Depends(get_student_exam_service),
+):
+    data = await student_exam_service.reload_exam(student_id, student_exam_id)
+    return {
+        "message": "Exam reloaded successfully",
+        "data": data,
+    }
+
+
 @router.post(
-    "/exam/{student_exam_id}/submit",
-    response_model=BaseReturn[StudentAttemptBasicSchema],
+    "/exam/{student_exam_id}/submit", response_model=BaseReturn[StudentAttemptBasic]
 )
 async def submit_exam(
     student_exam_id: str,
+    student_id: str = Depends(get_current_student_id),
     student_exam_service: StudentExamService = Depends(get_student_exam_service),
 ):
-    data = await student_exam_service.submit_exam(student_exam_id)
+    data = await student_exam_service.submit_exam(student_id, student_exam_id)
     return {
         "message": "Exam submitted successfully",
         "data": data,

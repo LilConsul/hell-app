@@ -23,6 +23,7 @@ async def get_exam_report(
         None, description="Comma-separated list of student IDs"
     ),
     subject: Optional[str] = None,
+    only_last_attempt: Optional[bool] = True,
     report_service: ReportService = Depends(get_report_service),
 ):
     """
@@ -38,6 +39,7 @@ async def get_exam_report(
         end_date=end_date,
         student_ids=student_ids,
         subject=subject,
+        only_last_attempt=only_last_attempt,
     )
 
     report = await report_service.get_exam_report(

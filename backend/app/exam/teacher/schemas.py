@@ -148,6 +148,7 @@ class ExamReportFilter(BaseModel):
     end_date: datetime | None = None
     student_ids: List[str] | None = None
     subject: str | None = None
+    only_last_attempt: bool = True
 
 
 class ExamStatistics(BaseModel):

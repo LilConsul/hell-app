@@ -65,7 +65,7 @@ class ReportService:
         )
 
         attempts = await self._get_filtered_attempts(
-            exam_instance_id, date_range, filters.student_ids
+            exam_instance_id, date_range, filters.student_ids, filters.only_last_attempt
         )
 
         if not attempts:
@@ -106,8 +106,20 @@ class ReportService:
         exam_instance_id: str,
         date_range: Optional[Tuple[datetime, datetime]] = None,
         student_ids: Optional[List[str]] = None,
+        only_last_attempt: bool = True,
     ) -> List[StudentAttempt]:
-        """Helper method to get filtered student attempts"""
+        """
+        Helper method to get filtered student attempts
+
+        Args:
+            exam_instance_id: ID of the exam instance
+            date_range: Optional tuple of (start_date, end_date) to filter by submission time
+            student_ids: Optional list of student IDs to filter by
+            only_last_attempt: If True, include only the last attempt for each student
+
+        Returns:
+            Filtered list of student attempts
+        """
         student_exams = await self.student_exam_repository.get_all(
             {"exam_instance_id._id": exam_instance_id}, fetch_links=True
         )
@@ -119,7 +131,7 @@ class ReportService:
                 if str(exam.student_id.ref.id) in student_ids
             ]
 
-        attempts = []
+        all_attempts = []
         for student_exam in student_exams:
             student_attempts = await self.student_attempt_repository.get_all(
                 {"student_exam_id._id": student_exam.id}, fetch_links=True
@@ -134,27 +146,49 @@ class ReportService:
                     and start_date <= attempt.submitted_at <= end_date
                 ]
 
-            attempts.extend(student_attempts)
+            # Filter for attempts with grades
+            student_attempts = [a for a in student_attempts if a.grade is not None]
 
-        return [attempt for attempt in attempts if attempt.grade is not None]
+            if only_last_attempt and student_attempts:
+                # Get only the latest attempt (by submission time)
+                last_attempt = max(
+                    student_attempts,
+                    key=lambda a: a.submitted_at if a.submitted_at else datetime.min,
+                )
+                all_attempts.append(last_attempt)
+            else:
+                all_attempts.extend(student_attempts)
+
+        return all_attempts
 
     def _prepare_histogram_data(self, scores: List[float]) -> List[HistogramDataPoint]:
-        """Helper method to prepare histogram data"""
+        """Helper method to prepare histogram data for percentage scores (0-100%)"""
         if not scores:
             return []
 
-        # Create bins for scores (0-10, 11-20, etc.)
+        # Create bins for scores (0-9, 10-19, ..., 90-100)
         bins = {}
-        for i in range(0, 101, 10):
+        for i in range(0, 100, 10):
             bins[i] = 0
 
         for score in scores:
-            bin_key = (int(score) // 10) * 10
+            # Special handling for score of exactly 100%
+            if score == 100:
+                bin_key = 90  # Put 100% in the 90-100 bin
+            else:
+                bin_key = (int(score) // 10) * 10
             bins[bin_key] += 1
 
-        return [
-            HistogramDataPoint(range=f"{k}-{k + 9}", count=v) for k, v in bins.items()
-        ]
+        # Create histogram data points with special handling for last bin
+        result = []
+        for k, v in bins.items():
+            if k == 90:
+                range_str = "90-100"  # Last bin includes 100%
+            else:
+                range_str = f"{k}-{k + 9}"
+            result.append(HistogramDataPoint(range=range_str, count=v))
+
+        return result
 
     def _prepare_timeline_data(
         self, attempts: List[StudentAttempt]

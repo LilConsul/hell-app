@@ -86,6 +86,12 @@ class Settings(BaseSettings):
     def DELETE_ACCOUNT_URL(self) -> str:
         return f"https://{self.DOMAIN}{self.DELETE_ACCOUNT_PATH}"
 
+    DASHBOARD_PATH: str
+
+    @property
+    def DASHBOARD_URL(self) -> str:
+        return f"https://{self.DOMAIN}{self.DASHBOARD_PATH}"
+
     # Backend settings
     BACKEND_PORT_INTERNAL: int
 

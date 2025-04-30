@@ -1,5 +1,5 @@
 import statistics
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Optional, Tuple
 
 from app.core.exceptions import NotFoundError
@@ -58,11 +58,17 @@ class ReportService:
                 statistics=ExamStatistics(),
             )
 
-        date_range = (
-            (filters.start_date, filters.end_date)
-            if filters.start_date and filters.end_date
-            else None
+        start_date = (
+            filters.start_date if filters.start_date else exam_instance.start_date
         )
+        if start_date and start_date.tzinfo is None:
+            start_date = start_date.replace(tzinfo=timezone.utc)
+
+        end_date = filters.end_date if filters.end_date else datetime.now(timezone.utc)
+        if end_date and end_date.tzinfo is None:
+            end_date = end_date.replace(tzinfo=timezone.utc)
+
+        date_range = (start_date, end_date)
 
         attempts = await self._get_filtered_attempts(
             exam_instance_id, date_range, filters.student_ids, filters.only_last_attempt
@@ -126,9 +132,7 @@ class ReportService:
 
         if student_ids:
             student_exams = [
-                exam
-                for exam in student_exams
-                if str(exam.student_id.id) in student_ids
+                exam for exam in student_exams if str(exam.student_id.id) in student_ids
             ]
 
         all_attempts = []
@@ -139,18 +143,21 @@ class ReportService:
 
             if date_range:
                 start_date, end_date = date_range
-                student_attempts = [
-                    attempt
-                    for attempt in student_attempts
-                    if attempt.submitted_at
-                    and start_date <= attempt.submitted_at <= end_date
-                ]
+                filtered_attempts = []
+                for attempt in student_attempts:
+                    if attempt.submitted_at:
+                        # Ensure attempt.submitted_at is timezone-aware
+                        submitted_at = attempt.submitted_at
+                        if submitted_at.tzinfo is None:
+                            submitted_at = submitted_at.replace(tzinfo=timezone.utc)
 
-            # Filter for attempts with grades
+                        if start_date <= submitted_at <= end_date:
+                            filtered_attempts.append(attempt)
+                student_attempts = filtered_attempts
+
             student_attempts = [a for a in student_attempts if a.grade is not None]
 
             if only_last_attempt and student_attempts:
-                # Get only the latest attempt (by submission time)
                 last_attempt = max(
                     student_attempts,
                     key=lambda a: a.submitted_at if a.submitted_at else datetime.min,

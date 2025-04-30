@@ -39,7 +39,7 @@ export function CollectionCard({ collection, onStatusChange, onDelete, onDuplica
 
   return (
     <>
-      <Card key={collection.id} className="overflow-hidden">
+      <Card className="overflow-hidden">
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between">
             <div className="flex items-center">
@@ -73,7 +73,7 @@ export function CollectionCard({ collection, onStatusChange, onDelete, onDuplica
             <div className="flex items-center">
               <Library className="mr-2 h-4 w-4 text-muted-foreground" />
               <span className="text-sm">
-                {collection.questions ? collection.questions.length : 0} questions
+                {collection.question_count || 0} questions
               </span>
             </div>
             {collection.used_in_exams > 0 && (

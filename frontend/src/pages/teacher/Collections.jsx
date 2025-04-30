@@ -77,7 +77,7 @@ function Collections() {
         }
       }
       
-      const questionCount = collection.questions ? collection.questions.length : 0;
+      const questionCount = collection.question_count || 0;
       if (questionCount < filters.questionCount[0] || questionCount > filters.questionCount[1]) {
         return false;
       }
@@ -120,32 +120,15 @@ function Collections() {
       }
       
       const data = await response.json();
+      const collectionsData = data.data || [];
       
-      // Fetch detailed data for each collection to get questions
-      const detailedCollections = await Promise.all(
-        data.data.map(async (collection) => {
-          try {
-            const detailResponse = await fetch(`/api/v1/exam/teacher/collections/${collection.id}`, {
-              credentials: "include",
-            });
-            
-            if (!detailResponse.ok) {
-              console.error(`Failed to fetch details for collection ${collection.id}`);
-              return collection;
-            }
-            
-            const detailData = await detailResponse.json();
-            return detailData.data;
-          } catch (err) {
-            console.error(`Error fetching details for collection ${collection.id}:`, err);
-            return collection;
-          }
-        })
-      );
+      setAllCollections(collectionsData);
       
-      setAllCollections(detailedCollections);
+      const filteredCollections = collectionsData.length > 0 ? 
+        collectionsData.filter(collection => 
+          (activeFilter === "all" || collection.status === activeFilter)
+        ) : [];
       
-      const filteredCollections = applyAllFilters();
       setCollections(filteredCollections);
     } catch (err) {
       console.error("Error fetching collections:", err);

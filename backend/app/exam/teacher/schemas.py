@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List
+from typing import List, Any
 
 from app.auth.schemas import UserResponse
 from app.exam.models import (
@@ -9,8 +9,7 @@ from app.exam.models import (
     QuestionType,
     SecuritySettings,
 )
-from pydantic import BaseModel, ConfigDict
-from pydantic.json_schema import model_json_schema
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class TimeStamp(BaseModel):
@@ -97,8 +96,12 @@ class GetCollection(CollectionBase, TimeStamp):
     questions: List[QuestionSchema]
 
 
-class JustCollection(GetCollection):
-    questions: None = None
+class CollectionNoQuestions(GetCollection):
+    questions: Any = Field(..., exclude=True)
+
+
+class CollectionQuestionCount(CollectionNoQuestions):
+    question_count: int
 
 
 class UserId(BaseModel):

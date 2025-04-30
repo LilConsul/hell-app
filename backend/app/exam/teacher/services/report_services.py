@@ -1,6 +1,7 @@
 import statistics
 from datetime import datetime, timezone
-from typing import List, Optional, Tuple
+from io import BytesIO
+from typing import Any, Dict, List, Optional, Tuple
 
 from app.core.exceptions import NotFoundError
 from app.exam.models import StudentAttempt
@@ -16,6 +17,11 @@ from app.exam.teacher.schemas import (
     HistogramDataPoint,
     TimelineDataPoint,
 )
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import A4, landscape
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib.units import inch
+from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
 
 class ReportService:
@@ -220,3 +226,199 @@ class ReportService:
             TimelineDataPoint(date=day, average_score=sum(scores) / len(scores))
             for day, scores in timeline_data.items()
         ]
+
+    async def get_student_report_data(
+        self,
+        exam_instance_id: str,
+        filters: ExamReportFilter,
+    ) -> List[Dict[str, Any]]:
+        """Get individual student performance data for the report."""
+        student_data = []
+
+        # Get all attempts filtered by the criteria
+        attempts = await self._get_filtered_attempts(
+            exam_instance_id,
+            (filters.start_date, filters.end_date)
+            if filters.start_date and filters.end_date
+            else None,
+            filters.student_ids,
+            filters.only_last_attempt,
+        )
+
+        # Process each attempt to get student information
+        for attempt in attempts:
+            if attempt.grade is not None:
+                student_exam = attempt.student_exam_id
+                student = student_exam.student_id
+
+                student_data.append(
+                    {
+                        "name": f"{student.first_name} {student.last_name}",
+                        "email": student.email,
+                        "score": attempt.grade,
+                        "status": attempt.pass_fail,
+                        "attempt_date": attempt.submitted_at.strftime("%Y-%m-%d %H:%M")
+                        if attempt.submitted_at
+                        else "N/A",
+                    }
+                )
+
+        # Sort by student name
+        student_data.sort(key=lambda x: x["name"])
+
+        return student_data
+
+    async def generate_exam_report_pdf(
+        self,
+        exam_instance_id: str,
+        filters: ExamReportFilter,
+    ) -> bytes:
+        """Generate a PDF report for an exam instance."""
+        # Get the report data
+        report_data = await self.get_exam_report(
+            exam_instance_id=exam_instance_id, filters=filters
+        )
+
+        # Get student-specific data
+        student_data = await self.get_student_report_data(
+            exam_instance_id=exam_instance_id, filters=filters
+        )
+
+        # Create a buffer for the PDF content
+        buffer = BytesIO()
+
+        # Set up the document
+        doc = SimpleDocTemplate(
+            buffer,
+            pagesize=landscape(A4),
+            rightMargin=72,
+            leftMargin=72,
+            topMargin=72,
+            bottomMargin=72,
+        )
+
+        # Get styles
+        styles = getSampleStyleSheet()
+        title_style = styles["Title"]
+        heading_style = styles["Heading2"]
+        normal_style = styles["Normal"]
+
+        # Create story (content elements)
+        story = []
+
+        # Add title
+        story.append(Paragraph(f"Exam Report: {report_data.exam_title}", title_style))
+        story.append(Spacer(1, 0.25 * inch))
+
+        # Add date
+        current_date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        story.append(Paragraph(f"Generated on: {current_date}", normal_style))
+        story.append(Spacer(1, 0.25 * inch))
+
+        # Add summary statistics
+        story.append(Paragraph("Summary Statistics", heading_style))
+
+        # Create a summary table
+        summary_data = [
+            [
+                "Total Students",
+                "Attempts",
+                "Average",
+                "Median",
+                "Min",
+                "Max",
+                "Pass Rate",
+            ],
+            [
+                str(report_data.total_students),
+                str(report_data.attempts_count),
+                f"{report_data.statistics.mean:.1f}"
+                if report_data.statistics.mean is not None
+                else "N/A",
+                f"{report_data.statistics.median:.1f}"
+                if report_data.statistics.median is not None
+                else "N/A",
+                f"{report_data.statistics.min:.1f}"
+                if report_data.statistics.min is not None
+                else "N/A",
+                f"{report_data.statistics.max:.1f}"
+                if report_data.statistics.max is not None
+                else "N/A",
+                f"{report_data.pass_rate:.1f}%"
+                if report_data.pass_rate is not None
+                else "N/A",
+            ],
+        ]
+
+        summary_table = Table(summary_data, colWidths=[doc.width / 7.0] * 7)
+        summary_table.setStyle(
+            TableStyle(
+                [
+                    ("BACKGROUND", (0, 0), (-1, 0), colors.grey),
+                    ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
+                    ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                    ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                    ("BOTTOMPADDING", (0, 0), (-1, 0), 12),
+                    ("BACKGROUND", (0, 1), (-1, -1), colors.beige),
+                    ("GRID", (0, 0), (-1, -1), 1, colors.black),
+                ]
+            )
+        )
+
+        story.append(summary_table)
+        story.append(Spacer(1, 0.5 * inch))
+
+        # Add student performance breakdown
+        story.append(Paragraph("Student Performance", heading_style))
+
+        if student_data:
+            # Prepare student data for the table
+            student_table_data = [
+                ["Student Name", "Email", "Score", "Status", "Attempt Date"]
+            ]
+
+            for student in student_data:
+                student_table_data.append(
+                    [
+                        student["name"],
+                        student["email"],
+                        f"{student['score']:.1f}"
+                        if student["score"] is not None
+                        else "N/A",
+                        student["status"].value if student["status"] else "N/A",
+                        student["attempt_date"],
+                    ]
+                )
+
+            # Create the student table
+            student_table = Table(student_table_data, colWidths=[doc.width / 5.0] * 5)
+            student_table.setStyle(
+                TableStyle(
+                    [
+                        ("BACKGROUND", (0, 0), (-1, 0), colors.grey),
+                        ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
+                        ("ALIGN", (0, 0), (-1, -1), "LEFT"),
+                        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                        ("BOTTOMPADDING", (0, 0), (-1, 0), 12),
+                        ("GRID", (0, 0), (-1, -1), 1, colors.black),
+                        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                    ]
+                )
+            )
+
+            story.append(student_table)
+        else:
+            story.append(
+                Paragraph(
+                    "No student data available for the selected filters.", normal_style
+                )
+            )
+
+        # Generate the PDF
+        doc.build(story)
+
+        # Get the PDF content
+        pdf_content = buffer.getvalue()
+        buffer.close()
+
+        return pdf_content

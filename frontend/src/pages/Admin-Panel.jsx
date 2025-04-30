@@ -1,4 +1,4 @@
-import {useEffect, useState} from "react";
+import {useState} from "react";
 import {useAdmin} from "@/contexts/admin-context";
 import {Navbar} from "@/components/navbar";
 import {Footer} from "@/components/footer";
@@ -40,17 +40,6 @@ function AdminPanel() {
   const [newRole, setNewRole] = useState("");
   const [batchNewRole, setBatchNewRole] = useState("student");
   const [operationError, setOperationError] = useState(null);
-  const [currentDateTime, setCurrentDateTime] = useState("");
-
-  // Set the current date and time in the required format
-  useEffect(() => {
-    const now = new Date();
-    const formatted = now.toISOString().slice(0, 19).replace('T', ' ');
-    setCurrentDateTime(formatted);
-  }, []);
-
-  // Current user from admin_context
-  const currentUser = window.admin_context?.currentUser || "LilConsul";
 
   // Handle role change confirmation
   const handleRoleChange = async () => {
@@ -125,14 +114,10 @@ function AdminPanel() {
 
       <main className="flex-1 container max-w-7xl mx-auto px-4 py-8">
         <div className="flex flex-col gap-8">
-          {/* Header with current user info */}
+          {/* Description */}
           <div className="flex flex-col gap-2">
             <div className="flex justify-between items-center">
               <h1 className="text-3xl font-bold tracking-tight">User Management</h1>
-              <div className="text-sm text-muted-foreground">
-                Logged in as: <span className="font-semibold">{currentUser}</span>
-                <div className="text-xs">{currentDateTime || "2025-04-27 15:45:02"}</div>
-              </div>
             </div>
             <p className="text-muted-foreground">
               Manage users, change roles, and control verification status

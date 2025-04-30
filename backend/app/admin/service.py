@@ -37,4 +37,3 @@ class AdminService:
         user.is_verified = True
         await self.user_repository.update(user_id, dict(user))
         return UserSchema.model_validate(user)
-    

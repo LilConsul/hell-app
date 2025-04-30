@@ -16,7 +16,13 @@ def get_student_exam_service(
     student_exam_repository: StudentExamRepository = Depends(
         get_student_exam_repository
     ),
-    student_attempt_repository: StudentAttemptRepository = Depends(get_student_attempt_repository),
-    student_response_repository: StudentResponseRepository = Depends(get_student_response_repository),
+    student_attempt_repository: StudentAttemptRepository = Depends(
+        get_student_attempt_repository
+    ),
+    student_response_repository: StudentResponseRepository = Depends(
+        get_student_response_repository
+    ),
 ) -> StudentExamService:
-    return StudentExamService(student_exam_repository, student_attempt_repository, student_response_repository)
+    return StudentExamService(
+        student_exam_repository, student_attempt_repository, student_response_repository
+    )

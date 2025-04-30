@@ -4,30 +4,64 @@
 
 {% block additional_styles %}
 .feature-section {
-  margin: 28px 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
+  margin: 1.5rem 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(175px, 1fr));
+  gap: 1rem;
 }
 
 .feature {
-  flex: 1;
-  min-width: 150px;
-  padding: 16px;
-  background-color: #f9f9f9;
-  border-radius: 8px;
+  padding: 1.25rem;
+  background-color: var(--secondary);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.feature:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
 .feature-icon {
-  font-family: monospace;
-  font-size: 20px;
-  margin-bottom: 12px;
-  color: #000000;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 2.5rem;
+  width: 2.5rem;
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+  border-radius: 0.5rem;
+  margin-bottom: 0.75rem;
+  font-size: 1.25rem;
 }
 
-@media screen and (max-width: 100px) {
-  .feature {
-    flex: 100%;
+.feature h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem 0;
+  color: var(--foreground);
+}
+
+.feature p {
+  font-size: 0.875rem;
+  color: var(--muted-foreground);
+  margin: 0;
+}
+
+.welcome-message {
+  font-size: 1.05rem;
+  line-height: 1.6;
+}
+
+.button-container {
+  text-align: center;
+  margin: 1.5rem 0;
+}
+
+@media screen and (max-width: 480px) {
+  .feature-section {
+    grid-template-columns: 1fr;
   }
 }
 {% endblock %}
@@ -35,15 +69,15 @@
 {% block heading %}Welcome to Hell App{% endblock %}
 
 {% block content %}
-<p>We're pleased to welcome you to Hell App, the secure examination platform designed to maintain academic
+<p class="welcome-message">We're pleased to welcome you to Hell App, the secure examination platform designed to maintain academic
    integrity through powerful anti-cheat technology.</p>
 
 <div class="info-box">
   <strong>Your account is now active.</strong> You can access the examination platform using your credentials
-                                               when your institution schedules an assessment.
+  when your institution schedules an assessment.
 </div>
 
-<div style="text-align: center;">
+<div class="button-container">
   <a href="{{login_link}}" class="button">Login to Hell App</a>
 </div>
 
@@ -53,19 +87,19 @@
 
 <div class="feature-section">
   <div class="feature">
-    <div class="feature-icon">&#9719;</div>
+    <div class="feature-icon">🔒</div>
     <h3>Advanced Anti-Cheat</h3>
     <p>Sophisticated monitoring system that ensures examination integrity.</p>
   </div>
   
   <div class="feature">
-    <div class="feature-icon">&#9881;</div>
+    <div class="feature-icon">🎯</div>
     <h3>Intuitive Interface</h3>
     <p>Clean, distraction-free environment for optimal focus during exams.</p>
   </div>
   
   <div class="feature">
-    <div class="feature-icon">&#9782;</div>
+    <div class="feature-icon">⚡</div>
     <h3>Seamless Experience</h3>
     <p>Reliable platform that works across devices and network conditions.</p>
   </div>

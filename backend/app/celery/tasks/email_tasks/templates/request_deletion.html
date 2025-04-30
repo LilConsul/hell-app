@@ -3,12 +3,62 @@
 {% block title %}Hell App Account Deletion{% endblock %}
 
 {% block additional_styles %}
-.button {
-  background-color: #dc3545;
+.destructive-button {
+  display: inline-block;
+  background-color: var(--destructive);
+  color: var(--destructive-foreground);
+  text-decoration: none;
+  padding: 0.75rem 1.25rem;
+  border-radius: var(--radius);
+  font-weight: 500;
+  font-size: 0.875rem;
+  margin: 1.25rem 0;
+  text-align: center;
+  transition: background-color 0.2s;
 }
 
-.button:hover {
-  background-color: #bd2130;
+.destructive-button:hover {
+  background-color: #dc2626;
+}
+
+.info-box-primary {
+  background-color: var(--secondary);
+  border-left: 3px solid var(--primary);
+  padding: 1rem;
+  margin: 1.25rem 0;
+  border-radius: 0 calc(var(--radius) - 2px) calc(var(--radius) - 2px) 0;
+}
+
+.info-box-warning {
+  background-color: #fef2f2;
+  border-left: 3px solid var(--destructive);
+  padding: 1rem;
+  margin: 1.25rem 0;
+  border-radius: 0 calc(var(--radius) - 2px) calc(var(--radius) - 2px) 0;
+  color: #991b1b;
+}
+
+.info-box-info {
+  background-color: #eff6ff;
+  border-left: 3px solid #3b82f6;
+  padding: 1rem;
+  margin: 1.25rem 0;
+  border-radius: 0 calc(var(--radius) - 2px) calc(var(--radius) - 2px) 0;
+  color: #1e40af;
+}
+
+.note-container {
+  background-color: var(--secondary);
+  border-radius: var(--radius);
+  padding: 1rem;
+  margin: 1.25rem 0;
+  border: 1px solid var(--border);
+  font-size: 0.875rem;
+}
+
+.deletion-container {
+  text-align: center;
+  margin: 2rem 0;
 }
 {% endblock %}
 
@@ -18,23 +68,25 @@
 <p>We received a request to delete your Hell App account. If you requested this action, please use the button below
    to confirm the deletion of your account.</p>
 
-<div style="text-align: center;">
-  <a href="{{deletion_link}}" class="button">Delete My Account</a>
+<div class="deletion-container">
+  <a href="{{deletion_link}}" class="destructive-button">Delete My Account</a>
 </div>
-<div class="security-notice">
+
+<div class="note-container">
   <strong>Note:</strong> Account deletion will permanently remove all your data, including exam history, profiles,
-                         and personal information from our system.
+  and personal information from our system.
 </div>
 
 <div class="divider"></div>
-<div class="info-box">
+
+<div class="info-box-warning">
   <strong>Important:</strong> This account deletion link will expire in 24 hours for security reasons. Once your
-                              account is deleted, all your data will be permanently removed and cannot be recovered.
+  account is deleted, all your data will be permanently removed and cannot be recovered.
 </div>
-<div class="info-box" style="border-left: 3px solid #0d6efd;">
+
+<div class="info-box-info">
   <strong>Security Notice:</strong> If you did not request an account deletion, please ignore this email. If you're
-                                    concerned about your account's security, please contact our support team
-                                    immediately.
+  concerned about your account's security, please contact our support team immediately.
 </div>
 {% endblock %}
 

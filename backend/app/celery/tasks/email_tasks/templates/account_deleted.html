@@ -2,20 +2,68 @@
 
 {% block title %}Hell App Account Deleted{% endblock %}
 
+{% block additional_styles %}
+.thank-you-box {
+  background-color: #f0fdf4;
+  border-left: 3px solid #4ade80;
+  padding: 1rem;
+  margin: 1.5rem 0;
+  border-radius: 0 calc(var(--radius) - 2px) calc(var(--radius) - 2px) 0;
+  color: #166534;
+}
+
+.status-indicator {
+  display: inline-block;
+  width: 0.75rem;
+  height: 0.75rem;
+  background-color: #4ade80;
+  border-radius: 50%;
+  margin-right: 0.5rem;
+}
+
+.success-banner {
+  background-color: #4ade80;
+  color: #14532d;
+  text-align: center;
+  padding: 0.75rem;
+  margin: 1.25rem 0;
+  border-radius: var(--radius);
+  font-weight: 600;
+}
+
+.footer-notice {
+  background-color: var(--secondary);
+  padding: 0.75rem;
+  border-radius: var(--radius);
+  margin-top: 1.5rem;
+  font-size: 0.875rem;
+  color: var(--muted-foreground);
+  text-align: center;
+}
+{% endblock %}
+
 {% block heading %}Account Successfully Deleted{% endblock %}
 
 {% block content %}
+<div class="success-banner">
+  <span class="status-indicator"></span>Your account has been permanently deleted
+</div>
+
 <p>Your Hell App account has been successfully deleted. All your data, including exam history, profiles, and
    personal information have been permanently removed from our system.</p>
 
-<div class="info-box">
+<div class="thank-you-box">
   <strong>Thank You:</strong> We appreciate the time you spent with us and hope that Hell App was useful during your
-                              journey. We wish you all the best in your future endeavors.
+  journey. We wish you all the best in your future endeavors.
 </div>
 
 <div class="divider"></div>
 
 <p>If you ever wish to use our services again, you're welcome to create a new account anytime.</p>
+
+<div class="footer-notice">
+  No further action is required on your part.
+</div>
 {% endblock %}
 
 {% block footer_extra %}This email was sent to confirm your Hell App account has been deleted.{% endblock %}

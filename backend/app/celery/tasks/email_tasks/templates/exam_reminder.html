@@ -4,41 +4,72 @@
 
 {% block additional_styles %}
 .exam-details {
-  background-color: #f9f9f9;
-  border-radius: 8px;
-  padding: 20px;
-  margin: 24px 0;
+  background-color: var(--secondary);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  margin: 1.5rem 0;
+  border: 1px solid var(--border);
 }
 
 .exam-item {
   display: flex;
-  margin-bottom: 12px;
+  margin-bottom: 0.75rem;
   align-items: flex-start;
 }
 
 .exam-label {
   font-weight: 600;
   min-width: 120px;
-  color: #000000;
+  color: var(--foreground);
+  font-size: 0.875rem;
 }
 
 .exam-value {
   font-weight: 500;
-  color: #000000;
+  color: var(--foreground);
 }
 
 .important-icon {
-  font-size: 20px;
-  margin-right: 8px;
+  font-size: 1rem;
+  margin-right: 0.5rem;
+  display: inline-block;
 }
 
-@media screen and (max-width: 480px) {
+.checklist {
+  background-color: var(--secondary);
+  border-radius: var(--radius);
+  padding: 1rem 1.25rem;
+  margin: 1rem 0;
+}
+
+.checklist-title {
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+}
+
+.checklist-item {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 0.5rem;
+}
+
+.checklist-icon {
+  color: var(--primary);
+  margin-right: 0.5rem;
+}
+
+.button-container {
+  text-align: center;
+  margin: 1.5rem 0;
+}
+
+@media screen and (max-width: 640px) {
   .exam-item {
     flex-direction: column;
   }
   
   .exam-label {
-    margin-bottom: 4px;
+    margin-bottom: 0.25rem;
   }
 }
 {% endblock %}
@@ -50,12 +81,9 @@
    review the details below and ensure you are prepared.</p>
 
 <div class="info-box">
-  <strong><span class="important-icon">&#9888;</span> Important:</strong> All exams are monitored using our
-                                                                          advanced anti-cheat technology. Please
-                                                                          ensure your computer meets all system
-                                                                          requirements and that your
-                                                                          webcam and microphone are functioning
-                                                                          properly.
+  <strong><span class="important-icon">⚠️</span> Important:</strong> All exams are monitored using our
+  advanced anti-cheat technology. Please ensure your computer meets all system
+  requirements and that your webcam and microphone are functioning properly.
 </div>
 
 <div class="exam-details">
@@ -73,20 +101,27 @@
   </div>
 </div>
 
-<div style="text-align: center;">
-  <a href="{{ exam_link }}" class="button">View Exam</a>
+<div class="button-container">
+  <a href="{{ exam_link }}" class="button">View Exam Details</a>
 </div>
 
 <div class="divider"></div>
 
-<h2>Preparation Checklist:</h2>
-<ul>
-  <li>Test your webcam and microphone</li>
-  <li>Ensure you have a stable internet connection</li>
-  <li>Log in 15 minutes before the exam starts</li>
-</ul>
-
-<div class="divider"></div>
+<div class="checklist">
+  <div class="checklist-title">Preparation Checklist:</div>
+  <div class="checklist-item">
+    <span class="checklist-icon">✓</span>
+    <span>Test your webcam and microphone</span>
+  </div>
+  <div class="checklist-item">
+    <span class="checklist-icon">✓</span>
+    <span>Ensure you have a stable internet connection</span>
+  </div>
+  <div class="checklist-item">
+    <span class="checklist-icon">✓</span>
+    <span>Log in 15 minutes before the exam starts</span>
+  </div>
+</div>
 
 <p>Good luck with your examination.</p>
 {% endblock %}

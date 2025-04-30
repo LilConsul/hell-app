@@ -18,6 +18,7 @@ class QuestionOptionBase(BaseModel):
     Basic question option schema without correctness information.
     Used when displaying options to students during an exam.
     """
+
     id: str
     text: str
 
@@ -29,6 +30,7 @@ class QuestionOptionFull(QuestionOptionBase):
     Complete question option schema including correctness information.
     Used when reviewing exam results or for teacher view.
     """
+
     is_correct: bool
 
     model_config = ConfigDict(arbitrary_types_allowed=True, from_attributes=True)
@@ -40,6 +42,7 @@ class QuestionBase(BaseModel):
     Base question schema with core properties.
     Used as foundation for other question schemas.
     """
+
     id: str
     question_text: str
     type: QuestionType
@@ -54,6 +57,7 @@ class QuestionWithOptions(QuestionBase):
     Question schema with options but without correctness information.
     Used when displaying questions to students during an exam.
     """
+
     options: List[QuestionOptionBase] | None = None
 
     model_config = ConfigDict(arbitrary_types_allowed=True, from_attributes=True)
@@ -64,6 +68,7 @@ class QuestionFull(QuestionBase):
     Complete question schema with all data including correct answers.
     Used when reviewing exam results or for teacher view.
     """
+
     options: List[QuestionOptionFull] | None = None
     correct_input_answer: str | None = None
 
@@ -75,6 +80,7 @@ class QuestionWithUserResponse(QuestionWithOptions):
     Question schema that includes user response data.
     Used when reloading an exam to show previous answers.
     """
+
     user_selected_options: List[str] = []
     user_text_response: Optional[str] = None
     is_flagged: bool = False
@@ -88,6 +94,7 @@ class ExamInstanceBasic(ExamInstanceBase):
     Basic exam instance data visible to students.
     Used when displaying exam information in student views.
     """
+
     id: str
     created_by: UserResponse
 
@@ -100,6 +107,7 @@ class StudentExamBase(BaseModel):
     Basic information about a student's exam assignment.
     Used for listing exams assigned to a student.
     """
+
     id: str
     exam_instance_id: ExamInstanceBasic
     current_status: StudentExamStatus
@@ -113,6 +121,7 @@ class StudentExamDetail(StudentExamBase):
     Detailed information about a student's exam including attempts.
     Used for detailed view of an exam for a student.
     """
+
     latest_attempt_id: Optional[str] = None
     attempts: List["StudentAttemptBasic"] = []
 
@@ -125,6 +134,7 @@ class StudentAttemptBase(BaseModel):
     Base schema for exam attempt information.
     Contains basic timing and status data.
     """
+
     id: str
     status: StudentExamStatus
     started_at: Optional[datetime] = None
@@ -138,6 +148,7 @@ class StudentAttemptBasic(StudentAttemptBase):
     Basic attempt information including grade.
     Used when showing attempt results without detailed answers.
     """
+
     grade: Optional[float] = None
     pass_fail: Optional[PassFailStatus] = None
 
@@ -149,6 +160,7 @@ class StudentAttemptDetail(StudentAttemptBase):
     Detailed attempt information including question order and security events.
     Used for detailed attempt information and monitoring.
     """
+
     grade: Optional[float] = None
     pass_fail: Optional[PassFailStatus] = None
     question_order: List[str] = []
@@ -163,6 +175,7 @@ class StudentResponseBase(BaseModel):
     Student's response to a question in an exam.
     Used to record and display a student's answers.
     """
+
     id: str
     question_id: QuestionFull
     selected_option_ids: List[str] = []
@@ -179,6 +192,7 @@ class ReviewResponse(StudentResponseBase):
     Response schema with correctness information.
     Used when reviewing completed exam attempts.
     """
+
     is_correct: bool = False
     correct_option_ids: List[str] = []
     correct_text_answer: Optional[str] = None
@@ -192,6 +206,7 @@ class QuestionIdentifier(BaseModel):
     Simple schema to identify a question by ID.
     Used in API requests that need to reference a specific question.
     """
+
     question_id: str
 
     model_config = ConfigDict(arbitrary_types_allowed=True, from_attributes=True)
@@ -202,6 +217,7 @@ class AnswerSubmission(QuestionIdentifier):
     Schema for submitting an answer to a question.
     Used for saving answers during an exam session.
     """
+
     answer: str | None = None
     option_ids: List[str] | None = None
 
@@ -214,6 +230,7 @@ class CurrentAttempt(StudentAttemptDetail):
     Complete attempt with all student responses.
     Used for tracking and displaying the current exam attempt.
     """
+
     responses: List[StudentResponseBase] = []
 
     model_config = ConfigDict(arbitrary_types_allowed=True, from_attributes=True)
@@ -224,6 +241,7 @@ class ReviewAttempt(StudentAttemptDetail):
     Complete attempt with review information including correct answers.
     Used for reviewing a completed exam attempt.
     """
+
     responses: List[ReviewResponse] = []
     allow_review: bool = True
 

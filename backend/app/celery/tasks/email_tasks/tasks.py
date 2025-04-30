@@ -137,20 +137,21 @@ def user_deleted_notification(
     )
     async_to_sync(mail.send_message)(message, "account_deleted.html")
 
+
 @celery.task
 def exam_finish_confirmation(
-        recipient: str,
-        username: str,
-        exam_title: str,
-        end_time: datetime,
-        start_time: datetime = None,
-        question_count: int = None,
+    recipient: str,
+    username: str,
+    exam_title: str,
+    end_time: datetime,
+    start_time: datetime = None,
+    question_count: int = None,
 ):
     duration = "N/A"
     if start_time:
         duration_minutes = int((end_time - start_time).total_seconds() / 60)
         duration = f"{duration_minutes} minutes"
-    
+
     message = create_message(
         recipients=[
             recipient,

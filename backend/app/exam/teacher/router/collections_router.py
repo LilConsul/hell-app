@@ -4,9 +4,9 @@ from app.auth.dependencies import get_current_teacher_id
 from app.core.schemas import BaseReturn
 from app.exam.teacher.dependencies import get_collection_service
 from app.exam.teacher.schemas import (
+    CollectionQuestionCount,
     CreateCollection,
     GetCollection,
-    JustCollection,
     QuestionSchema,
     UpdateCollection,
     UpdateQuestionSchema,
@@ -36,7 +36,7 @@ async def create_collection(
     )
 
 
-@router.get("/", response_model=BaseReturn[List[JustCollection]])
+@router.get("/", response_model=BaseReturn[List[CollectionQuestionCount]])
 async def get_teacher_collections(
     teacher_id: str = Depends(get_current_teacher_id),
     collection_service: CollectionService = Depends(get_collection_service),
@@ -49,9 +49,7 @@ async def get_teacher_collections(
     )
 
 
-@router.get(
-    "/public", response_model=BaseReturn[List[JustCollection]] | BaseReturn[List[None]]
-)
+@router.get("/public", response_model=BaseReturn[List[CollectionQuestionCount]])
 async def get_public_collections(
     collection_service: CollectionService = Depends(get_collection_service),
 ):

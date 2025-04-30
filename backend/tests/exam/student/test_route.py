@@ -15,11 +15,12 @@ from app.exam.models import (
     StudentExamStatus,
 )
 from app.exam.student.schemas import (
-    BaseGetStudentExamSchema,
-    BaseQuestionSchema,
-    CurrentAttemptSchema,
-    DetailGetStudentExamSchema,
-    StudentAttemptBasicSchema,
+    CurrentAttempt,
+    QuestionWithOptions,
+    QuestionWithUserResponse,
+    StudentAttemptBasic,
+    StudentExamBase,
+    StudentExamDetail,
 )
 from app.settings import settings
 
@@ -129,7 +130,7 @@ class TestStudentRouter:
             "attempts_count": 0,
         }
 
-        mock_service.return_value = [BaseGetStudentExamSchema.model_validate(mock_data)]
+        mock_service.return_value = [StudentExamBase.model_validate(mock_data)]
 
         response = await client.get("/v1/exam/student/exams", headers=auth_headers)
         assert response.status_code == 200
@@ -177,10 +178,10 @@ class TestStudentRouter:
             "current_status": StudentExamStatus.NOT_STARTED,
             "attempts_count": 0,
             "attempts": [],
-            "last_attempt_id": None,
+            "latest_attempt_id": None,
         }
 
-        mock_service.return_value = DetailGetStudentExamSchema.model_validate(mock_data)
+        mock_service.return_value = StudentExamDetail.model_validate(mock_data)
 
         response = await client.get(
             f"/v1/exam/student/exams/{test_student_exam.id}", headers=auth_headers
@@ -195,7 +196,7 @@ class TestStudentRouter:
     ):
         """Test getting a specific attempt for a student"""
         # Mock return value for the service method
-        mock_service.return_value = CurrentAttemptSchema(
+        mock_service.return_value = CurrentAttempt(
             id=test_student_attempt.id,
             status=StudentExamStatus.IN_PROGRESS,
             started_at=datetime.now(timezone.utc),
@@ -221,7 +222,7 @@ class TestStudentRouter:
         """Test starting an exam"""
         # Mock return value for the service method
         mock_service.return_value = [
-            BaseQuestionSchema(
+            QuestionWithOptions(
                 id="q1",
                 question_text="What is 2+2?",
                 type="mcq",
@@ -279,7 +280,7 @@ class TestStudentRouter:
     ):
         """Test submitting an exam"""
         # Mock return value for the service method
-        mock_service.return_value = StudentAttemptBasicSchema(
+        mock_service.return_value = StudentAttemptBasic(
             id=str(uuid.uuid4()),
             status=StudentExamStatus.SUBMITTED,
             started_at=datetime.now(timezone.utc),
@@ -294,3 +295,66 @@ class TestStudentRouter:
         assert response.status_code == 200
         assert response.json()["message"] == "Exam submitted successfully"
         assert response.json()["data"]["status"] == "submitted"
+
+    @patch("app.exam.student.services.StudentExamService.reload_exam")
+    async def test_reload_exam(
+        self, mock_service, client, auth_headers, test_student_exam, student_user
+    ):
+        """Test reloading an in-progress exam with user responses"""
+        # Mock return value with properly structured question data
+        mock_service.return_value = [
+            QuestionWithUserResponse(
+                id="q1",
+                question_text="What is 2+2?",
+                type="mcq",
+                has_katex=False,
+                weight=1,
+                options=[
+                    {"id": "opt1", "text": "3"},
+                    {"id": "opt2", "text": "4"},
+                    {"id": "opt3", "text": "5"},
+                ],
+                user_selected_options=["opt2"],
+                user_text_response=None,
+                is_flagged=False,
+            ),
+            QuestionWithUserResponse(
+                id="q2",
+                question_text="Explain the concept of gravity",
+                type="shortanswer",
+                has_katex=False,
+                weight=2,
+                options=None,
+                user_selected_options=[],
+                user_text_response="Gravity is a force that attracts objects",
+                is_flagged=True,
+            ),
+        ]
+
+        response = await client.get(
+            f"/v1/exam/student/exam/{test_student_exam.id}/reload", headers=auth_headers
+        )
+
+        assert response.status_code == 200
+        assert response.json()["message"] == "Exam reloaded successfully"
+
+        # Verify the response data structure
+        data = response.json()["data"]
+        assert len(data) == 2
+
+        # Check first question (MCQ)
+        assert data[0]["id"] == "q1"
+        assert data[0]["type"] == "mcq"
+        assert data[0]["user_selected_options"] == ["opt2"]
+        assert data[0]["is_flagged"] == False
+
+        # Check second question (short answer)
+        assert data[1]["id"] == "q2"
+        assert data[1]["type"] == "shortanswer"
+        assert (
+            data[1]["user_text_response"] == "Gravity is a force that attracts objects"
+        )
+        assert data[1]["is_flagged"] == True
+
+        # Verify service was called with correct parameters - using positional arguments
+        mock_service.assert_called_once_with(str(student_user.id), test_student_exam.id)

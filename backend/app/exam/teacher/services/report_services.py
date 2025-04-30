@@ -288,10 +288,15 @@ class ReportService:
         # Create a buffer for the PDF content
         buffer = BytesIO()
 
-        # Set up the document
+        # Get the A4 dimensions and create landscape format
+        # A4 is 210mm × 297mm (8.27in × 11.69in)
+        a4_width, a4_height = A4  # Default A4 size (portrait)
+        a4_landscape = landscape(A4)  # Swap width and height
+
+        # Set up the document with explicit landscape A4 format
         doc = SimpleDocTemplate(
             buffer,
-            pagesize=landscape(A4),
+            pagesize=a4_landscape,
             rightMargin=72,
             leftMargin=72,
             topMargin=72,
@@ -319,7 +324,8 @@ class ReportService:
         # Add summary statistics
         story.append(Paragraph("Summary Statistics", heading_style))
 
-        # Create a summary table
+        # Create a summary table with width adjusted for landscape A4
+        available_width = a4_landscape[0] - 2 * 72  # Total width minus margins
         summary_data = [
             [
                 "Total Students",
@@ -351,7 +357,8 @@ class ReportService:
             ],
         ]
 
-        summary_table = Table(summary_data, colWidths=[doc.width / 7.0] * 7)
+        col_width = available_width / 7.0
+        summary_table = Table(summary_data, colWidths=[col_width] * 7)
         summary_table.setStyle(
             TableStyle(
                 [
@@ -374,19 +381,19 @@ class ReportService:
             and report_data.histogram_data
             and report_data.timeline_data
         ):
-            # Add histogram
+            # Add histogram optimized for landscape
             story.append(Paragraph("Score Distribution", heading_style))
 
-            # Create histogram data for chart
             from reportlab.graphics.charts.barcharts import VerticalBarChart
             from reportlab.graphics.shapes import Drawing
 
-            histogram_drawing = Drawing(500, 200)
+            # Larger drawing width for landscape
+            histogram_drawing = Drawing(600, 200)
             histogram_chart = VerticalBarChart()
             histogram_chart.x = 50
             histogram_chart.y = 50
             histogram_chart.height = 125
-            histogram_chart.width = 400
+            histogram_chart.width = 500  # Wider chart for landscape
 
             # Extract data from histogram_data
             histogram_ranges = [h.range for h in report_data.histogram_data]
@@ -402,17 +409,17 @@ class ReportService:
             story.append(histogram_drawing)
             story.append(Spacer(1, 0.25 * inch))
 
-            # Add timeline chart
+            # Add timeline chart optimized for landscape
             story.append(Paragraph("Performance Over Time", heading_style))
 
             from reportlab.graphics.charts.lineplots import LinePlot
 
-            timeline_drawing = Drawing(500, 200)
+            timeline_drawing = Drawing(600, 200)
             timeline_chart = LinePlot()
             timeline_chart.x = 50
             timeline_chart.y = 50
             timeline_chart.height = 125
-            timeline_chart.width = 400
+            timeline_chart.width = 500  # Wider chart for landscape
 
             # Extract data from timeline_data
             timeline_dates = [t.date for t in report_data.timeline_data]
@@ -474,8 +481,9 @@ class ReportService:
                         ]
                     )
 
-                # Create and style the attempt table
-                attempt_table = Table(attempt_table_data)
+                # Create and style the attempt table with landscape-appropriate widths
+                col_widths = [available_width * w for w in [0.15, 0.15, 0.3, 0.4]]
+                attempt_table = Table(attempt_table_data, colWidths=col_widths)
                 attempt_table.setStyle(
                     TableStyle(
                         [
@@ -516,9 +524,11 @@ class ReportService:
                         ]
                     )
 
-                student_table = Table(
-                    student_table_data, colWidths=[doc.width / 5.0] * 5
-                )
+                # Adjust column widths for landscape orientation
+                col_widths = [
+                    available_width * w for w in [0.25, 0.25, 0.15, 0.15, 0.2]
+                ]
+                student_table = Table(student_table_data, colWidths=col_widths)
                 student_table.setStyle(
                     TableStyle(
                         [

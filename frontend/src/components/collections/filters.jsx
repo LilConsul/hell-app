@@ -10,7 +10,6 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 
-// correct to work on based on frontend
 export function CollectionFilters({
   searchQuery,
   setSearchQuery,
@@ -25,20 +24,43 @@ export function CollectionFilters({
   applyFilters,
 }) {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-
+  const [tempFilters, setTempFilters] = useState(filters);
+  
+  const handlePopoverChange = (open) => {
+    if (open) {
+      setTempFilters({...filters});
+    }
+    setIsFilterOpen(open);
+  };
+  
   const handleClearFilters = () => {
-    setFilters({
+    const clearedFilters = {
       dateRange: "all",
       questionCount: [0, 100],
       createdBy: "all",
-    })
-  }
+    };
+    setTempFilters(clearedFilters);
+    setFilters(clearedFilters);
+    applyFilters();
+  };
+  
+  const handleApplyFilters = () => {
+    setFilters(tempFilters);
+    applyFilters();
+    setIsFilterOpen(false);
+  };
 
   const hasActiveFilters =
     filters.dateRange !== "all" ||
     filters.questionCount[0] > 0 ||
     filters.questionCount[1] < 100 ||
-    filters.createdBy !== "all"
+    filters.createdBy !== "all";
+    
+  const hasUnappliedChanges = 
+    tempFilters.dateRange !== filters.dateRange ||
+    tempFilters.questionCount[0] !== filters.questionCount[0] ||
+    tempFilters.questionCount[1] !== filters.questionCount[1] ||
+    tempFilters.createdBy !== filters.createdBy;
 
   return (
     <div className="flex flex-col space-y-2 md:flex-row md:items-center md:justify-between md:space-y-0">
@@ -53,7 +75,7 @@ export function CollectionFilters({
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
-        <Popover open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+        <Popover open={isFilterOpen} onOpenChange={handlePopoverChange}>
           <PopoverTrigger asChild>
             <Button
               variant="outline"
@@ -68,7 +90,15 @@ export function CollectionFilters({
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <h4 className="font-medium">Filters</h4>
-                <Button variant="ghost" size="sm" onClick={handleClearFilters} disabled={!hasActiveFilters}>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={handleClearFilters} 
+                  disabled={tempFilters.dateRange === "all" && 
+                            tempFilters.questionCount[0] === 0 && 
+                            tempFilters.questionCount[1] === 100 && 
+                            tempFilters.createdBy === "all"}
+                >
                   <X className="mr-2 h-3.5 w-3.5" />
                   Clear
                 </Button>
@@ -77,8 +107,8 @@ export function CollectionFilters({
               <div className="space-y-2">
                 <Label>Date</Label>
                 <Select
-                  value={filters.dateRange}
-                  onValueChange={(value) => setFilters({ ...filters, dateRange: value })}
+                  value={tempFilters.dateRange}
+                  onValueChange={(value) => setTempFilters({ ...tempFilters, dateRange: value })}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select date range" />
@@ -97,7 +127,7 @@ export function CollectionFilters({
                 <div className="flex justify-between">
                   <Label>Question Count</Label>
                   <span className="text-xs text-muted-foreground">
-                    {filters.questionCount[0]} - {filters.questionCount[1] === 100 ? "100+" : filters.questionCount[1]}
+                    {tempFilters.questionCount[0]} - {tempFilters.questionCount[1] === 100 ? "100+" : tempFilters.questionCount[1]}
                   </span>
                 </div>
                 <Slider
@@ -105,16 +135,16 @@ export function CollectionFilters({
                   min={0}
                   max={100}
                   step={5}
-                  value={filters.questionCount}
-                  onValueChange={(value) => setFilters({ ...filters, questionCount: value })}
+                  value={tempFilters.questionCount}
+                  onValueChange={(value) => setTempFilters({ ...tempFilters, questionCount: value })}
                 />
               </div>
 
               <div className="space-y-2">
                 <Label>Created By</Label>
                 <Select
-                  value={filters.createdBy}
-                  onValueChange={(value) => setFilters({ ...filters, createdBy: value })}
+                  value={tempFilters.createdBy}
+                  onValueChange={(value) => setTempFilters({ ...tempFilters, createdBy: value })}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select creator" />
@@ -131,10 +161,8 @@ export function CollectionFilters({
 
               <Button
                 className="w-full"
-                onClick={() => {
-                  applyFilters()
-                  setIsFilterOpen(false)
-                }}
+                onClick={handleApplyFilters}
+                disabled={!hasUnappliedChanges}
               >
                 Apply Filters
               </Button>
@@ -145,13 +173,25 @@ export function CollectionFilters({
 
       <div className="flex items-center space-x-2">
         {hasActiveFilters && (
-          <Badge variant="outline" className="mr-2">
-            {
-              Object.values(filters).filter(
-                (f) => (Array.isArray(f) && (f[0] > 0 || f[1] < 100)) || (!Array.isArray(f) && f !== "all"),
-              ).length
-            }{" "}
-            active filters
+          <Badge variant="outline" className="mr-2 flex items-center gap-2">
+            <span>
+              {
+                Object.values(filters).filter(
+                  (f) => (Array.isArray(f) && (f[0] > 0 || f[1] < 100)) || (!Array.isArray(f) && f !== "all"),
+                ).length
+              }{" "}
+              active filters
+            </span>
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                handleClearFilters();
+              }}
+              className="flex h-4 w-4 items-center justify-center rounded-full hover:bg-muted"
+              title="Clear all filters"
+            >
+              <X className="h-3 w-3" />
+            </button>
           </Badge>
         )}
         <Tabs defaultValue={activeFilter} className="w-full md:w-auto" onValueChange={setActiveFilter} value={activeFilter}>
@@ -163,5 +203,5 @@ export function CollectionFilters({
         </Tabs>
       </div>
     </div>
-  )
+  );
 }

@@ -1,18 +1,22 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
+import { useAuth } from "@/contexts/auth-context";
 
 import { CollectionCard } from "@/components/collections/card";
 import { CollectionFilters } from "@/components/collections/filters";
 import { EmptyCollections, LoadingCollections, ErrorCollections } from "@/components/collections/handle-collections";
 
 function Collections() {
+  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState("all");
   const [collections, setCollections] = useState([]);
+  const [allCollections, setAllCollections] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [filters, setFilters] = useState({
@@ -23,20 +27,91 @@ function Collections() {
   
   useEffect(() => {
     fetchCollections();
-  }, [activeFilter]);
+  }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  const applyAllFilters = useCallback(() => {
+    if (!allCollections.length) return [];
+    
+    return allCollections.filter(collection => {
+      if (activeFilter !== "all" && collection.status !== activeFilter) {
+        return false;
+      }
+      
+      if (debouncedSearchQuery && 
+          !collection.title.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) && 
+          !collection.description.toLowerCase().includes(debouncedSearchQuery.toLowerCase())) {
+        return false;
+      }
+      
+      if (filters.dateRange !== "all") {
+        const collectionDate = new Date(collection.created_at);
+        const now = new Date();
+        
+        switch (filters.dateRange) {
+          case "today":
+            if (collectionDate.toDateString() !== now.toDateString()) return false;
+            break;
+          case "week":
+            const weekAgo = new Date();
+            weekAgo.setDate(now.getDate() - 7);
+            if (collectionDate < weekAgo) return false;
+            break;
+          case "month":
+            const monthAgo = new Date();
+            monthAgo.setMonth(now.getMonth() - 1);
+            if (collectionDate < monthAgo) return false;
+            break;
+          case "year":
+            const yearAgo = new Date();
+            yearAgo.setFullYear(now.getFullYear() - 1);
+            if (collectionDate < yearAgo) return false;
+            break;
+        }
+      }
+      
+      const questionCount = collection.questions ? collection.questions.length : 0;
+      if (questionCount < filters.questionCount[0] || questionCount > filters.questionCount[1]) {
+        return false;
+      }
+      
+      if (filters.createdBy !== "all" && user) {
+        const isCreatedByCurrentUser = collection.created_by?.id === user.id;
+        
+        if ((filters.createdBy === "me" && !isCreatedByCurrentUser) || 
+            (filters.createdBy === "others" && isCreatedByCurrentUser)) {
+          return false;
+        }
+      }
+      
+      return true;
+    });
+  }, [activeFilter, debouncedSearchQuery, filters, allCollections, user]);
+    
+  const applyFilters = () => {
+    if (allCollections.length > 0) {
+      const filtered = applyAllFilters();
+      setCollections(filtered);
+    }
+  };
+  
+  useEffect(() => {
+    applyFilters();
+  }, [debouncedSearchQuery, activeFilter, allCollections, user, applyAllFilters]);
 
   const fetchCollections = async () => {
     try {
       setLoading(true);
       setError(null);
       
-      let endpoint = "/api/v1/exam/teacher/collections/";
-      
-      if (activeFilter === "published") {
-        endpoint = "/api/v1/exam/teacher/collections/public";
-      }
-      
-      const response = await fetch(endpoint, {
+      const response = await fetch("/api/v1/exam/teacher/collections/", {
         credentials: "include",
       });
       
@@ -52,51 +127,39 @@ function Collections() {
           try {
             const detailResponse = await fetch(`/api/v1/exam/teacher/collections/${collection.id}`, {
               credentials: "include",
-            })
+            });
             
             if (!detailResponse.ok) {
-              console.error(`Failed to fetch details for collection ${collection.id}`)
-              return collection
+              console.error(`Failed to fetch details for collection ${collection.id}`);
+              return collection;
             }
             
-            const detailData = await detailResponse.json()
-            return detailData.data
+            const detailData = await detailResponse.json();
+            return detailData.data;
           } catch (err) {
-            console.error(`Error fetching details for collection ${collection.id}:`, err)
-            return collection
+            console.error(`Error fetching details for collection ${collection.id}:`, err);
+            return collection;
           }
         })
-      )
+      );
       
-      setCollections(detailedCollections)
+      setAllCollections(detailedCollections);
+      
+      const filteredCollections = applyAllFilters();
+      setCollections(filteredCollections);
     } catch (err) {
-      console.error("Error fetching collections:", err)
-      setError("Failed to load collections. Please try again later.")
+      console.error("Error fetching collections:", err);
+      setError("Failed to load collections. Please try again later.");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
-  // TODO
-  const applyFilters = () => {
-    console.log("Applying filters:", filters)
-    fetchCollections()
-  }
-
-  // Search bar
-  const filteredCollections = collections.filter((collection) => {
-    return (
-      collection.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      collection.description.toLowerCase().includes(searchQuery.toLowerCase())
-    )
-  })
-
-  // Collection status change
   const handleStatusChange = async (collectionId, newStatus) => {
     try {
-      const data = collections.find(collection => collection.id === collectionId)
+      const data = collections.find(collection => collection.id === collectionId);
       if (!data) {
-        throw new Error("Collection not found")
+        throw new Error("Collection not found");
       }
       
       const response = await fetch(`/api/v1/exam/teacher/collections/${collectionId}`, {
@@ -110,63 +173,65 @@ function Collections() {
           status: newStatus
         }),
         credentials: 'include'
-      })
+      });
       
       if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`)
+        throw new Error(`HTTP error! Status: ${response.status}`);
       }
       
-      // Update locally
       setCollections(collections.map(collection => 
         collection.id === collectionId 
           ? { ...collection, status: newStatus }
           : collection
-      ))
+      ));
+      
+      setAllCollections(allCollections.map(collection => 
+        collection.id === collectionId 
+          ? { ...collection, status: newStatus }
+          : collection
+      ));
     } catch (err) {
-      console.error("Error updating collection status:", err)
-      setError("Failed to update collection status. Please try again.")
+      console.error("Error updating collection status:", err);
+      setError("Failed to update collection status. Please try again.");
     }
-  }
+  };
   
-  // Collection deletion
   const handleDelete = async (collectionId) => {
     try {
       const response = await fetch(`/api/v1/exam/teacher/collections/${collectionId}`, {
         method: 'DELETE',
         credentials: 'include'
-      })
+      });
       
       if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`)
+        throw new Error(`HTTP error! Status: ${response.status}`);
       }
       
-      // Update locally
-      setCollections(collections.filter(collection => collection.id !== collectionId))
+      setCollections(collections.filter(collection => collection.id !== collectionId));
+      setAllCollections(allCollections.filter(collection => collection.id !== collectionId));
     } catch (err) {
-      console.error("Error deleting collection:", err)
-      setError("Failed to delete collection. Please try again.")
+      console.error("Error deleting collection:", err);
+      setError("Failed to delete collection. Please try again.");
     }
-  }
+  };
 
-  // collection duplication
   const handleDuplicate = async (collectionId, title, description) => {
     try {
-      setLoading(true)
+      setLoading(true);
 
-      // Get the original collection with questions
+      // Get collection with questions
       const detailResponse = await fetch(`/api/v1/exam/teacher/collections/${collectionId}`, {
         credentials: "include",
-      })
+      });
       
       if (!detailResponse.ok) {
         throw new Error(`HTTP error! Status: ${detailResponse.status}`);
       }
       
-      const detailData = await detailResponse.json()
-      const originalCollection = detailData.data
-      const questions = originalCollection.questions || []
+      const detailData = await detailResponse.json();
+      const originalCollection = detailData.data;
+      const questions = originalCollection.questions || [];
       
-      // Create a new collection
       const createResponse = await fetch("/api/v1/exam/teacher/collections/", {
         method: 'POST',
         headers: {
@@ -178,7 +243,7 @@ function Collections() {
           status: "draft"
         }),
         credentials: 'include'
-      })
+      });
       
       if (!createResponse.ok) {
         throw new Error(`HTTP error! Status: ${createResponse.status}`);
@@ -187,7 +252,7 @@ function Collections() {
       const newCollectionData = await createResponse.json();
       const newCollectionId = newCollectionData.data.collection_id;
       
-      // Copy each question to the new collection
+      // Copy questions to the new collection
       if (questions && questions.length > 0) {
         for (const question of questions) {
           if (question) {
@@ -196,21 +261,18 @@ function Collections() {
               type: question.type,
               weight: question.weight || 1,
               has_katex: question.has_katex || false
-            }
+            };
             
-            // Add correct answer
             if (question.type === 'shortanswer' && question.correct_input_answer) {
-              questionPayload.correct_input_answer = question.correct_input_answer
+              questionPayload.correct_input_answer = question.correct_input_answer;
             }
             
-            // Add options for multiple choice
             if ((question.type === 'mcq' || question.type === 'singlechoice') && question.options) {
-              // Remove id fields
               const cleanOptions = question.options.map(option => ({
                 text: option.text,
                 is_correct: option.is_correct
-              }))
-              questionPayload.options = cleanOptions
+              }));
+              questionPayload.options = cleanOptions;
             }
             
             await fetch(`/api/v1/exam/teacher/collections/${newCollectionId}/questions`, {
@@ -220,18 +282,18 @@ function Collections() {
               },
               body: JSON.stringify(questionPayload),
               credentials: 'include'
-            })
+            });
           }
         }
       }
       
-      fetchCollections()
+      fetchCollections();
     } catch (err) {
-      console.error("Error duplicating collection:", err)
-      setError("Failed to duplicate collection. Please try again.")
-      setLoading(false)
+      console.error("Error duplicating collection:", err);
+      setError("Failed to duplicate collection. Please try again.");
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -269,10 +331,10 @@ function Collections() {
             <ErrorCollections error={error} retryAction={fetchCollections} />
           ) : (
             <div className="space-y-4">
-              {filteredCollections.length === 0 ? (
+              {collections.length === 0 ? (
                 <EmptyCollections />
               ) : (
-                filteredCollections.map((collection) => (
+                collections.map((collection) => (
                   <CollectionCard
                     key={collection.id}
                     collection={collection}
@@ -288,7 +350,7 @@ function Collections() {
       </main>
       <Footer />
     </div>
-  )
+  );
 }
 
-export default Collections
+export default Collections;

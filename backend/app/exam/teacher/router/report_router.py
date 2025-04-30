@@ -91,7 +91,7 @@ async def export_exam_report_pdf(
     pdf_content = await report_service.generate_exam_report_pdf(
         exam_instance_id=exam_instance_id,
         filters=filters,
-        include_visualizations=include_visualizations
+        include_visualizations=include_visualizations,
     )
 
     # Create a downloadable response

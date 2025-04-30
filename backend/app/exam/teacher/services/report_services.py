@@ -298,15 +298,15 @@ class ReportService:
         )
 
         # Shadcn-inspired neutral color palette
-        primary_color = colors.HexColor("#18181B")      # zinc-900
-        secondary_color = colors.HexColor("#71717A")    # zinc-500
-        accent_color = colors.HexColor("#3F3F46")       # zinc-700
-        background_color = colors.HexColor("#F4F4F5")   # zinc-100
-        muted_color = colors.HexColor("#E4E4E7")        # zinc-200
-        border_color = colors.HexColor("#D4D4D8")       # zinc-300
-        text_color = colors.HexColor("#27272A")         # zinc-800
-        success_color = colors.HexColor("#16A34A")      # green-600
-        error_color = colors.HexColor("#DC2626")        # red-600
+        primary_color = colors.HexColor("#18181B")  # zinc-900
+        secondary_color = colors.HexColor("#71717A")  # zinc-500
+        accent_color = colors.HexColor("#3F3F46")  # zinc-700
+        background_color = colors.HexColor("#F4F4F5")  # zinc-100
+        muted_color = colors.HexColor("#E4E4E7")  # zinc-200
+        border_color = colors.HexColor("#D4D4D8")  # zinc-300
+        text_color = colors.HexColor("#27272A")  # zinc-800
+        success_color = colors.HexColor("#16A34A")  # green-600
+        error_color = colors.HexColor("#DC2626")  # red-600
 
         # Get styles and customize for shadcn look
         styles = getSampleStyleSheet()
@@ -333,7 +333,7 @@ class ReportService:
         subheading_style.fontName = "Helvetica-Bold"
 
         # White title style specifically for the exam title
-        white_title_style = styles["Title"].clone('WhiteTitle')
+        white_title_style = styles["Title"].clone("WhiteTitle")
         white_title_style.textColor = colors.white
         white_title_style.fontSize = 18
         white_title_style.fontName = "Helvetica-Bold"
@@ -395,12 +395,40 @@ class ReportService:
 
         # Adjust for portrait mode - use 3 rows of stats instead of 1 row
         summary_data = [
-            ["Total Students", str(report_data.total_students), "Attempts", str(report_data.attempts_count)],
-            ["Average", f"{report_data.statistics.mean:.1f}" if report_data.statistics.mean is not None else "N/A", 
-             "Median", f"{report_data.statistics.median:.1f}" if report_data.statistics.median is not None else "N/A"],
-            ["Min", f"{report_data.statistics.min:.1f}" if report_data.statistics.min is not None else "N/A", 
-             "Max", f"{report_data.statistics.max:.1f}" if report_data.statistics.max is not None else "N/A"],
-            ["Pass Rate", f"{report_data.pass_rate:.1f}%" if report_data.pass_rate is not None else "N/A", "", ""],
+            [
+                "Total Students",
+                str(report_data.total_students),
+                "Attempts",
+                str(report_data.attempts_count),
+            ],
+            [
+                "Average",
+                f"{report_data.statistics.mean:.1f}"
+                if report_data.statistics.mean is not None
+                else "N/A",
+                "Median",
+                f"{report_data.statistics.median:.1f}"
+                if report_data.statistics.median is not None
+                else "N/A",
+            ],
+            [
+                "Min",
+                f"{report_data.statistics.min:.1f}"
+                if report_data.statistics.min is not None
+                else "N/A",
+                "Max",
+                f"{report_data.statistics.max:.1f}"
+                if report_data.statistics.max is not None
+                else "N/A",
+            ],
+            [
+                "Pass Rate",
+                f"{report_data.pass_rate:.1f}%"
+                if report_data.pass_rate is not None
+                else "N/A",
+                "",
+                "",
+            ],
         ]
 
         available_width = doc.width
@@ -417,7 +445,7 @@ class ReportService:
                     ("ALIGN", (0, 0), (-1, -1), "LEFT"),
                     ("FONTNAME", (0, 0), (0, -1), "Helvetica-Bold"),
                     ("FONTNAME", (2, 0), (2, -2), "Helvetica-Bold"),
-                    # Value columns (1, 3) 
+                    # Value columns (1, 3)
                     ("ALIGN", (1, 0), (1, -1), "LEFT"),
                     ("ALIGN", (3, 0), (3, -1), "LEFT"),
                     # All cells
@@ -452,21 +480,21 @@ class ReportService:
 
             # Create drawing with background - adjusted for portrait
             histogram_drawing = Drawing(500, 220)
-            
+
             # Add background rectangle with rounded corners
             bg_rect = Rect(0, 0, 500, 220, rx=6, ry=6)
             bg_rect.fillColor = colors.white
             bg_rect.strokeColor = border_color
             bg_rect.strokeWidth = 1
             histogram_drawing.add(bg_rect)
-            
+
             # Add title inside the rectangle
-            title_string = String(250, 200, "Score Distribution", textAnchor='middle')
+            title_string = String(250, 200, "Score Distribution", textAnchor="middle")
             title_string.fontName = "Helvetica-Bold"
             title_string.fontSize = 12
             title_string.fillColor = accent_color
             histogram_drawing.add(title_string)
-            
+
             histogram_chart = VerticalBarChart()
             histogram_chart.x = 50
             histogram_chart.y = 30  # Lower to make room for title
@@ -498,21 +526,23 @@ class ReportService:
 
             # Create drawing with background - adjusted for portrait
             timeline_drawing = Drawing(500, 220)
-            
+
             # Add background rectangle with rounded corners
             bg_rect = Rect(0, 0, 500, 220, rx=6, ry=6)
             bg_rect.fillColor = colors.white
             bg_rect.strokeColor = border_color
             bg_rect.strokeWidth = 1
             timeline_drawing.add(bg_rect)
-            
+
             # Add title inside the rectangle
-            title_string = String(250, 200, "Performance Over Time", textAnchor='middle')
+            title_string = String(
+                250, 200, "Performance Over Time", textAnchor="middle"
+            )
             title_string.fontName = "Helvetica-Bold"
             title_string.fontSize = 12
             title_string.fillColor = accent_color
             timeline_drawing.add(title_string)
-            
+
             timeline_chart = LinePlot()
             timeline_chart.x = 50
             timeline_chart.y = 30  # Lower to make room for title
@@ -619,14 +649,10 @@ class ReportService:
 
                 # Add subtle row dividers
                 for i in range(1, len(attempt_table_data)):
-                    table_style.append(
-                        ("LINEBELOW", (0, i), (-1, i), 0.5, muted_color)
-                    )
+                    table_style.append(("LINEBELOW", (0, i), (-1, i), 0.5, muted_color))
 
                 # Highlight the latest attempt with subtle background
-                table_style.append(
-                    ("BACKGROUND", (0, 1), (-1, 1), muted_color)
-                )
+                table_style.append(("BACKGROUND", (0, 1), (-1, 1), muted_color))
 
                 attempt_table.setStyle(TableStyle(table_style))
                 story.append(attempt_table)
@@ -635,14 +661,14 @@ class ReportService:
             # Original single attempt per student code - adjusted for portrait
             if student_data:
                 # For portrait, show fewer columns to maintain readability
-                student_table_data = [
-                    ["Student Name", "Score", "Status", "Date"]
-                ]
+                student_table_data = [["Student Name", "Score", "Status", "Date"]]
 
                 for student in student_data:
                     # Determine status color
-                    status_text = student["status"].value if student["status"] else "N/A"
-                    
+                    status_text = (
+                        student["status"].value if student["status"] else "N/A"
+                    )
+
                     student_table_data.append(
                         [
                             student["name"],
@@ -655,9 +681,7 @@ class ReportService:
                     )
 
                 # Adjusted column widths for portrait orientation
-                col_widths = [
-                    available_width * w for w in [0.35, 0.15, 0.2, 0.3]
-                ]
+                col_widths = [available_width * w for w in [0.35, 0.15, 0.2, 0.3]]
                 student_table = Table(student_table_data, colWidths=col_widths)
 
                 # Modern shadcn-inspired table styling
@@ -681,16 +705,12 @@ class ReportService:
 
                 # Add subtle row dividers
                 for i in range(1, len(student_table_data) - 1):
-                    table_style.append(
-                        ("LINEBELOW", (0, i), (-1, i), 0.5, muted_color)
-                    )
+                    table_style.append(("LINEBELOW", (0, i), (-1, i), 0.5, muted_color))
 
                 # Apply alternating row background for better readability
                 for i in range(1, len(student_table_data)):
                     if i % 2 == 0:
-                        table_style.append(
-                            ("BACKGROUND", (0, i), (-1, i), muted_color)
-                        )
+                        table_style.append(("BACKGROUND", (0, i), (-1, i), muted_color))
 
                 student_table.setStyle(TableStyle(table_style))
                 story.append(student_table)
@@ -700,19 +720,18 @@ class ReportService:
                     "No student data available for the selected filters.",
                     normal_style,
                 )
-                empty_table = Table(
-                    [[empty_message]], 
-                    colWidths=[doc.width]
-                )
+                empty_table = Table([[empty_message]], colWidths=[doc.width])
                 empty_table.setStyle(
-                    TableStyle([
-                        ("BACKGROUND", (0, 0), (0, 0), background_color),
-                        ("ALIGN", (0, 0), (0, 0), "CENTER"),
-                        ("VALIGN", (0, 0), (0, 0), "MIDDLE"),
-                        ("PADDING", (0, 0), (0, 0), 20),
-                        ("ROUNDEDCORNERS", [4, 4, 4, 4]),
-                        ("BOX", (0, 0), (0, 0), 1, border_color),
-                    ])
+                    TableStyle(
+                        [
+                            ("BACKGROUND", (0, 0), (0, 0), background_color),
+                            ("ALIGN", (0, 0), (0, 0), "CENTER"),
+                            ("VALIGN", (0, 0), (0, 0), "MIDDLE"),
+                            ("PADDING", (0, 0), (0, 0), 20),
+                            ("ROUNDEDCORNERS", [4, 4, 4, 4]),
+                            ("BOX", (0, 0), (0, 0), 1, border_color),
+                        ]
+                    )
                 )
                 story.append(empty_table)
 
@@ -760,4 +779,3 @@ class ReportService:
         buffer.close()
 
         return pdf_content
-

@@ -221,8 +221,8 @@ class ExamInstanceService:
         if end_date.tzinfo is None:
             end_date = end_date.replace(tzinfo=timezone.utc)
 
-        # if start_date < datetime.now(timezone.utc):
-        #     raise ForbiddenError("Start date must be in the future")
+        if start_date < datetime.now(timezone.utc):
+            raise ForbiddenError("Start date must be in the future")
         if end_date < start_date:
             raise ForbiddenError("End date must be after start date")
 

@@ -406,11 +406,9 @@ async def cascade_delete_user(user_id: str, role: UserRole):
         await ExamInstance.find(ExamInstance.created_by.id == user_id).delete()
 
     # Delete all student exams and responses
-    if role == UserRole.STUDENT:
+    if role == UserRole.STUDENT or role == UserRole.ADMIN:
         student_exams = await StudentExam.find(
             StudentExam.student_id.id == user_id
         ).to_list()
         for exam in student_exams:
             await exam.delete()
-
-    print(f"Deleted all data related to user {user_id}")

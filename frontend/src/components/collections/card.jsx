@@ -9,7 +9,7 @@ import { Calendar, Copy, Edit, Eye, Globe, Library, Lock, MoreHorizontal } from 
 import { DeleteCollectionModal } from "@/components/collections/delete-collection-modal";
 import { DuplicateCollectionModal } from "@/components/collections/duplicate-collection-modal";
 
-export function CollectionCard({ collection, onStatusChange, onDelete, onDuplicate }) {
+export function CollectionCard({ collection, onStatusChange, onDelete, onDuplicate, canEdit }) {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showDuplicateModal, setShowDuplicateModal] = useState(false);
 
@@ -93,44 +93,56 @@ export function CollectionCard({ collection, onStatusChange, onDelete, onDuplica
             </Link>
           </Button>
           <div className="flex space-x-2">
-            <Button variant="outline" size="sm" asChild>
-              <Link to={`/collections/${collection.id}/edit`}>
-                <Edit className="mr-2 h-4 w-4" />
-                Edit
-              </Link>
-            </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <MoreHorizontal className="h-4 w-4" />
+            {canEdit ? (
+              <>
+                <Button variant="outline" size="sm" asChild>
+                  <Link to={`/collections/${collection.id}/edit`}>
+                    <Edit className="mr-2 h-4 w-4" />
+                    Edit
+                  </Link>
                 </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => setShowDuplicateModal(true)} className="cursor-pointer">
-                  <Copy className="mr-2 h-4 w-4" />
-                  Duplicate
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleStatusChange} className="cursor-pointer">
-                  {collection.status === "draft" ? (
-                    <>
-                      <Globe className="mr-2 h-4 w-4" />
-                      Make Public
-                    </>
-                  ) : (
-                    <>
-                      <Lock className="mr-2 h-4 w-4" />
-                      Make Draft
-                    </>
-                  )}
-                </DropdownMenuItem>
-                <DropdownMenuItem 
-                  onClick={() => setShowDeleteModal(true)} 
-                  className="cursor-pointer text-destructive"
-                >
-                  Delete
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => setShowDuplicateModal(true)} className="cursor-pointer">
+                      <Copy className="mr-2 h-4 w-4" />
+                      Duplicate
+                    </DropdownMenuItem>
+                    
+                    <DropdownMenuItem onClick={handleStatusChange} className="cursor-pointer">
+                      {collection.status === "draft" ? (
+                        <>
+                          <Globe className="mr-2 h-4 w-4" />
+                          Make Public
+                        </>
+                      ) : (
+                        <>
+                          <Lock className="mr-2 h-4 w-4" />
+                          Make Draft
+                        </>
+                      )}
+                    </DropdownMenuItem>
+                    
+                    <DropdownMenuItem 
+                      onClick={() => setShowDeleteModal(true)} 
+                      className="cursor-pointer text-destructive"
+                    >
+                      Delete
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </>
+            ) : (
+              <Button variant="outline" size="sm" onClick={() => setShowDuplicateModal(true)}>
+                <Copy className="mr-2 h-4 w-4" />
+                Duplicate
+              </Button>
+            )}
           </div>
         </CardFooter>
       </Card>

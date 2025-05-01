@@ -111,21 +111,46 @@ function Collections() {
       setLoading(true);
       setError(null);
       
-      const response = await fetch("/api/v1/exam/teacher/collections/", {
+      const userCollectionsPromise = fetch("/api/v1/exam/teacher/collections/", {
         credentials: "include",
       });
       
-      if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
+      const publicCollectionsPromise = fetch("/api/v1/exam/teacher/collections/public", {
+        credentials: "include",
+      });
+      
+      const [userResponse, publicResponse] = await Promise.all([
+        userCollectionsPromise,
+        publicCollectionsPromise
+      ]);
+      
+      if (!userResponse.ok) {
+        throw new Error(`HTTP error fetching user collections! Status: ${userResponse.status}`);
       }
       
-      const data = await response.json();
-      const collectionsData = data.data || [];
+      if (!publicResponse.ok) {
+        throw new Error(`HTTP error fetching public collections! Status: ${publicResponse.status}`);
+      }
       
-      setAllCollections(collectionsData);
+      const userData = await userResponse.json();
+      const publicData = await publicResponse.json();
       
-      const filteredCollections = collectionsData.length > 0 ? 
-        collectionsData.filter(collection => 
+      const userCollections = userData.data || [];
+      const publicCollections = publicData.data || [];
+      
+      const mergedCollections = [...userCollections];
+      
+      publicCollections.forEach(publicColl => {
+        const isDuplicate = mergedCollections.some(userColl => userColl.id === publicColl.id);
+        if (!isDuplicate) {
+          mergedCollections.push(publicColl);
+        }
+      });
+      
+      setAllCollections(mergedCollections);
+      
+      const filteredCollections = mergedCollections.length > 0 ? 
+        mergedCollections.filter(collection => 
           (activeFilter === "all" || collection.status === activeFilter)
         ) : [];
       
@@ -181,6 +206,8 @@ function Collections() {
   
   const handleDelete = async (collectionId) => {
     try {
+      const collectionToDelete = allCollections.find(collection => collection.id === collectionId);
+      
       const response = await fetch(`/api/v1/exam/teacher/collections/${collectionId}`, {
         method: 'DELETE',
         credentials: 'include'
@@ -278,6 +305,10 @@ function Collections() {
     }
   };
 
+  const canEditCollection = (collection) => {
+    return user && collection.created_by?.id === user.id;
+  };
+
   return (
     <div className="flex min-h-screen flex-col">
       <Navbar />
@@ -324,6 +355,7 @@ function Collections() {
                     onStatusChange={handleStatusChange}
                     onDelete={handleDelete}
                     onDuplicate={handleDuplicate}
+                    canEdit={canEditCollection(collection)}
                   />
                 ))
               )}

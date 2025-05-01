@@ -396,7 +396,13 @@ async def cascade_delete_user(user_id: str, role: UserRole):
     """
     # Delete all questions created by the user (can be teacher or admin)
     if role == UserRole.TEACHER or role == UserRole.ADMIN:
-        await Collection.find(Collection.created_by.id == user_id).delete()
+        # await Collection.find(Collection.created_by.id == user_id).delete()
+        # to support the cascade delete of collections
+        collections = await Collection.find(
+            Collection.created_by.id == user_id
+        ).to_list()
+        for collection in collections:
+            await collection.delete()
         await ExamInstance.find(ExamInstance.created_by.id == user_id).delete()
 
     # Delete all student exams and responses

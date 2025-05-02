@@ -59,8 +59,8 @@ export function CollectionCard({ collection, onStatusChange, onDelete, onDuplica
             <Badge
               className={
                 collection.status === "published"
-                  ? "bg-green-100 text-green-800 hover:bg-green-100"
-                  : "bg-amber-100 text-amber-800 hover:bg-amber-100"
+                  ? "bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-400 hover:bg-green-100"
+                  : "bg-amber-100 dark:bg-amber-900/20 text-amber-800 dark:text-amber-400 hover:bg-amber-100"
               }
             >
               {collection.status === "published" ? "Public" : "Draft"}

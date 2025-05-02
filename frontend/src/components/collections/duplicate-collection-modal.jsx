@@ -56,7 +56,7 @@ export function DuplicateCollectionModal({ isOpen, onClose, onConfirm, originalT
             </div>
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose} className="text-white">
+            <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
             <Button type="submit">Duplicate</Button>

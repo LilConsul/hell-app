@@ -7,7 +7,7 @@ const Toaster = ({
   const { theme = "system" } = useTheme()
 
   return (
-    (<Sonner
+    <Sonner
       theme={theme}
       className="toaster group"
       style={
@@ -17,7 +17,7 @@ const Toaster = ({
           "--normal-border": "var(--border)"
         }
       }
-      {...props} />)
+      {...props} />
   );
 }
 

@@ -81,16 +81,16 @@ function PasswordResetPage() {
                 <CardDescription className="text-center">Your password has been successfully reset</CardDescription>
               </CardHeader>
               <CardContent className="flex flex-col items-center justify-center py-6">
-                <div className="rounded-full bg-green-100 p-3 mb-4">
-                  <CheckCircle className="h-12 w-12 text-green-600" />
+                <div className="rounded-full bg-green-100 dark:bg-green-900/30 p-3 mb-4">
+                  <CheckCircle className="h-12 w-12 text-green-600 dark:text-green-400" />
                 </div>
                 <p className="text-center mb-6">
                   Your password has been successfully reset. You can now log in with your new password.
                 </p>
-                <Alert className="bg-green-50 border-green-200">
-                  <CheckCircle className="h-4 w-4 text-green-600" />
+                <Alert className="bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-700">
+                  <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
                   <AlertTitle>Success</AlertTitle>
-                  <AlertDescription>You will be redirected to the login page in a few seconds.</AlertDescription>
+                  <AlertDescription>You can now login with new password</AlertDescription>
                 </Alert>
               </CardContent>
               <CardFooter className="flex justify-center">

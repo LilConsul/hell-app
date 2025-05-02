@@ -1,17 +1,29 @@
 import { useState, useEffect, useCallback } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { useAuth } from "@/contexts/auth-context";
+import { toast } from "sonner";
+import { Toaster } from "@/components/ui/sonner";
 
 import { CollectionCard } from "@/components/collections/card";
 import { CollectionFilters } from "@/components/collections/filters";
 import { EmptyCollections, LoadingCollections, ErrorCollections } from "@/components/collections/handle-collections";
+import { 
+  Pagination, 
+  PaginationContent, 
+  PaginationItem, 
+  PaginationLink, 
+  PaginationNext, 
+  PaginationPrevious,
+  PaginationEllipsis
+} from "@/components/ui/pagination";
 
 function Collections() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState("all");
@@ -24,6 +36,11 @@ function Collections() {
     questionCount: [0, 100],
     createdBy: "all",
   });
+  
+  const [currentPage, setCurrentPage] = useState(1);
+  const [collectionsPerPage] = useState(10);
+  const [paginatedCollections, setPaginatedCollections] = useState([]);
+  const [totalPages, setTotalPages] = useState(1);
   
   useEffect(() => {
     fetchCollections();
@@ -99,12 +116,34 @@ function Collections() {
     if (allCollections.length > 0) {
       const filtered = applyAllFilters();
       setCollections(filtered);
+      setCurrentPage(1);
     }
   };
   
   useEffect(() => {
     applyFilters();
   }, [debouncedSearchQuery, activeFilter, allCollections, user, applyAllFilters]);
+
+  // Apply pagination
+  useEffect(() => {
+    if (collections.length > 0) {
+      const totalPages = Math.ceil(collections.length / collectionsPerPage);
+      setTotalPages(totalPages);
+      
+      const indexOfLastCollection = currentPage * collectionsPerPage;
+      const indexOfFirstCollection = indexOfLastCollection - collectionsPerPage;
+      const currentCollections = collections.slice(indexOfFirstCollection, indexOfLastCollection);
+      
+      setPaginatedCollections(currentCollections);
+    } else {
+      setPaginatedCollections([]);
+      setTotalPages(1);
+    }
+  }, [collections, currentPage, collectionsPerPage]);
+
+  const handlePageChange = (pageNumber) => {
+    setCurrentPage(pageNumber);
+  };
 
   const fetchCollections = async () => {
     try {
@@ -158,6 +197,9 @@ function Collections() {
     } catch (err) {
       console.error("Error fetching collections:", err);
       setError("Failed to load collections. Please try again later.");
+      toast.error("Failed to load collections", {
+        description: "Please try again later.",
+      });
     } finally {
       setLoading(false);
     }
@@ -198,9 +240,16 @@ function Collections() {
           ? { ...collection, status: newStatus }
           : collection
       ));
+
+      toast.success(`Collection status updated`, {
+        description: `"${data.title}" is now ${newStatus}.`,
+      });
     } catch (err) {
       console.error("Error updating collection status:", err);
       setError("Failed to update collection status. Please try again.");
+      toast.error("Failed to update status", {
+        description: "Please try again later.",
+      });
     }
   };
   
@@ -219,9 +268,16 @@ function Collections() {
       
       setCollections(collections.filter(collection => collection.id !== collectionId));
       setAllCollections(allCollections.filter(collection => collection.id !== collectionId));
+      
+      toast.success(`Collection deleted`, {
+        description: `"${collectionToDelete.title}" has been removed.`,
+      });
     } catch (err) {
       console.error("Error deleting collection:", err);
       setError("Failed to delete collection. Please try again.");
+      toast.error("Failed to delete collection", {
+        description: "Please try again later.",
+      });
     }
   };
 
@@ -297,10 +353,13 @@ function Collections() {
         }
       }
       
-      fetchCollections();
+      navigate(`/collections/${newCollectionId}`);
     } catch (err) {
       console.error("Error duplicating collection:", err);
       setError("Failed to duplicate collection. Please try again.");
+      toast.error("Failed to duplicate collection", {
+        description: "Please try again later.",
+      });
       setLoading(false);
     }
   };
@@ -312,6 +371,7 @@ function Collections() {
   return (
     <div className="flex min-h-screen flex-col">
       <Navbar />
+      <Toaster closeButton />
       <main className="flex-1 space-y-4 p-8 pt-6">
         <div className="max-w-6xl mx-auto flex items-center justify-between space-y-2">
           <div>
@@ -348,16 +408,94 @@ function Collections() {
               {collections.length === 0 ? (
                 <EmptyCollections />
               ) : (
-                collections.map((collection) => (
-                  <CollectionCard
-                    key={collection.id}
-                    collection={collection}
-                    onStatusChange={handleStatusChange}
-                    onDelete={handleDelete}
-                    onDuplicate={handleDuplicate}
-                    canEdit={canEditCollection(collection)}
-                  />
-                ))
+                <>
+                  {paginatedCollections.map((collection) => (
+                    <CollectionCard
+                      key={collection.id}
+                      collection={collection}
+                      onStatusChange={handleStatusChange}
+                      onDelete={handleDelete}
+                      onDuplicate={handleDuplicate}
+                      canEdit={canEditCollection(collection)}
+                    />
+                  ))}
+                  
+                  {collections.length > collectionsPerPage && (
+                    <Pagination className="mt-6">
+                      <PaginationContent>
+                        <PaginationItem>
+                          <PaginationPrevious 
+                            onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
+                            aria-disabled={currentPage === 1}
+                            className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
+                          />
+                        </PaginationItem>
+                        
+                        {/* Show first page */}
+                        <PaginationItem>
+                          <PaginationLink 
+                            isActive={currentPage === 1}
+                            onClick={() => handlePageChange(1)}
+                          >
+                            1
+                          </PaginationLink>
+                        </PaginationItem>
+                        
+                        {/* Show ellipsis if needed */}
+                        {currentPage > 3 && (
+                          <PaginationItem>
+                            <PaginationEllipsis />
+                          </PaginationItem>
+                        )}
+                        
+                        {/* Show previous page */}
+                        {currentPage > 2 && (
+                          <PaginationItem>
+                            <PaginationLink onClick={() => handlePageChange(currentPage - 1)}>
+                              {currentPage - 1}
+                            </PaginationLink>
+                          </PaginationItem>
+                        )}
+                        
+                        {/* Show next page*/}
+                        {currentPage < totalPages - 1 && (
+                          <PaginationItem>
+                            <PaginationLink onClick={() => handlePageChange(currentPage + 1)}>
+                              {currentPage + 1}
+                            </PaginationLink>
+                          </PaginationItem>
+                        )}
+                        
+                        {/* Show ellipsis if needed */}
+                        {currentPage < totalPages - 2 && (
+                          <PaginationItem>
+                            <PaginationEllipsis />
+                          </PaginationItem>
+                        )}
+                        
+                        {/* Show last page if its not the first page */}
+                        {totalPages > 1 && (
+                          <PaginationItem>
+                            <PaginationLink 
+                              isActive={currentPage === totalPages}
+                              onClick={() => handlePageChange(totalPages)}
+                            >
+                              {totalPages}
+                            </PaginationLink>
+                          </PaginationItem>
+                        )}
+                        
+                        <PaginationItem>
+                          <PaginationNext 
+                            onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
+                            aria-disabled={currentPage === totalPages}
+                            className={currentPage === totalPages ? "pointer-events-none opacity-50" : ""}
+                          />
+                        </PaginationItem>
+                      </PaginationContent>
+                    </Pagination>
+                  )}
+                </>
               )}
             </div>
           )}

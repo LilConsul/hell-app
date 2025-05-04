@@ -9,8 +9,6 @@ import Exams from './pages/Exams';
 import Students from './pages/Students';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
-import AdminPanel from "./pages/Admin-Panel.jsx";
-import {AdminProvider} from "./contexts/admin-context.jsx";
 
 export default function App() {
   return (
@@ -19,8 +17,19 @@ export default function App() {
         <Routes>
           {/* Public routes */}
           <Route path="/" element={<Home/>}/>
+          <Route path="/login" element={<HomeWithLoginModal/>}/>
+          <Route path="/verify/:token" element={<EmailVerification/>}/>
+          <Route path="/password-reset/:token" element={<PasswordReset/>}/>
+          <Route path="/privacy-policy" element={<PrivacyPolicy/>}/>
+
 
           {/* Protected routes */}
+          <Route path="/dashboard" element={<ProtectedRoute element={<Dashboard/>}/>}/>
+          <Route path="/settings" element={<ProtectedRoute element={<Settings/>}/>}/>
+          <Route path="/exams" element={<ProtectedRoute element={<Exams/>}/>}/>
+          <Route path="/students"
+                 element={<ProtectedRoute element={<Students/>} allowedRoles={['teacher', 'admin']}/>}/>
+          <Route path="/reports" element={<ProtectedRoute element={<Reports/>} allowedRoles={['teacher', 'admin']}/>}/>
           <Route path="/dashboard" element={<ProtectedRoute element={<Dashboard/>}/>}/>
           <Route path="/exams" element={<ProtectedRoute element={<Exams/>}/>}/>
           <Route path="/students"

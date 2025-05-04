@@ -1,3 +1,4 @@
+TODO: Make /reset-passwords tokens exipire after it was used
 TODO:add timezone support to the app
 TODO:add email after exam submission
 TODO:add for each endpoint dolboeb check

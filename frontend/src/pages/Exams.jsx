@@ -3,7 +3,7 @@ import { Navbar } from "@/components/navbar"
 import { Footer } from "@/components/footer"
 import { Link } from "react-router-dom"
 
-export default function Exams() {
+function Exams() {
   return (
     <div className="flex flex-col min-h-screen">
       <Navbar />
@@ -22,3 +22,5 @@ export default function Exams() {
     </div>
   )
 }
+
+export default Exams;

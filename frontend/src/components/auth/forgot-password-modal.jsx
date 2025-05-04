@@ -51,27 +51,18 @@ export function ForgotPasswordModal({ isOpen, onClose, onBackToLogin }) {
     setServerError(null)
     
     try {
-      // For now we're just simulating the API call
-      // In a real implementation, you would connect to your backend
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      // For demonstration, always succeed
-      setIsSubmitted(true)
-      
-      // In a real implementation:
-      // const response = await fetch('/api/v1/auth/send-password-reset', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ email })
-      // })
-      // 
-      // const result = await response.json()
-      //
-      // if (!response.ok) {
-      //   setServerError(result.detail || "An error occurred. Please try again.")
-      // } else {
-      //   setIsSubmitted(true)
-      // }
+      const response = await fetch('/api/v1/auth/send-password-reset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      })
+      const result = await response.json()
+
+      if (!response.ok) {
+        setServerError(result.detail || "An error occurred. Please try again.")
+      } else {
+        setIsSubmitted(true)
+      }
     } catch (error) {
       console.error("Password reset request failed:", error)
       setServerError("An unexpected error occurred. Please try again.")

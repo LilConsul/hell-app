@@ -97,7 +97,9 @@ class StudentResponseRepository(BaseRepository[StudentResponse]):
         )
         return response
 
-    async def find_by_attempt_id(self, attempt_id: str) -> List[StudentResponse] | None:
+    async def find_by_attempt_id(
+        self, attempt_id: str, fetch_links: bool = True
+    ) -> List[StudentResponse] | None:
         """
         Find all student responses for a specific attempt.
 
@@ -109,7 +111,7 @@ class StudentResponseRepository(BaseRepository[StudentResponse]):
         """
         responses = await self.model_class.find(
             {"attempt_id._id": attempt_id},
-            fetch_links=True,
+            fetch_links=fetch_links,
         ).to_list()
         return responses
 

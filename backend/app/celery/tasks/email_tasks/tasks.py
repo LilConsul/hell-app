@@ -136,3 +136,36 @@ def user_deleted_notification(
         },
     )
     async_to_sync(mail.send_message)(message, "account_deleted.html")
+
+
+@celery.task
+def exam_finish_confirmation(
+    recipient: str,
+    username: str,
+    exam_title: str,
+    end_time: datetime,
+    start_time: datetime = None,
+    question_count: int = None,
+):
+    duration = "N/A"
+    if start_time:
+        duration_minutes = int((end_time - start_time).total_seconds() / 60)
+        duration = f"{duration_minutes} minutes"
+
+    message = create_message(
+        recipients=[
+            recipient,
+        ],
+        subject=f"{settings.PROJECT_NAME} | Exam Submitted Successfully",
+        body={
+            "username": username,
+            "exam_title": exam_title,
+            "completion_time": end_time.strftime("%Y-%m-%d %H:%M"),
+            "duration": duration,
+            "question_count": question_count or "N/A",
+            "dashboard_link": settings.DASHBOARD_URL,
+            "datetime": datetime.now().strftime("%Y-%m-%d %H:%M"),
+            "year": datetime.now().year,
+        },
+    )
+    async_to_sync(mail.send_message)(message, "exam_finished.html")

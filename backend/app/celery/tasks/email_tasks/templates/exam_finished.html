@@ -1,0 +1,115 @@
+{% extends "base_email.html" %}
+
+{% block title %}Exam Completed - Hell App{% endblock %}
+
+{% block additional_styles %}
+.exam-summary {
+  background-color: var(--secondary);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  margin: 1.5rem 0;
+  border: 1px solid var(--border);
+}
+
+.exam-item {
+  display: flex;
+  margin-bottom: 0.75rem;
+  align-items: flex-start;
+}
+
+.exam-label {
+  font-weight: 600;
+  min-width: 120px;
+  color: var(--foreground);
+  font-size: 0.875rem;
+}
+
+.exam-value {
+  font-weight: 500;
+  color: var(--foreground);
+}
+
+.completion-banner {
+  background-color: #ecfdf5;
+  color: #065f46;
+  text-align: center;
+  padding: 0.75rem;
+  margin: 1.25rem 0;
+  border-radius: var(--radius);
+  font-weight: 600;
+}
+
+.status-indicator {
+  display: inline-block;
+  width: 0.75rem;
+  height: 0.75rem;
+  background-color: #10b981;
+  border-radius: 50%;
+  margin-right: 0.5rem;
+}
+
+.next-steps {
+  background-color: #f8fafc;
+  border-left: 3px solid #64748b;
+  padding: 1rem;
+  margin: 1.25rem 0;
+  border-radius: 0 calc(var(--radius) - 2px) calc(var(--radius) - 2px) 0;
+  color: #334155;
+}
+
+.button-container {
+  text-align: center;
+  margin: 1.5rem 0;
+}
+
+@media screen and (max-width: 640px) {
+  .exam-item {
+    flex-direction: column;
+  }
+  
+  .exam-label {
+    margin-bottom: 0.25rem;
+  }
+}
+{% endblock %}
+
+{% block heading %}Examination Completed{% endblock %}
+
+{% block content %}
+<div class="completion-banner">
+  <span class="status-indicator"></span>Your exam has been successfully submitted
+</div>
+
+<p>Thank you for completing your examination through the Hell App platform. Your responses have been securely recorded in our system.</p>
+
+<div class="exam-summary">
+  <div class="exam-item">
+    <div class="exam-label">Exam Title:</div>
+    <div class="exam-value">{{ exam_title }}</div>
+  </div>
+  <div class="exam-item">
+    <div class="exam-label">Completion Time:</div>
+    <div class="exam-value">{{ completion_time }}</div>
+  </div>
+  <div class="exam-item">
+    <div class="exam-label">Duration:</div>
+    <div class="exam-value">{{ duration }}</div>
+  </div>
+  <div class="exam-item">
+    <div class="exam-label">Questions:</div>
+    <div class="exam-value">{{ question_count }}</div>
+  </div>
+</div>
+
+<div class="next-steps">
+  <strong>What happens next:</strong> Your submission will be processed according to your institution's grading timeline. Results will be available through your institution's grading system once evaluation is complete.
+</div>
+
+<div class="button-container">
+  <a href="{{ dashboard_link }}" class="button">Return to Dashboard</a>
+</div>
+
+<p>If you have any questions regarding your examination or results, please contact your institution's administrator.</p>
+{% endblock %}
+
+{% block footer_extra %}This email serves as confirmation of your completed examination on the Hell App platform.{% endblock %}

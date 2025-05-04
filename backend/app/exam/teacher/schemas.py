@@ -144,3 +144,39 @@ class GetExamInstance(ExamInstance):
     collection_id: str
     created_by: str
     assigned_students: List[UserId] | None = None
+
+
+class ExamReportFilter(BaseModel):
+    start_date: datetime | None = None
+    end_date: datetime | None = None
+    student_ids: List[str] | None = None
+    title: str | None = None
+    only_last_attempt: bool = True
+
+
+class ExamStatistics(BaseModel):
+    mean: float | None = None
+    median: float | None = None
+    max: float | None = None
+    min: float | None = None
+
+
+class HistogramDataPoint(BaseModel):
+    range: str
+    count: int
+
+
+class TimelineDataPoint(BaseModel):
+    date: str
+    average_score: float
+
+
+class ExamReportResponse(BaseModel):
+    exam_title: str
+    total_students: int
+    attempts_count: int
+    statistics: ExamStatistics
+    pass_rate: float | None = None
+    histogram_data: List[HistogramDataPoint] = []
+    timeline_data: List[TimelineDataPoint] = []
+    error: str | None = None

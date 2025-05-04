@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List
+from typing import List, Any
 
 from app.auth.schemas import UserResponse
 from app.exam.models import (
@@ -9,7 +9,7 @@ from app.exam.models import (
     QuestionType,
     SecuritySettings,
 )
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class TimeStamp(BaseModel):
@@ -28,7 +28,7 @@ class QuestionBase(BaseModel):
     type: QuestionType
     has_katex: bool = False
     weight: int = 1
-    options: List[QuestionOptionSchema] | None = []
+    options: List[QuestionOptionSchema] = []
     correct_input_answer: str | None = None
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
@@ -36,6 +36,23 @@ class QuestionBase(BaseModel):
 
 class QuestionSchema(QuestionBase):
     id: str | None = None
+
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,
+        json_schema_extra={
+            "example": {
+                "question_text": "What is the capital of France?",
+                "type": "mcq",
+                "has_katex": False,
+                "weight": 1,
+                "options": [
+                    {"text": "Paris", "is_correct": True},
+                    {"text": "London", "is_correct": False},
+                ],
+                "correct_input_answer": "Correct input answer, if type:shortanswer",
+            }
+        },
+    )
 
 
 class CreateQuestionSchema(QuestionBase):
@@ -79,8 +96,12 @@ class GetCollection(CollectionBase, TimeStamp):
     questions: List[QuestionSchema]
 
 
-class JustCollection(GetCollection):
-    questions: None = None
+class CollectionNoQuestions(GetCollection):
+    questions: Any = Field(..., exclude=True)
+
+
+class CollectionQuestionCount(CollectionNoQuestions):
+    question_count: int
 
 
 class UserId(BaseModel):
@@ -123,3 +144,39 @@ class GetExamInstance(ExamInstance):
     collection_id: str
     created_by: str
     assigned_students: List[UserId] | None = None
+
+
+class ExamReportFilter(BaseModel):
+    start_date: datetime | None = None
+    end_date: datetime | None = None
+    student_ids: List[str] | None = None
+    title: str | None = None
+    only_last_attempt: bool = True
+
+
+class ExamStatistics(BaseModel):
+    mean: float | None = None
+    median: float | None = None
+    max: float | None = None
+    min: float | None = None
+
+
+class HistogramDataPoint(BaseModel):
+    range: str
+    count: int
+
+
+class TimelineDataPoint(BaseModel):
+    date: str
+    average_score: float
+
+
+class ExamReportResponse(BaseModel):
+    exam_title: str
+    total_students: int
+    attempts_count: int
+    statistics: ExamStatistics
+    pass_rate: float | None = None
+    histogram_data: List[HistogramDataPoint] = []
+    timeline_data: List[TimelineDataPoint] = []
+    error: str | None = None

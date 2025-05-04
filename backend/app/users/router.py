@@ -4,7 +4,7 @@ from app.auth.dependencies import (
     get_current_teacher_id,
     get_current_user_id,
 )
-from app.auth.schemas import UserResponse, Token
+from app.auth.schemas import Token, UserResponse
 from app.core.schemas import BaseReturn
 from app.users.dependencies import get_user_service
 from app.users.schemas import StudentData, UserUpdate, UserUpdatePassword

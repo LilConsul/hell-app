@@ -1,19 +1,19 @@
 from datetime import timedelta
 
 from app.auth.repository import UserRepository
-from app.auth.schemas import UserCreate, UserLogin, UserResponse
+from app.auth.schemas import UserCreate, UserLogin, UserResponse, UserRole
 from app.auth.security import (
+    TokenType,
     create_access_token,
     create_verification_token,
     decode_verification_token,
     get_password_hash,
     verify_password,
-    TokenType,
 )
 from app.celery.tasks.email_tasks.tasks import (
     user_password_reset_mail,
-    user_welcome_mail_event,
     user_verify_mail_event,
+    user_welcome_mail_event,
 )
 from app.core.exceptions import AuthenticationError, BadRequestError, NotFoundError
 from app.core.utils import make_username
@@ -92,7 +92,7 @@ class AuthService:
         user_id = token_data.get("user_id")
         token_type = token_data.get("type")
 
-        if token_type != str(TokenType.VERIFICATION):
+        if token_type != TokenType.VERIFICATION.value:
             raise AuthenticationError("Invalid token type")
 
         user = await self.user_repository.get_by_id(user_id)
@@ -134,7 +134,7 @@ class AuthService:
         user_id = token_data.get("user_id")
         token_type = token_data.get("type")
 
-        if token_type != str(TokenType.PASSWORD_RESET):
+        if token_type != TokenType.PASSWORD_RESET.value:
             raise AuthenticationError("Invalid token type")
 
         user = await self.user_repository.get_by_id(user_id)
@@ -145,3 +145,26 @@ class AuthService:
         hashed_password = get_password_hash(new_password)
         user.hashed_password = hashed_password
         await self.user_repository.save(user)
+
+    async def initialize_admin(self):
+        """
+        Initialize the admin user if it doesn't exist.
+        """
+        admin_email = settings.ADMIN_EMAIL
+        admin_password = settings.ADMIN_PASSWORD
+
+        existing_admin = await self.user_repository.get_by_email(admin_email)
+        if existing_admin:
+            return
+
+        hashed_password = get_password_hash(admin_password)
+        admin_data = {
+            "email": admin_email,
+            "hashed_password": hashed_password,
+            "role": UserRole.ADMIN,
+            "first_name": "Super",
+            "last_name": "Admin",
+            "is_verified": True,
+        }
+
+        await self.user_repository.create(admin_data)

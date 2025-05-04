@@ -3,20 +3,20 @@ from typing import List
 from app.auth.repository import UserRepository
 from app.auth.schemas import UserResponse, UserRole
 from app.auth.security import (
+    TokenType,
+    create_verification_token,
+    decode_verification_token,
     get_password_hash,
     verify_password,
-    create_verification_token,
-    TokenType,
-    decode_verification_token,
 )
 from app.celery.tasks.email_tasks.tasks import (
-    user_deletion_confirmation,
     user_deleted_notification,
+    user_deletion_confirmation,
 )
 from app.core.exceptions import AuthenticationError, NotFoundError
-from app.users.schemas import StudentData, UserUpdate
 from app.core.utils import make_username
 from app.settings import settings
+from app.users.schemas import StudentData, UserUpdate
 
 
 class UserService:
@@ -79,7 +79,7 @@ class UserService:
         if not delete_data or not delete_data.get("type"):
             raise AuthenticationError("Invalid or expired token")
 
-        if delete_data.get("type") != str(TokenType.USER_DELETION):
+        if delete_data.get("type") != TokenType.USER_DELETION.value:
             raise AuthenticationError("Invalid token type")
 
         if delete_data.get("user_id") != user_id:

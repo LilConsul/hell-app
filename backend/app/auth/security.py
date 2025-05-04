@@ -68,7 +68,7 @@ def create_verification_token(user_id: str, token_type: TokenType) -> str:
     data = {
         "user_id": user_id,
         "created": datetime.now(timezone.utc).timestamp(),
-        "type": str(token_type),
+        "type": token_type.value,
     }
     return serializer.dumps(data)
 

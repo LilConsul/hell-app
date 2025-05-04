@@ -3,6 +3,8 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from .auth.dependencies import get_user_repository
+from .auth.service import AuthService
 from .database import init_db
 from .router import router
 from .settings import settings
@@ -11,6 +13,12 @@ from .settings import settings
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_db()
+
+    # Initialize the admin user
+    user_repository = get_user_repository()
+    auth_service = AuthService(user_repository)
+    await auth_service.initialize_admin()
+
     yield
 
 

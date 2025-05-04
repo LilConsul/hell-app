@@ -8,7 +8,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     # Redis settings
-    REDIS_PORT: str = Field(..., alias="REDIS_PORT_INTERNAL")
+    REDIS_PORT: int = Field(..., alias="REDIS_PORT_INTERNAL")
     REDIS_HOST: str
 
     @property
@@ -23,6 +23,10 @@ class Settings(BaseSettings):
     DEBUG: bool = Field(..., alias="BACKEND_DEBUG")
     DOMAIN: str
     ACCESS_TOKEN_EXPIRE_SECONDS: int
+
+    # Admin
+    ADMIN_EMAIL: str = Field(..., alias="ADMIN_EMAIL")
+    ADMIN_PASSWORD: str = Field(..., alias="ADMIN_PASSWORD")
 
     # Cookie settings
     COOKIE_SECURE: bool = True
@@ -81,6 +85,12 @@ class Settings(BaseSettings):
     @property
     def DELETE_ACCOUNT_URL(self) -> str:
         return f"https://{self.DOMAIN}{self.DELETE_ACCOUNT_PATH}"
+
+    DASHBOARD_PATH: str
+
+    @property
+    def DASHBOARD_URL(self) -> str:
+        return f"https://{self.DOMAIN}{self.DASHBOARD_PATH}"
 
     # Backend settings
     BACKEND_PORT_INTERNAL: int

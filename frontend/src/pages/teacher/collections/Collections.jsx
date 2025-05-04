@@ -7,19 +7,30 @@ import { Footer } from "@/components/footer";
 import { useAuth } from "@/contexts/auth-context";
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
-
 import { CollectionCard } from "@/components/collections/card";
 import { CollectionFilters } from "@/components/collections/filters";
-import { EmptyCollections, LoadingCollections, ErrorCollections } from "@/components/collections/handle-collections";
-import { 
-  Pagination, 
-  PaginationContent, 
-  PaginationItem, 
-  PaginationLink, 
-  PaginationNext, 
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
   PaginationPrevious,
   PaginationEllipsis
 } from "@/components/ui/pagination";
+
+import {
+  fetchCollections as fetchCollectionsAPI,
+  updateCollectionStatus,
+  deleteCollection,
+  duplicateCollection
+} from "./Collections.api";
+
+import {
+  EmptyCollections,
+  LoadingCollections,
+  ErrorCollections
+} from "@/components/collections/handle-collections";
 
 function Collections() {
   const { user } = useAuth();
@@ -34,44 +45,49 @@ function Collections() {
   const [filters, setFilters] = useState({
     dateRange: "all",
     questionCount: [0, 100],
-    createdBy: "all",
+    createdBy: "all"
   });
-  
   const [currentPage, setCurrentPage] = useState(1);
   const [collectionsPerPage] = useState(10);
   const [paginatedCollections, setPaginatedCollections] = useState([]);
   const [totalPages, setTotalPages] = useState(1);
-  
+
   useEffect(() => {
-    fetchCollections();
+    const loadCollections = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await fetchCollectionsAPI();
+        setAllCollections(data);
+      } catch (err) {
+        setError("Failed to load collections. Please try again later.");
+        toast.error("Failed to load collections", {
+          description: "Please try again later.",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadCollections();
   }, []);
 
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearchQuery(searchQuery);
     }, 300);
-
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
   const applyAllFilters = useCallback(() => {
     if (!allCollections.length) return [];
-    
     return allCollections.filter(collection => {
-      if (activeFilter !== "all" && collection.status !== activeFilter) {
-        return false;
-      }
-      
-      if (debouncedSearchQuery && 
-          !collection.title.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) && 
-          !collection.description.toLowerCase().includes(debouncedSearchQuery.toLowerCase())) {
-        return false;
-      }
-      
+      if (activeFilter !== "all" && collection.status !== activeFilter) return false;
+      if (debouncedSearchQuery &&
+          !collection.title.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) &&
+          !collection.description.toLowerCase().includes(debouncedSearchQuery.toLowerCase())) return false;
       if (filters.dateRange !== "all") {
         const collectionDate = new Date(collection.created_at);
         const now = new Date();
-        
         switch (filters.dateRange) {
           case "today":
             if (collectionDate.toDateString() !== now.toDateString()) return false;
@@ -93,47 +109,33 @@ function Collections() {
             break;
         }
       }
-      
       const questionCount = collection.question_count || 0;
-      if (questionCount < filters.questionCount[0] || questionCount > filters.questionCount[1]) {
-        return false;
-      }
-      
+      if (questionCount < filters.questionCount[0] || questionCount > filters.questionCount[1]) return false;
       if (filters.createdBy !== "all" && user) {
         const isCreatedByCurrentUser = collection.created_by?.id === user.id;
-        
-        if ((filters.createdBy === "me" && !isCreatedByCurrentUser) || 
-            (filters.createdBy === "others" && isCreatedByCurrentUser)) {
-          return false;
-        }
+        if ((filters.createdBy === "me" && !isCreatedByCurrentUser) ||
+            (filters.createdBy === "others" && isCreatedByCurrentUser)) return false;
       }
-      
       return true;
     });
   }, [activeFilter, debouncedSearchQuery, filters, allCollections, user]);
-    
-  const applyFilters = () => {
-    if (allCollections.length > 0) {
-      const filtered = applyAllFilters();
-      setCollections(filtered);
-      setCurrentPage(1);
-    }
-  };
-  
+
   useEffect(() => {
-    applyFilters();
-  }, [debouncedSearchQuery, activeFilter, allCollections, user, applyAllFilters]);
+    const filtered = applyAllFilters();
+    setCollections(filtered);
+    setCurrentPage(1);
+  }, [debouncedSearchQuery, activeFilter, applyAllFilters]);
 
   // Apply pagination
   useEffect(() => {
     if (collections.length > 0) {
       const totalPages = Math.ceil(collections.length / collectionsPerPage);
       setTotalPages(totalPages);
-      
       const indexOfLastCollection = currentPage * collectionsPerPage;
-      const indexOfFirstCollection = indexOfLastCollection - collectionsPerPage;
-      const currentCollections = collections.slice(indexOfFirstCollection, indexOfLastCollection);
-      
+      const currentCollections = collections.slice(
+        indexOfLastCollection - collectionsPerPage,
+        indexOfLastCollection
+      );
       setPaginatedCollections(currentCollections);
     } else {
       setPaginatedCollections([]);
@@ -141,140 +143,40 @@ function Collections() {
     }
   }, [collections, currentPage, collectionsPerPage]);
 
-  const handlePageChange = (pageNumber) => {
-    setCurrentPage(pageNumber);
-  };
-
-  const fetchCollections = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      const userCollectionsPromise = fetch("/api/v1/exam/teacher/collections/", {
-        credentials: "include",
-      });
-      
-      const publicCollectionsPromise = fetch("/api/v1/exam/teacher/collections/public", {
-        credentials: "include",
-      });
-      
-      const [userResponse, publicResponse] = await Promise.all([
-        userCollectionsPromise,
-        publicCollectionsPromise
-      ]);
-      
-      if (!userResponse.ok) {
-        throw new Error(`HTTP error fetching user collections! Status: ${userResponse.status}`);
-      }
-      
-      if (!publicResponse.ok) {
-        throw new Error(`HTTP error fetching public collections! Status: ${publicResponse.status}`);
-      }
-      
-      const userData = await userResponse.json();
-      const publicData = await publicResponse.json();
-      
-      const userCollections = userData.data || [];
-      const publicCollections = publicData.data || [];
-      
-      const mergedCollections = [...userCollections];
-      
-      publicCollections.forEach(publicColl => {
-        const isDuplicate = mergedCollections.some(userColl => userColl.id === publicColl.id);
-        if (!isDuplicate) {
-          mergedCollections.push(publicColl);
-        }
-      });
-      
-      setAllCollections(mergedCollections);
-      
-      const filteredCollections = mergedCollections.length > 0 ? 
-        mergedCollections.filter(collection => 
-          (activeFilter === "all" || collection.status === activeFilter)
-        ) : [];
-      
-      setCollections(filteredCollections);
-    } catch (err) {
-      console.error("Error fetching collections:", err);
-      setError("Failed to load collections. Please try again later.");
-      toast.error("Failed to load collections", {
-        description: "Please try again later.",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+  const handlePageChange = (pageNumber) => setCurrentPage(pageNumber);
 
   const handleStatusChange = async (collectionId, newStatus) => {
     try {
-      const data = collections.find(collection => collection.id === collectionId);
-      if (!data) {
-        throw new Error("Collection not found");
-      }
-      
-      const response = await fetch(`/api/v1/exam/teacher/collections/${collectionId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          title: data.title,
-          description: data.description, 
-          status: newStatus
-        }),
-        credentials: 'include'
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
-      }
-      
-      setCollections(collections.map(collection => 
-        collection.id === collectionId 
-          ? { ...collection, status: newStatus }
-          : collection
-      ));
-      
-      setAllCollections(allCollections.map(collection => 
-        collection.id === collectionId 
-          ? { ...collection, status: newStatus }
-          : collection
-      ));
-
+      await updateCollectionStatus(collectionId, newStatus);
+      setCollections(prev =>
+        prev.map(collection =>
+          collection.id === collectionId ? { ...collection, status: newStatus } : collection
+        )
+      );
+      setAllCollections(prev =>
+        prev.map(collection =>
+          collection.id === collectionId ? { ...collection, status: newStatus } : collection
+        )
+      );
       toast.success(`Collection status updated`, {
-        description: `"${data.title}" is now ${newStatus}.`,
+        description: `"${collections.find(c => c.id === collectionId)?.title}" is now ${newStatus}.`,
       });
     } catch (err) {
-      console.error("Error updating collection status:", err);
-      setError("Failed to update collection status. Please try again.");
       toast.error("Failed to update status", {
         description: "Please try again later.",
       });
     }
   };
-  
+
   const handleDelete = async (collectionId) => {
     try {
-      const collectionToDelete = allCollections.find(collection => collection.id === collectionId);
-      
-      const response = await fetch(`/api/v1/exam/teacher/collections/${collectionId}`, {
-        method: 'DELETE',
-        credentials: 'include'
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
-      }
-      
-      setCollections(collections.filter(collection => collection.id !== collectionId));
-      setAllCollections(allCollections.filter(collection => collection.id !== collectionId));
-      
+      await deleteCollection(collectionId);
+      setCollections(prev => prev.filter(collection => collection.id !== collectionId));
+      setAllCollections(prev => prev.filter(collection => collection.id !== collectionId));
       toast.success(`Collection deleted`, {
-        description: `"${collectionToDelete.title}" has been removed.`,
+        description: `"${collections.find(c => c.id === collectionId)?.title}" has been removed.`,
       });
     } catch (err) {
-      console.error("Error deleting collection:", err);
-      setError("Failed to delete collection. Please try again.");
       toast.error("Failed to delete collection", {
         description: "Please try again later.",
       });
@@ -284,82 +186,13 @@ function Collections() {
   const handleDuplicate = async (collectionId, title, description) => {
     try {
       setLoading(true);
-
-      // Get collection with questions
-      const detailResponse = await fetch(`/api/v1/exam/teacher/collections/${collectionId}`, {
-        credentials: "include",
-      });
-      
-      if (!detailResponse.ok) {
-        throw new Error(`HTTP error! Status: ${detailResponse.status}`);
-      }
-      
-      const detailData = await detailResponse.json();
-      const originalCollection = detailData.data;
-      const questions = originalCollection.questions || [];
-      
-      const createResponse = await fetch("/api/v1/exam/teacher/collections/", {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          title,
-          description,
-          status: "draft"
-        }),
-        credentials: 'include'
-      });
-      
-      if (!createResponse.ok) {
-        throw new Error(`HTTP error! Status: ${createResponse.status}`);
-      }
-      
-      const newCollectionData = await createResponse.json();
-      const newCollectionId = newCollectionData.data.collection_id;
-      
-      // Copy questions to the new collection
-      if (questions && questions.length > 0) {
-        for (const question of questions) {
-          if (question) {
-            const questionPayload = {
-              question_text: question.question_text,
-              type: question.type,
-              weight: question.weight || 1,
-              has_katex: question.has_katex || false
-            };
-            
-            if (question.type === 'shortanswer' && question.correct_input_answer) {
-              questionPayload.correct_input_answer = question.correct_input_answer;
-            }
-            
-            if ((question.type === 'mcq' || question.type === 'singlechoice') && question.options) {
-              const cleanOptions = question.options.map(option => ({
-                text: option.text,
-                is_correct: option.is_correct
-              }));
-              questionPayload.options = cleanOptions;
-            }
-            
-            await fetch(`/api/v1/exam/teacher/collections/${newCollectionId}/questions`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify(questionPayload),
-              credentials: 'include'
-            });
-          }
-        }
-      }
-      
+      const newCollectionId = await duplicateCollection(collectionId, title, description);
       navigate(`/collections/${newCollectionId}`);
     } catch (err) {
-      console.error("Error duplicating collection:", err);
-      setError("Failed to duplicate collection. Please try again.");
       toast.error("Failed to duplicate collection", {
         description: "Please try again later.",
       });
+    } finally {
       setLoading(false);
     }
   };
@@ -387,7 +220,6 @@ function Collections() {
             </Button>
           </div>
         </div>
-
         <div className="max-w-6xl mx-auto flex flex-col space-y-4">
           <CollectionFilters
             searchQuery={searchQuery}
@@ -396,13 +228,12 @@ function Collections() {
             setActiveFilter={setActiveFilter}
             filters={filters}
             setFilters={setFilters}
-            applyFilters={applyFilters}
+            applyFilters={applyAllFilters}
           />
-
           {loading ? (
             <LoadingCollections />
           ) : error ? (
-            <ErrorCollections error={error} retryAction={fetchCollections} />
+            <ErrorCollections error={error} retryAction={() => fetchCollectionsAPI()} />
           ) : (
             <div className="space-y-4">
               {collections.length === 0 ? (
@@ -419,36 +250,32 @@ function Collections() {
                       canEdit={canEditCollection(collection)}
                     />
                   ))}
-                  
                   {collections.length > collectionsPerPage && (
                     <Pagination className="mt-6">
                       <PaginationContent>
                         <PaginationItem>
-                          <PaginationPrevious 
+                          <PaginationPrevious
                             onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
                             aria-disabled={currentPage === 1}
                             className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
                           />
                         </PaginationItem>
-                        
-                        {/* Show first page */}
+                        {/* First Page */}
                         <PaginationItem>
-                          <PaginationLink 
+                          <PaginationLink
                             isActive={currentPage === 1}
                             onClick={() => handlePageChange(1)}
                           >
                             1
                           </PaginationLink>
                         </PaginationItem>
-                        
-                        {/* Show ellipsis if needed */}
+                        {/* Ellipsis if needed */}
                         {currentPage > 3 && (
                           <PaginationItem>
                             <PaginationEllipsis />
                           </PaginationItem>
                         )}
-                        
-                        {/* Show previous page */}
+                        {/* Previous Page */}
                         {currentPage > 2 && (
                           <PaginationItem>
                             <PaginationLink onClick={() => handlePageChange(currentPage - 1)}>
@@ -456,8 +283,13 @@ function Collections() {
                             </PaginationLink>
                           </PaginationItem>
                         )}
-                        
-                        {/* Show next page*/}
+                        {/* Current Page */}
+                        {currentPage > 1 && currentPage < totalPages && (
+                          <PaginationItem>
+                            <PaginationLink isActive>{currentPage}</PaginationLink>
+                          </PaginationItem>
+                        )}
+                        {/* Next Page */}
                         {currentPage < totalPages - 1 && (
                           <PaginationItem>
                             <PaginationLink onClick={() => handlePageChange(currentPage + 1)}>
@@ -465,18 +297,16 @@ function Collections() {
                             </PaginationLink>
                           </PaginationItem>
                         )}
-                        
-                        {/* Show ellipsis if needed */}
+                        {/* Ellipsis if needed */}
                         {currentPage < totalPages - 2 && (
                           <PaginationItem>
                             <PaginationEllipsis />
                           </PaginationItem>
                         )}
-                        
-                        {/* Show last page if its not the first page */}
+                        {/* Last Page */}
                         {totalPages > 1 && (
                           <PaginationItem>
-                            <PaginationLink 
+                            <PaginationLink
                               isActive={currentPage === totalPages}
                               onClick={() => handlePageChange(totalPages)}
                             >
@@ -484,9 +314,8 @@ function Collections() {
                             </PaginationLink>
                           </PaginationItem>
                         )}
-                        
                         <PaginationItem>
-                          <PaginationNext 
+                          <PaginationNext
                             onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
                             aria-disabled={currentPage === totalPages}
                             className={currentPage === totalPages ? "pointer-events-none opacity-50" : ""}

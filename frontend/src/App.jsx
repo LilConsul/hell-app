@@ -7,7 +7,7 @@ import { AuthProvider } from './contexts/auth-context';
 
 import Home from './pages/Home';
 import Dashboard from './pages/teacher/Dashboard';
-import Collections from './pages/teacher/Collections';
+import Collections from './pages/teacher/collections/Collections';
 import Exams from './pages/Exams';
 import Students from './pages/Students';
 import Reports from './pages/Reports';

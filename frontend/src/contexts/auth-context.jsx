@@ -1,14 +1,17 @@
 import { createContext, useContext, useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [initialized, setInitialized] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
 
   const fetchUser = async () => {
+    setLoading(true);
     try {
       const response = await fetch("/api/v1/users/me", {
         credentials: "include",
@@ -21,16 +24,51 @@ export function AuthProvider({ children }) {
         setUser(null);
       }
     } catch (error) {
-      console.error("Failed to fetch user:", error);
       setUser(null);
+    } finally {
+      setLoading(false);
+      setInitialized(true);
+    }
+  };
+
+
+  useEffect(() => {
+    const isVerificationPage = location.pathname.includes('/verify/');
+    
+    if (!isVerificationPage) {
+      fetchUser();
+    } else {
+      setLoading(false);
+      setInitialized(true);
+    }
+  }, [location.pathname]);
+
+  const login = async (credentials) => {
+    setLoading(true);
+    try {
+      const response = await fetch('/api/v1/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(credentials),
+        credentials: 'include'
+      });
+      
+      const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.detail || "An error occurred during login");
+      }
+      await fetchUser();      
+      navigate("/dashboard");
+      return true;
+    } catch (error) {
+      throw error;
     } finally {
       setLoading(false);
     }
   };
-
-  useEffect(() => {
-    fetchUser();
-  }, []);
 
   const logout = async () => {
     try {
@@ -49,6 +87,8 @@ export function AuthProvider({ children }) {
     user,
     loading,
     isAuthenticated: !!user,
+    initialized,
+    login,
     logout,
     refreshUser: fetchUser
   };

@@ -13,7 +13,7 @@ import Settings from './pages/Settings';
 import EmailVerification from './pages/EmailVerification';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import PasswordReset from './pages/PasswordReset';
-
+import DeleteAccount from "./pages/DeleteAccount"; 
 
 function HomeWithLoginModal() {
   useEffect(() => {
@@ -40,8 +40,7 @@ export default function App() {
           <Route path="/verify/:token" element={<EmailVerification />} />
           <Route path="/password-reset/:token" element={<PasswordReset />} />
           <Route path="/settings"  element={<Settings />}  />
-          
-
+          <Route path="/delete-account/:token" element={<DeleteAccount />} />
 
           {/* Protected routes */}
           <Route path="/dashboard" element={<ProtectedRoute element={<Dashboard />} />} />

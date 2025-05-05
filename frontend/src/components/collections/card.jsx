@@ -73,8 +73,9 @@ export function CollectionCard({ collection, onStatusChange, onDelete, onDuplica
             <div className="flex items-center">
               <Library className="mr-2 h-4 w-4 text-muted-foreground" />
               <span className="text-sm">
-                {collection.question_count || 0} questions
+                {collection.question_count || 0} {collection.question_count === 1 ? 'question' : 'questions'}
               </span>
+
             </div>
             {collection.used_in_exams > 0 && (
               <div className="flex items-center">

@@ -7,9 +7,10 @@ import { useNavigate } from "react-router-dom";
 import { apiRequest } from "@/lib/utils";
 
 // Import refactored components
-import { SettingsTabs } from "./SettingsTabs";
-import { SettingsModals } from "./SettingsModals";
-import { FeedbackAlerts } from "./FeedbackAlerts";
+import { SettingsTabs } from "@/components/settings/SettingsTabs";
+import { SettingsModals } from "@/components/settings/SettingsModals";
+import { FeedbackAlerts } from "@/components/settings/FeedbackAlerts";
+
 
 export default function Settings() {
   // Auth context
@@ -62,7 +63,8 @@ export default function Settings() {
       setFirstName(user.first_name || "");
       setLastName(user.last_name || "");
       setLanguage(user.language || "en");
-      setNotifications({ email: user.receive_notifications || true });
+      // Ensure we're setting the initial state correctly with proper fallback
+      setNotifications({ email: user.receive_notifications === false ? false : true });
     }
   }, [user]);
 
@@ -83,7 +85,6 @@ export default function Settings() {
       
       const response = await apiRequest("/api/v1/users/me", {
         method: "PUT",
-        credentials: 'include', // Include cookies
         body: JSON.stringify(payload),
       });
 
@@ -107,56 +108,72 @@ export default function Settings() {
   // Handle language change
   const handleChangeLanguage = async (value) => {
     try {
+      // Set loading state
+      setIsUpdating(true);
+      
+      // Update local state immediately for better UX
+      setLanguage(value);
+      
       const response = await apiRequest("/api/v1/users/me", {
         method: "PUT",
-        credentials: 'include', // Include cookies
         body: JSON.stringify({
           language: value
         }),
       });
       
       // Update both the local state and the auth context
-      // This avoids the need for a separate API call via refreshUser()
       if (response && response.data) {
         // Update the auth context with the new user data
         refreshUser(response.data);
-      } else {
-        // If the response doesn't contain user data, manually update the local state
-        setLanguage(value);
       }
       
       showSuccess("Language updated successfully!");
     } catch (error) {
+      // Revert on error
+      setLanguage(user?.language || "en");
       console.error("Error updating language:", error);
       showError(`Failed to update language: ${error.message}`);
+    } finally {
+      setIsUpdating(false);
     }
   };
   
-  // Handle notification toggle
+  // FIXED toggle function that prevents immediate reversion
   const handleToggleNotifications = async (value) => {
     try {
+      // Prevent multiple submissions
+      if (isUpdating) return;
+      
+      // Set loading state
+      setIsUpdating(true);
+      
+      // Store the original value in case we need to revert
+      const originalValue = notifications.email;
+      
+      // Update local state immediately for better user experience
+      setNotifications({ ...notifications, email: value });
+      
       const response = await apiRequest("/api/v1/users/me", {
         method: "PUT",
-        credentials: 'include', // Include cookies
         body: JSON.stringify({
           receive_notifications: value
         }),
       });
       
-      // Update both the local state and the auth context
-      // This avoids the need for a separate API call via refreshUser()
+      // Success case
       if (response && response.data) {
-        // Update the auth context with the new user data
-        refreshUser(response.data);
-      } else {
-        // If the response doesn't contain user data, manually update the local state
-        setNotifications({ ...notifications, email: value });
+        // Don't call refreshUser here as it might override our local state
+        // Just show success message
+        showSuccess("Notification preferences updated successfully!");
       }
-      
-      showSuccess("Notification preferences updated successfully!");
     } catch (error) {
+      // Revert local state change if API call fails
+      setNotifications(prev => ({ ...prev, email: !value }));
       console.error("Error updating notification preferences:", error);
       showError(`Failed to update notification preferences: ${error.message}`);
+    } finally {
+      // Reset loading state
+      setIsUpdating(false);
     }
   };
 
@@ -191,9 +208,10 @@ export default function Settings() {
     }
 
     try {
+      setIsUpdating(true);
+      
       await apiRequest("/api/v1/users/me/change-password", {
         method: "PUT",
-        credentials: 'include', // Include cookies
         body: JSON.stringify({
           password: currentPassword,
           new_password: newPassword,
@@ -207,6 +225,8 @@ export default function Settings() {
       showSuccess("Password changed successfully!");
     } catch (error) {
       setErrorMessage(`Password change failed: ${error.message}`);
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -222,7 +242,6 @@ export default function Settings() {
   
       await apiRequest("/api/v1/users/me/request-delete", {
         method: "POST",
-        credentials: 'include', // Include cookies
       });
       
       // Close the delete confirmation modal
@@ -235,7 +254,6 @@ export default function Settings() {
     } catch (error) {
       console.error("Error sending confirmation email:", error);
       setErrorMessage(`Failed to send confirmation email: ${error.message}`);
-    } finally {
       setIsDeletionEmailSent(false);
     }
   };

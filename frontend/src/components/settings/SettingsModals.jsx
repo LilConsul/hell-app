@@ -365,8 +365,7 @@ export function SettingsModals({
               type="button" 
               onClick={() => {
                 setShowDeletionEmailSentModal(false);
-                // Log out the user when they close the modal
-                logout();
+                // Removed the logout() call here to keep the user logged in
               }}
               className="w-full"
             >

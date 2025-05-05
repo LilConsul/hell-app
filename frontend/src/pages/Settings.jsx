@@ -4,8 +4,8 @@ import { Footer } from "@/components/footer";
 import { useAuth } from "@/contexts/auth-context";
 import { usePasswordValidation } from "@/components/password/password-validation";
 import { useNavigate } from "react-router-dom";
+import { apiRequest } from "@/lib/utils";
 
-// Import refactored components
 // Import refactored components
 import { SettingsTabs } from "./SettingsTabs";
 import { SettingsModals } from "./SettingsModals";
@@ -50,9 +50,10 @@ export default function Settings() {
   // Password validation
   const { passwordErrors, showRequirements, setShowRequirements, isPasswordValid } = usePasswordValidation(newPassword);
 
-  // Fetch user data on component mount
+  // Single effect to fetch user data on mount
   useEffect(() => {
-    fetchUserData();
+    // Only fetch user data once on component mount
+    refreshUser();
   }, []);
 
   // Update local state when user data changes
@@ -64,38 +65,6 @@ export default function Settings() {
       setNotifications({ email: user.receive_notifications || true });
     }
   }, [user]);
-
-  // Fetch user data from API
-  const fetchUserData = async () => {
-    try {
-      const response = await fetch("/api/v1/users/me", {
-        method: "GET",
-        headers: {
-          "Accept": "application/json",
-          "Content-Type": "application/json",
-        },
-        credentials: 'include', // Include cookies
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch user data");
-      }
-
-      const userData = await response.json();
-      
-      // Use the refreshUser function from context
-      refreshUser();
-      
-      // Update local state
-      setFirstName(userData.data.first_name || "");
-      setLastName(userData.data.last_name || "");
-      setLanguage(userData.data.language || "en");
-      setNotifications({ email: userData.data.receive_notifications || true });
-    } catch (error) {
-      console.error("Error fetching user data:", error);
-      showError("Failed to load user data. Please try again.");
-    }
-  };
 
   // Handle name updates
   const handleSaveName = async (field) => {
@@ -112,24 +81,18 @@ export default function Settings() {
         payload.last_name = lastName;
       }
       
-      const response = await fetch("/api/v1/users/me", {
+      const response = await apiRequest("/api/v1/users/me", {
         method: "PUT",
-        headers: {
-          "Accept": "application/json",
-          "Content-Type": "application/json",
-        },
         credentials: 'include', // Include cookies
         body: JSON.stringify(payload),
       });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
-        console.error("API error response:", errorData);
-        throw new Error(errorData?.message || "Failed to update profile");
+      // Update both local state and auth context
+      // This helps maintain UI consistency without an extra API call
+      if (response && response.data) {
+        // Assuming refreshUser can accept direct data to avoid an API call
+        refreshUser(response.data);
       }
-
-      // Update the user data using the refreshUser function from context
-      refreshUser();
       
       setEditField("");
       showSuccess("Profile updated successfully!");
@@ -144,27 +107,24 @@ export default function Settings() {
   // Handle language change
   const handleChangeLanguage = async (value) => {
     try {
-      const response = await fetch("/api/v1/users/me", {
+      const response = await apiRequest("/api/v1/users/me", {
         method: "PUT",
-        headers: {
-          "Accept": "application/json",
-          "Content-Type": "application/json",
-        },
         credentials: 'include', // Include cookies
         body: JSON.stringify({
           language: value
         }),
       });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
-        throw new Error(errorData?.message || "Failed to update language");
-      }
-
-      // Update the user data using the refreshUser function from context
-      refreshUser();
       
-      setLanguage(value);
+      // Update both the local state and the auth context
+      // This avoids the need for a separate API call via refreshUser()
+      if (response && response.data) {
+        // Update the auth context with the new user data
+        refreshUser(response.data);
+      } else {
+        // If the response doesn't contain user data, manually update the local state
+        setLanguage(value);
+      }
+      
       showSuccess("Language updated successfully!");
     } catch (error) {
       console.error("Error updating language:", error);
@@ -175,27 +135,24 @@ export default function Settings() {
   // Handle notification toggle
   const handleToggleNotifications = async (value) => {
     try {
-      const response = await fetch("/api/v1/users/me", {
+      const response = await apiRequest("/api/v1/users/me", {
         method: "PUT",
-        headers: {
-          "Accept": "application/json",
-          "Content-Type": "application/json",
-        },
         credentials: 'include', // Include cookies
         body: JSON.stringify({
           receive_notifications: value
         }),
       });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
-        throw new Error(errorData?.message || "Failed to update notification preferences");
-      }
-
-      // Update the user data using the refreshUser function from context
-      refreshUser();
       
-      setNotifications({ ...notifications, email: value });
+      // Update both the local state and the auth context
+      // This avoids the need for a separate API call via refreshUser()
+      if (response && response.data) {
+        // Update the auth context with the new user data
+        refreshUser(response.data);
+      } else {
+        // If the response doesn't contain user data, manually update the local state
+        setNotifications({ ...notifications, email: value });
+      }
+      
       showSuccess("Notification preferences updated successfully!");
     } catch (error) {
       console.error("Error updating notification preferences:", error);
@@ -228,24 +185,20 @@ export default function Settings() {
       return;
     }
 
+    if (!isPasswordValid) {
+      setErrorMessage("Please ensure your password meets all requirements.");
+      return;
+    }
+
     try {
-      const response = await fetch("/api/v1/users/me/change-password", {
+      await apiRequest("/api/v1/users/me/change-password", {
         method: "PUT",
-        headers: {
-          "Accept": "application/json",
-          "Content-Type": "application/json",
-        },
         credentials: 'include', // Include cookies
         body: JSON.stringify({
           password: currentPassword,
           new_password: newPassword,
         }),
       });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
-        throw new Error(errorData?.message || "Incorrect current password!");
-      }
 
       setShowNewPasswordModal(false);
       setCurrentPassword("");
@@ -257,7 +210,7 @@ export default function Settings() {
     }
   };
 
-  // Account deletion handling - UPDATED to not log out automatically
+  // Account deletion handling
   const handleSendDeleteConfirmation = async () => {
     if (deleteConfirmText !== "DELETE") {
       setErrorMessage("Please type DELETE to confirm sending the confirmation email");
@@ -267,19 +220,10 @@ export default function Settings() {
     try {
       setIsDeletionEmailSent(true);
   
-      const response = await fetch("/api/v1/users/me/request-delete", {
+      await apiRequest("/api/v1/users/me/request-delete", {
         method: "POST",
-        headers: {
-          "Accept": "application/json",
-          "Content-Type": "application/json",
-        },
         credentials: 'include', // Include cookies
       });
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
-        throw new Error(errorData?.message || "Failed to send confirmation email");
-      }
       
       // Close the delete confirmation modal
       setShowDeleteModal(false);
@@ -287,8 +231,6 @@ export default function Settings() {
       
       // Show the confirmation email sent modal
       setShowDeletionEmailSentModal(true);
-      
-      // Removed the automatic logout timeout
       
     } catch (error) {
       console.error("Error sending confirmation email:", error);
@@ -389,7 +331,7 @@ export default function Settings() {
           showDeletionEmailSentModal={showDeletionEmailSentModal}
           setShowDeletionEmailSentModal={setShowDeletionEmailSentModal}
           
-          // Auth props - Added logout prop
+          // Auth props
           logout={logout}
           
           // General props

@@ -81,9 +81,10 @@ export function CollectionFilters({
               variant="outline"
               size="icon"
               title="Filter"
-              className={hasActiveFilters ? "bg-primary text-primary-foreground hover:bg-primary/90" : ""}
+              className={hasActiveFilters ? "bg-primary text-primary-foreground dark:text-gray-300 hover:bg-primary/90 dark:hover:text-black" 
+                : "dark:border-gray-700 dark:hover:border-gray-500 dark:hover:bg-gray-800"}
             >
-              <Filter className="h-4 w-4" />
+              <Filter className={`h-4 w-4`}/>
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-80">
@@ -173,7 +174,7 @@ export function CollectionFilters({
 
       <div className="flex items-center space-x-2">
         {hasActiveFilters && (
-          <Badge variant="outline" className="mr-2 flex items-center gap-2">
+          <Badge variant="outline" className="mr-2 flex items-center gap-2 dark:text-white">
             <span>
               {
                 Object.values(filters).filter(
@@ -187,7 +188,7 @@ export function CollectionFilters({
                 e.stopPropagation();
                 handleClearFilters();
               }}
-              className="flex h-4 w-4 items-center justify-center rounded-full hover:bg-muted"
+              className="flex h-4 w-4 items-center justify-center rounded-full hover:bg-muted dark:text-white"
               title="Clear all filters"
             >
               <X className="h-3 w-3" />

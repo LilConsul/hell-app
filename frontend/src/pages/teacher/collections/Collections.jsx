@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -19,12 +20,7 @@ import {
   PaginationEllipsis
 } from "@/components/ui/pagination";
 
-import {
-  fetchCollections as fetchCollectionsAPI,
-  updateCollectionStatus,
-  deleteCollection,
-  duplicateCollection
-} from "./Collections.api";
+import CollectionAPI from "./Collections.api";
 
 import {
   EmptyCollections,
@@ -57,7 +53,7 @@ function Collections() {
       try {
         setLoading(true);
         setError(null);
-        const data = await fetchCollectionsAPI();
+        const data = await CollectionAPI.fetchCollections();   // ← use CollectionAPI
         setAllCollections(data);
       } catch (err) {
         setError("Failed to load collections. Please try again later.");
@@ -147,21 +143,21 @@ function Collections() {
 
   const handleStatusChange = async (collectionId, newStatus) => {
     try {
-      await updateCollectionStatus(collectionId, newStatus);
+      await CollectionAPI.updateCollectionStatus(collectionId, newStatus);  // ← use API
       setCollections(prev =>
-        prev.map(collection =>
-          collection.id === collectionId ? { ...collection, status: newStatus } : collection
+        prev.map(c =>
+          c.id === collectionId ? { ...c, status: newStatus } : c
         )
       );
       setAllCollections(prev =>
-        prev.map(collection =>
-          collection.id === collectionId ? { ...collection, status: newStatus } : collection
+        prev.map(c =>
+          c.id === collectionId ? { ...c, status: newStatus } : c
         )
       );
       toast.success(`Collection status updated`, {
         description: `"${collections.find(c => c.id === collectionId)?.title}" is now ${newStatus}.`,
       });
-    } catch (err) {
+    } catch {
       toast.error("Failed to update status", {
         description: "Please try again later.",
       });
@@ -170,13 +166,13 @@ function Collections() {
 
   const handleDelete = async (collectionId) => {
     try {
-      await deleteCollection(collectionId);
-      setCollections(prev => prev.filter(collection => collection.id !== collectionId));
-      setAllCollections(prev => prev.filter(collection => collection.id !== collectionId));
+      await CollectionAPI.deleteCollection(collectionId);  // ← use API
+      setCollections(prev => prev.filter(c => c.id !== collectionId));
+      setAllCollections(prev => prev.filter(c => c.id !== collectionId));
       toast.success(`Collection deleted`, {
         description: `"${collections.find(c => c.id === collectionId)?.title}" has been removed.`,
       });
-    } catch (err) {
+    } catch {
       toast.error("Failed to delete collection", {
         description: "Please try again later.",
       });
@@ -186,9 +182,9 @@ function Collections() {
   const handleDuplicate = async (collectionId, title, description) => {
     try {
       setLoading(true);
-      const newCollectionId = await duplicateCollection(collectionId, title, description);
-      navigate(`/collections/${newCollectionId}`);
-    } catch (err) {
+      const newId = await CollectionAPI.duplicateCollection(collectionId, title, description); // ← use API
+      navigate(`/collections/${newId}`);
+    } catch {
       toast.error("Failed to duplicate collection", {
         description: "Please try again later.",
       });
@@ -197,9 +193,8 @@ function Collections() {
     }
   };
 
-  const canEditCollection = (collection) => {
-    return user && collection.created_by?.id === user.id;
-  };
+  const canEditCollection = (collection) => 
+    user && collection.created_by?.id === user.id;
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -213,7 +208,7 @@ function Collections() {
           </div>
           <div className="flex items-center space-x-2">
             <Button asChild>
-              <Link to="/collections/create">
+              <Link to="/collections/new">
                 <PlusCircle className="mr-2 h-4 w-4" />
                 Create Collection
               </Link>

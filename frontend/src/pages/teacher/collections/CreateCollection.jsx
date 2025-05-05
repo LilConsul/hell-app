@@ -1,0 +1,448 @@
+import { useState, useEffect } from "react";
+import { useNavigate, useParams, useLocation, Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Navbar } from "@/components/navbar";
+import { toast } from "sonner";
+import { Toaster } from "@/components/ui/sonner";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
+import { QuestionCard } from "@/components/collections/create/question-card";
+import { EmptyQuestionsState } from "@/components/collections/create/empty-questions-state";
+import { CollectionDetailsForm } from "@/components/collections/create/collection-details-form";
+import { PageHeader } from "@/components/collections/create/page-header";
+import { QuestionControls } from "@/components/collections/create/question-controls";
+
+import CollectionAPI from "./Collections.api";
+
+function CreateCollection() {
+  const navigate = useNavigate();
+  const { collectionId } = useParams();
+  const location = useLocation();
+  const [isNewCollection, setIsNewCollection] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isInvalid, setIsInvalid] = useState(false);
+  const [collectionData, setCollectionData] = useState({
+    title: "",
+    description: "",
+    status: "draft",
+  });
+  const [questions, setQuestions] = useState([]);
+  const [newQuestions, setNewQuestions] = useState([]);
+  const [activeTab, setActiveTab] = useState("details");
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  const statusDisplayMap = { draft: "Draft", published: "Public" };
+
+  useEffect(() => {
+    const isNew = location.pathname.includes("/new") || !collectionId;
+    setIsNewCollection(isNew);
+    if (!isNew && collectionId) {
+      fetchCollectionData(collectionId);
+    } else {
+      setNewQuestions([]);
+    }
+  }, [collectionId, location.pathname]);
+
+  const fetchCollectionData = async (id) => {
+    setIsLoading(true);
+    try {
+      const res = await CollectionAPI.getCollection(id);
+      const data = res.data;
+      if (!data) throw new Error();
+      setCollectionData({
+        title: data.title || "",
+        description: data.description || "",
+        status: data.status || "draft",
+      });
+      if (Array.isArray(data.questions)) {
+        setQuestions(
+          data.questions.map((q) => ({
+            id: q.id,
+            type: q.type,
+            question_text: q.question_text,
+            has_katex: q.has_katex || false,
+            weight: q.weight || 1,
+            options: q.options || [],
+            correct_input_answer: q.correct_input_answer || "",
+            saved: true,
+            server_id: q.id,
+          }))
+        );
+      }
+    } catch {
+      setIsInvalid(true);
+      setErrorMessage(
+        "Collection not found. Please check the URL and try again."
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (isLoading)
+    return (
+      <div className="flex min-h-screen flex-col">
+        <Navbar />
+        <main className="flex-1 flex items-center justify-center p-8 pt-6">
+          <p className="text-lg">Loading collection data...</p>
+        </main>
+      </div>
+    );
+
+  if (isInvalid)
+    return (
+      <div className="flex min-h-screen flex-col">
+        <Navbar />
+        <main className="flex-1 p-8 pt-6">
+          <Alert className="bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700">
+            <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
+            <AlertDescription>{errorMessage}</AlertDescription>
+          </Alert>
+          <div className="flex justify-center mt-8">
+            <Button asChild>
+              <Link to="/collections">Back to Collections</Link>
+            </Button>
+          </div>
+        </main>
+      </div>
+    );
+
+  const handleInputChange = (e) =>
+    setCollectionData({ ...collectionData, [e.target.name]: e.target.value });
+  const handleStatusChange = (value) =>
+    setCollectionData({ ...collectionData, status: value });
+
+  const createEmptyQuestion = (type) => ({
+    id: `${Date.now()}-${Math.random()}`,
+    type,
+    question_text: "",
+    has_katex: false,
+    weight: 1,
+    options: ["mcq", "singlechoice"].includes(type)
+      ? Array(3).fill({ text: "", is_correct: false })
+      : [],
+    correct_input_answer: type === "shortanswer" ? "" : "",
+    saved: false,
+  });
+
+  const addQuestion = (type) => {
+    setNewQuestions([createEmptyQuestion(type), ...newQuestions]);
+    setActiveTab("questions");
+  };
+
+  const removeQuestion = async (id) => {
+    if (newQuestions.some((q) => q.id === id)) {
+      setNewQuestions(newQuestions.filter((q) => q.id !== id));
+    } else {
+      const q = questions.find((q) => q.id === id);
+      if (q?.server_id && !isNewCollection) {
+        await CollectionAPI.deleteQuestion(collectionId, q.server_id);
+      }
+      setQuestions(questions.filter((q) => q.id !== id));
+    }
+  };
+
+  const updateList = (list, setList, id, updater) => {
+    const idx = list.findIndex((q) => q.id === id);
+    if (idx < 0) return;
+    const updated = [...list];
+    updated[idx] = { ...updater(updated[idx]), saved: false };
+    setList(updated);
+  };
+
+  const updateQuestionText = (id, text) => {
+    updateList(newQuestions, setNewQuestions, id, (q) => ({
+      ...q,
+      question_text: text,
+    }));
+    updateList(questions, setQuestions, id, (q) => ({
+      ...q,
+      question_text: text,
+    }));
+  };
+
+  const updateOptionText = (id, idx, text) => {
+    updateList(newQuestions, setNewQuestions, id, (q) => {
+      if (!q.options) return q;
+      const opts = [...q.options];
+      opts[idx] = { ...opts[idx], text };
+      return { ...q, options: opts };
+    });
+    updateList(questions, setQuestions, id, (q) => {
+      if (!q.options) return q;
+      const opts = [...q.options];
+      opts[idx] = { ...opts[idx], text };
+      return { ...q, options: opts };
+    });
+  };
+
+  const toggleCorrectOption = (id, idx) => {
+    const toggle = (q) => {
+      if (!q.options) return q;
+      const opts =
+        q.type === "singlechoice"
+          ? q.options.map((o, i) => ({ ...o, is_correct: i === idx }))
+          : q.options.map((o, i) =>
+              i === idx ? { ...o, is_correct: !o.is_correct } : o
+            );
+      return { ...q, options: opts };
+    };
+    updateList(newQuestions, setNewQuestions, id, toggle);
+    updateList(questions, setQuestions, id, toggle);
+  };
+
+  const updateShortAnswer = (id, ans) => {
+    updateList(newQuestions, setNewQuestions, id, (q) => ({
+      ...q,
+      correct_input_answer: ans,
+    }));
+    updateList(questions, setQuestions, id, (q) => ({
+      ...q,
+      correct_input_answer: ans,
+    }));
+  };
+
+  const updateWeight = (id, weight) => {
+    const w = parseInt(weight, 10);
+    updateList(newQuestions, setNewQuestions, id, (q) => ({ ...q, weight: w }));
+    updateList(questions, setQuestions, id, (q) => ({ ...q, weight: w }));
+  };
+
+  const addOption = (id) => {
+    updateList(newQuestions, setNewQuestions, id, (q) => ({
+      ...q,
+      options: [...(q.options || []), { text: "", is_correct: false }],
+    }));
+    updateList(questions, setQuestions, id, (q) => ({
+      ...q,
+      options: [...(q.options || []), { text: "", is_correct: false }],
+    }));
+  };
+
+  const removeOption = (id, idx) => {
+    updateList(newQuestions, setNewQuestions, id, (q) => ({
+      ...q,
+      options: (q.options || []).filter((_, i) => i !== idx),
+    }));
+    updateList(questions, setQuestions, id, (q) => ({
+      ...q,
+      options: (q.options || []).filter((_, i) => i !== idx),
+    }));
+  };
+
+  const validateQuestion = (q) => {
+    if (!q.question_text.trim()) return false;
+    if (["mcq", "singlechoice"].includes(q.type)) {
+      if (!q.options?.some((o) => o.is_correct)) return false;
+      if (q.options.some((o) => !o.text.trim())) return false;
+    }
+    if (q.type === "shortanswer" && !q.correct_input_answer.trim()) return false;
+    return true;
+  };
+
+  const handleSaveSingleQuestion = async (questionId) => {
+    setSaveError(false);
+    setErrorMessage("");
+    const isNew = newQuestions.some((q) => q.id === questionId);
+    const q = isNew
+      ? newQuestions.find((q) => q.id === questionId)
+      : questions.find((q) => q.id === questionId);
+    if (!q) return;
+
+    if (!validateQuestion(q)) {
+      toast.error("Question is invalid. Please fix it before saving.");
+      return;
+    }
+
+    if (isNew && !collectionId) {
+      toast.error("Save the collection first before adding questions.");
+      return;
+    }
+
+    try {
+      let savedId;
+      if (q.server_id) {
+        await CollectionAPI.updateQuestion(collectionId, q.server_id, q);
+        savedId = q.server_id;
+      } else {
+        const res = await CollectionAPI.addQuestion(collectionId, q);
+        savedId = res.data.id;
+      }
+      const savedQuestion = { ...q, server_id: savedId, saved: true };
+
+      if (isNew) {
+        setNewQuestions((prev) => prev.filter((x) => x.id !== questionId));
+        setQuestions((prev) => [...prev, savedQuestion]);
+      } else {
+        setQuestions((prev) =>
+          prev.map((x) => (x.id === questionId ? savedQuestion : x))
+        );
+      }
+
+      toast.success("Question saved successfully.");
+    } catch {
+      toast.error("Failed to save question. Please try again.");
+    }
+  };
+
+  const handleSaveCollection = async () => {
+    setSaveError(false);
+    setErrorMessage("");
+    if (!collectionData.title.trim()) {
+      setSaveError(true);
+      setErrorMessage("Please provide a title for the collection.");
+      return;
+    }
+    setIsSaving(true);
+
+    try {
+      let collId = collectionId;
+      if (isNewCollection) {
+        const res = await CollectionAPI.createCollection(collectionData);
+        collId = res.data.collection_id;
+      } else {
+        await CollectionAPI.updateCollection(collectionId, collectionData);
+      }
+
+      const valid = newQuestions.filter(validateQuestion);
+      const invalid = newQuestions.filter((q) => !validateQuestion(q));
+
+      const ids = await Promise.all(
+        valid.map((q) =>
+          CollectionAPI.addQuestion(collId, q).then((r) => r.data.id)
+        )
+      );
+
+      setQuestions((prev) => [
+        ...prev,
+        ...valid.map((q, i) => ({ ...q, server_id: ids[i], saved: true })),
+      ]);
+      setNewQuestions(invalid);
+
+      if (valid.length)
+        toast.success(`Saved ${valid.length} question${valid.length > 1 ? "s" : ""}`);
+      if (invalid.length) {
+        setSaveError(true);
+        setErrorMessage(`${invalid.length} question${invalid.length > 1 ? "s" : ""} invalid; please fix.`);
+      } else {
+        toast.success("Collection saved successfully.");
+        if (isNewCollection && collId) {
+          navigate(`/collections/${collId}`, { replace: true });
+          setIsNewCollection(false);
+        }
+      }
+    } catch {
+      setSaveError(true);
+      setErrorMessage("Failed to save collection. Please try again.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const isFormValid = () => collectionData.title.trim() !== "";
+
+  return (
+    <div className="flex min-h-screen flex-col">
+      <Navbar />
+      <Toaster />
+      <main className="flex-1 p-8 pt-6">
+        <div className="max-w-7xl mx-auto">
+          <PageHeader
+            status={collectionData.status}
+            displayStatus={statusDisplayMap[collectionData.status]}
+            onStatusChange={handleStatusChange}
+            onSave={handleSaveCollection}
+            isSaveDisabled={!isFormValid() || isSaving}
+          />
+          {saveError && (
+            <Alert className="bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700">  
+              <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
+              <AlertDescription>{errorMessage}</AlertDescription>
+            </Alert>
+          )}
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+            <TabsList>
+              <TabsTrigger value="details">Collection Details</TabsTrigger>
+              <TabsTrigger value="questions">
+                Questions ({questions.length + newQuestions.length})
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent value="details" className="space-y-4">
+              <CollectionDetailsForm
+                collectionData={collectionData}
+                onInputChange={handleInputChange}
+                onStatusChange={handleStatusChange}
+                statusDisplayMap={statusDisplayMap}
+                onContinue={() => setActiveTab("questions")}
+              />
+            </TabsContent>
+            <TabsContent value="questions" className="space-y-4">
+              <QuestionControls onAddQuestion={addQuestion} />
+              <div className="space-y-4">
+                {newQuestions.map((q, i) => (
+                  <QuestionCard
+                    key={q.id}
+                    question={q}
+                    index={i}
+                    isNew
+                    onSave={handleSaveSingleQuestion}
+                    onRemove={removeQuestion}
+                    onUpdateText={updateQuestionText}
+                    onUpdateOption={updateOptionText}
+                    onUpdateCorrectOption={toggleCorrectOption}
+                    onAddOption={addOption}
+                    onRemoveOption={removeOption}
+                    onUpdateWeight={updateWeight}
+                    onUpdateShortAnswer={updateShortAnswer}
+                    canSave={!isNewCollection || !!collectionId}
+                  />
+                ))}
+                {questions.map((q, i) => (
+                  <QuestionCard
+                    key={q.id}
+                    question={q}
+                    index={i + newQuestions.length}
+                    onSave={handleSaveSingleQuestion}
+                    onRemove={removeQuestion}
+                    onUpdateText={updateQuestionText}
+                    onUpdateOption={updateOptionText}
+                    onUpdateCorrectOption={toggleCorrectOption}
+                    onAddOption={addOption}
+                    onRemoveOption={removeOption}
+                    onUpdateWeight={updateWeight}
+                    onUpdateShortAnswer={updateShortAnswer}
+                    canSave={!isNewCollection || !!collectionId}
+                  />
+                ))}
+                {!questions.length && !newQuestions.length && (
+                  <EmptyQuestionsState onAddQuestion={addQuestion} />
+                )}
+              </div>
+            </TabsContent>
+          </Tabs>
+          <div className="flex justify-end space-x-2 mt-6">
+            <Button variant="outline" asChild>
+              <Link to="/collections">Cancel</Link>
+            </Button>
+            <Button
+              onClick={handleSaveCollection}
+              disabled={!isFormValid() || isSaving}
+              className="bg-primary hover:bg-primary/90 text-primary-foreground"
+            >
+              {isSaving
+                ? "Saving..."
+                : isNewCollection
+                ? "Save Collection"
+                : "Update Collection"}
+            </Button>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}
+
+export default CreateCollection;

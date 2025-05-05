@@ -112,18 +112,18 @@ function EmailVerification() {
         return (
           <>
             <CardHeader>
-              <CardTitle className="text-xl text-center text-green-600 dark:text-green-400">Email Verified!</CardTitle>
+              <CardTitle className="text-xl text-center text-green-600">Email Verified!</CardTitle>
               <CardDescription className="text-center">Your email has been successfully verified.</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col items-center justify-center py-6">
-              <div className="rounded-full bg-green-100 dark:bg-green-900/30 p-3 mb-4">
-                <CheckCircle className="h-12 w-12 text-green-600 dark:text-green-400" />
+              <div className="rounded-full bg-green-100 p-3 mb-4">
+                <CheckCircle className="h-12 w-12 text-green-600" />
               </div>
               <p className="text-center mb-6">
                 Thank you for verifying your email address. Your account is now fully activated.
               </p>
-              <Alert className="bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-700">
-                <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
+              <Alert className="bg-green-50 border-green-200">
+                <CheckCircle className="h-4 w-4 text-green-600" />
                 <AlertTitle>Verification Complete</AlertTitle>
                 <AlertDescription>Your account is now active.</AlertDescription>
               </Alert>
@@ -135,23 +135,23 @@ function EmailVerification() {
             </CardFooter>
           </>
         )
-
+      
       case "already-verified":
         return (
           <>
             <CardHeader>
-              <CardTitle className="text-xl text-center text-blue-600 dark:text-blue-400">Already Verified</CardTitle>
+              <CardTitle className="text-xl text-center text-blue-600">Already Verified</CardTitle>
               <CardDescription className="text-center">Your email has already been verified.</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col items-center justify-center py-6">
-              <div className="rounded-full bg-blue-100 dark:bg-blue-900/30 p-3 mb-4">
-                <CheckCircle className="h-12 w-12 text-blue-600 dark:text-blue-400" />
+              <div className="rounded-full bg-blue-100 p-3 mb-4">
+                <CheckCircle className="h-12 w-12 text-blue-600" />
               </div>
               <p className="text-center mb-6">
                 It looks like you've already verified your email address. No further action is needed.
               </p>
-              <Alert className="bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-700">
-                <CheckCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+              <Alert className="bg-blue-50 border-blue-200">
+                <CheckCircle className="h-4 w-4 text-blue-600" />
                 <AlertTitle>Already Verified</AlertTitle>
                 <AlertDescription>Your account is active and you can access all features.</AlertDescription>
               </Alert>
@@ -168,18 +168,18 @@ function EmailVerification() {
         return (
           <>
             <CardHeader>
-              <CardTitle className="text-xl text-center text-red-600 dark:text-red-400">Verification Failed</CardTitle>
+              <CardTitle className="text-xl text-center text-red-600">Verification Failed</CardTitle>
               <CardDescription className="text-center">
                 We encountered an issue while verifying your email.
               </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col items-center justify-center py-6">
-              <div className="rounded-full bg-red-100 dark:bg-red-900/30 p-3 mb-4">
-                <AlertTriangle className="h-12 w-12 text-red-600 dark:text-red-400" />
+              <div className="rounded-full bg-red-100 p-3 mb-4">
+                <AlertTriangle className="h-12 w-12 text-red-600" />
               </div>
               <p className="text-center mb-6">{errorMessage || "The verification link appears to be invalid."}</p>
-              <Alert variant="destructive" className="bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700">
-                <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" />
+              <Alert variant="destructive">
+                <AlertTriangle className="h-4 w-4" />
                 <AlertTitle>Verification Error</AlertTitle>
                 <AlertDescription>Please contact support if you need assistance.</AlertDescription>
               </Alert>

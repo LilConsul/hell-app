@@ -19,7 +19,22 @@ export const fetchCollections = async () => {
       const userData = await userResponse.json();
       const publicData = await publicResponse.json();
   
-      return [...(userData.data || []), ...(publicData.data || [])];
+      const userCollections = userData.data || [];
+      const publicCollections = publicData.data || [];
+  
+      const collectionsMap = new Map();
+  
+      userCollections.forEach(collection => {
+        collectionsMap.set(collection.id, collection);
+      });
+  
+      publicCollections.forEach(collection => {
+        if (!collectionsMap.has(collection.id)) {
+          collectionsMap.set(collection.id, collection);
+        }
+      });
+  
+      return Array.from(collectionsMap.values());
     } catch (err) {
       console.error("Error fetching collections:", err);
       throw err;

@@ -7,6 +7,7 @@ from app.auth.security import (
     create_access_token,
     create_verification_token,
     decode_verification_token,
+    delete_verification_token,
     get_password_hash,
     verify_password,
 )
@@ -40,7 +41,7 @@ class AuthService:
 
         user = await self.user_repository.create(user_dict)
 
-        verification_token = create_verification_token(
+        verification_token = await create_verification_token(
             user_id=user.id, token_type=TokenType.VERIFICATION
         )
         link = f"{settings.VERIFY_MAIL_URL}/{verification_token}"
@@ -85,7 +86,7 @@ class AuthService:
         )
 
     async def verify_token(self, token: str) -> None:
-        token_data = decode_verification_token(token)
+        token_data = await decode_verification_token(token)
         if not token_data:
             raise AuthenticationError("Invalid or expired verification token")
 
@@ -109,12 +110,14 @@ class AuthService:
         date_registered = user.created_at.strftime("%Y-%m-%d %H:%M:%S")
         user_welcome_mail_event.delay(user.email, date_registered, make_username(user))
 
+        await delete_verification_token(token)
+
     async def send_password_reset_token(self, email: str) -> None:
         user = await self.user_repository.get_by_email(email)
         if not user:
             raise BadRequestError(f"No user found with email {email}")
 
-        password_reset_token = create_verification_token(
+        password_reset_token = await create_verification_token(
             user_id=user.id, token_type=TokenType.PASSWORD_RESET
         )
 
@@ -127,7 +130,7 @@ class AuthService:
         )
 
     async def reset_password(self, token: str, new_password: str) -> None:
-        token_data = decode_verification_token(token)
+        token_data = await decode_verification_token(token)
         if not token_data:
             raise AuthenticationError("Invalid or expired password reset token")
 
@@ -145,6 +148,8 @@ class AuthService:
         hashed_password = get_password_hash(new_password)
         user.hashed_password = hashed_password
         await self.user_repository.save(user)
+
+        await delete_verification_token(token)
 
     async def initialize_admin(self):
         """

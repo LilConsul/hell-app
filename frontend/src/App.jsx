@@ -6,7 +6,8 @@ import { AdminProvider } from "./contexts/admin-context.jsx";
 import { AuthProvider } from './contexts/auth-context';
 
 import Home from './pages/Home';
-import Dashboard from './pages/teacher/Dashboard';
+import { TeacherDashboard as Dashboard } from './pages/teacher/Dashboard';
+
 import Collections from './pages/teacher/collections/Collections';
 import CreateCollection from './pages/teacher/collections/CreateCollection';
 import Exams from './pages/Exams';

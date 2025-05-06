@@ -1,4 +1,4 @@
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -72,6 +72,19 @@ export function SettingsModals({
 }) {
   const currentPasswordRef = useRef(null);
   const newPasswordRef = useRef(null);
+  // Add state to track dark mode
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  // Set up dark mode detection
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const applyTheme = (e) => {
+      setIsDarkMode(e.matches);
+    };
+    applyTheme(mediaQuery);
+    mediaQuery.addEventListener('change', applyTheme);
+    return () => mediaQuery.removeEventListener('change', applyTheme);
+  }, []);
 
   useEffect(() => {
     if (showCurrentPasswordModal && currentPasswordRef.current) {
@@ -118,7 +131,7 @@ export function SettingsModals({
                 </Button>
               </div>
               {errorMessage && (
-                <p className="text-sm font-medium text-red-500 flex items-center gap-1">
+                <p className="text-sm font-medium text-red-500 dark:text-red-400 flex items-center gap-1">
                   <AlertTriangle size={14} />
                   {errorMessage}
                 </p>
@@ -195,7 +208,7 @@ export function SettingsModals({
                 </Button>
               </div>
               {newPassword && confirmPassword && newPassword !== confirmPassword && (
-                <p className="text-sm font-medium text-red-500 flex items-center gap-1">
+                <p className="text-sm font-medium text-red-500 dark:text-red-400 flex items-center gap-1">
                   <X size={14} />
                   Passwords do not match
                 </p>
@@ -227,7 +240,7 @@ export function SettingsModals({
       <Dialog open={showDeleteModal} onOpenChange={setShowDeleteModal}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-red-500 flex items-center gap-2">
+            <DialogTitle className="text-red-700 dark:text-red-500 flex items-center gap-2">
               <Trash2 size={18} />
               Delete Account
             </DialogTitle>
@@ -236,31 +249,31 @@ export function SettingsModals({
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
-            <div className="rounded-lg overflow-hidden border border-red-200">
-              <div className="bg-red-500 py-2 px-4">
+            <div className="rounded-lg overflow-hidden border border-red-200 dark:border-red-900">
+              <div className="bg-red-600 dark:bg-red-900 py-2 px-4">
                 <div className="flex items-center gap-2">
                   <AlertTriangle className="h-5 w-5 text-white" />
                   <h4 className="font-semibold text-white">WARNING</h4>
                 </div>
               </div>
-              <div className="bg-red-50 p-4">
+              <div className="bg-red-50 dark:bg-red-950 p-4">
                 <div className="space-y-3">
-                  <p className="text-red-800 font-medium">You are requesting to delete your account!</p>
-                  <ul className="text-red-700 space-y-1.5 text-sm">
+                  <p className="text-red-800 dark:text-red-300 font-medium">You are requesting to delete your account!</p>
+                  <ul className="text-red-700 dark:text-red-400 space-y-1.5 text-sm">
                     <li className="flex items-start gap-2">
-                      <div className="min-w-4 h-4 rounded-full bg-red-400 flex items-center justify-center mt-0.5">
+                      <div className="min-w-4 h-4 rounded-full bg-red-400 dark:bg-red-800 flex items-center justify-center mt-0.5">
                         <span className="text-white text-xs font-bold">!</span>
                       </div>
                       <span>All your data will be permanently erased</span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <div className="min-w-4 h-4 rounded-full bg-red-400 flex items-center justify-center mt-0.5">
+                      <div className="min-w-4 h-4 rounded-full bg-red-400 dark:bg-red-800 flex items-center justify-center mt-0.5">
                         <span className="text-white text-xs font-bold">!</span>
                       </div>
                       <span>Your exam history and results will be lost</span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <div className="min-w-4 h-4 rounded-full bg-red-400 flex items-center justify-center mt-0.5">
+                      <div className="min-w-4 h-4 rounded-full bg-red-400 dark:bg-red-800 flex items-center justify-center mt-0.5">
                         <span className="text-white text-xs font-bold">!</span>
                       </div>
                       <span>Your account settings and personal information will be removed</span>
@@ -271,28 +284,31 @@ export function SettingsModals({
             </div>
           </div>
           <div className="pt-2 pb-4">
-            <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 mb-4">
-              <div className="flex items-start gap-2">
-                <Bell className="h-5 w-5 text-blue-500 mt-0.5 flex-shrink-0" />
-                <div className="text-sm text-blue-700">
-                  <p className="font-medium">Email Confirmation Required</p>
-                  <p className="mt-1">
-                    For security purposes, we'll send a confirmation email to <span className="font-semibold">{user?.email}</span>. 
-                    You must click the link in that email to complete the account deletion process.
-                  </p>
-                </div>
-              </div>
-            </div>
+          <div className="bg-blue-50 dark:bg-[#121212] p-4 rounded-lg border border-blue-100 dark:border-gray-800 mb-4">
+  <div className="flex flex-col items-center text-center gap-3">
+    <div className="p-3 rounded-full bg-blue-100 dark:bg-gray-800">
+      <Bell className="h-8 w-8 text-blue-600 dark:text-gray-300" />
+    </div>
+    <div className="space-y-2">
+      <p className="font-medium">Email Confirmation Required</p>
+      <p className="font-bold">{user?.email}</p>
+      <p className="text-sm text-blue-700 dark:text-gray-400 mt-2">
+        For security purposes, we'll send a confirmation email to this address.
+        You must click the link in that email to complete the account deletion process.
+      </p>
+    </div>
+  </div>
+</div>
             <Label htmlFor="confirm-delete" className="text-sm font-medium mb-2 block">Type "DELETE" to confirm</Label>
             <Input 
               id="confirm-delete"
               placeholder="DELETE" 
-              className="border-red-200 focus:border-red-300" 
+              className="border-red-200 focus:border-red-300 dark:border-red-900 dark:focus:border-red-700" 
               value={deleteConfirmText}
               onChange={(e) => setDeleteConfirmText(e.target.value)}
             />
             {errorMessage && (
-              <p className="text-sm font-medium text-red-500 flex items-center gap-1 mt-2">
+              <p className="text-sm font-medium text-red-500 dark:text-red-400 flex items-center gap-1 mt-2">
                 <AlertTriangle size={14} />
                 {errorMessage}
               </p>
@@ -311,21 +327,21 @@ export function SettingsModals({
               Cancel
             </Button>
             <Button 
-              type="button" 
-              variant="destructive" 
-              onClick={handleSendDeleteConfirmation}
-              className="sm:w-auto w-full bg-red-600 hover:bg-red-700"
-              disabled={deleteConfirmText !== "DELETE" || isDeletionEmailSent}
-            >
-              {isDeletionEmailSent ? (
-                <div className="flex items-center gap-2">
-                  <span className="animate-spin">⟳</span>
-                  <span>Sending Email...</span>
-                </div>
-              ) : (
-                "Send Confirmation Email"
-              )}
-            </Button>
+  type="button"
+  onClick={handleSendDeleteConfirmation}
+  className="sm:w-auto w-full bg-red-500 hover:bg-red-600 dark:bg-red-700 dark:hover:bg-red-600 text-white font-medium rounded-md px-4 py-2"
+  disabled={deleteConfirmText !== "DELETE" || isDeletionEmailSent}
+>
+  {isDeletionEmailSent ? (
+    <div className="flex items-center gap-2">
+      <span className="animate-spin">⟳</span>
+      <span>Sending Email...</span>
+    </div>
+  ) : (
+    "Send Confirmation Email"
+  )}
+</Button>
+
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -337,21 +353,21 @@ export function SettingsModals({
       >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-blue-600">
+            <DialogTitle className="flex items-center gap-2 text-blue-600 dark:text-gray-300">
               <CheckCircle size={18} />
               Account Deletion Initiated
             </DialogTitle>
           </DialogHeader>
           <div className="py-4">
-            <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
+            <div className="bg-blue-50 dark:bg-[#121212] p-4 rounded-lg border border-blue-100 dark:border-gray-800">
               <div className="flex flex-col items-center text-center gap-3">
-                <div className="p-3 rounded-full bg-blue-100">
-                  <Mail className="h-8 w-8 text-blue-600" />
+                <div className="p-3 rounded-full bg-blue-100 dark:bg-gray-800">
+                  <Mail className="h-8 w-8 text-blue-600 dark:text-gray-300" />
                 </div>
                 <div className="space-y-2">
                   <p className="font-medium">We've sent a confirmation email to:</p>
                   <p className="font-bold">{user?.email || "your email address"}</p>
-                  <p className="text-sm text-blue-700 mt-2">
+                  <p className="text-sm text-blue-700 dark:text-gray-400 mt-2">
                     Your account has been marked for deletion. 
                     Please check your inbox and click the confirmation link to complete the process. 
                     The link will expire in 30 minutes.

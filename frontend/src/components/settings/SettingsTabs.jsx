@@ -248,12 +248,13 @@ export function SettingsTabs({
               Once you delete your account, there is no going back. Please be certain.
             </p>
             <Button 
-              variant="destructive" 
-              size="sm" 
-              onClick={() => setShowDeleteModal(true)}
-            >
-              Delete Account
-            </Button>
+  size="sm" 
+  onClick={() => setShowDeleteModal(true)}
+  className="bg-red-500 hover:bg-red-600 dark:bg-red-500 dark:hover:bg-red-400 text-white font-medium"
+>
+  Delete Account
+</Button>
+
           </CardContent>
         </Card>
       </TabsContent>

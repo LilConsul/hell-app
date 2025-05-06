@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -10,15 +9,8 @@ import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
 import { CollectionCard } from "@/components/collections/card";
 import { CollectionFilters } from "@/components/collections/filters";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-  PaginationEllipsis
-} from "@/components/ui/pagination";
+import { CustomPagination } from "@/components/pagination";
+import { usePagination } from "@/hooks/use-pagination";
 
 import CollectionAPI from "./Collections.api";
 
@@ -43,17 +35,20 @@ function Collections() {
     questionCount: [0, 100],
     createdBy: "all"
   });
-  const [currentPage, setCurrentPage] = useState(1);
-  const [collectionsPerPage] = useState(10);
-  const [paginatedCollections, setPaginatedCollections] = useState([]);
-  const [totalPages, setTotalPages] = useState(1);
+  
+  const {
+    currentPage,
+    totalPages,
+    paginatedItems: paginatedCollections,
+    goToPage: handlePageChange
+  } = usePagination(collections, 10);
 
   useEffect(() => {
     const loadCollections = async () => {
       try {
         setLoading(true);
         setError(null);
-        const data = await CollectionAPI.fetchCollections();   // ← use CollectionAPI
+        const data = await CollectionAPI.fetchCollections();
         setAllCollections(data);
       } catch (err) {
         setError("Failed to load collections. Please try again later.");
@@ -119,31 +114,11 @@ function Collections() {
   useEffect(() => {
     const filtered = applyAllFilters();
     setCollections(filtered);
-    setCurrentPage(1);
   }, [debouncedSearchQuery, activeFilter, applyAllFilters]);
-
-  // Apply pagination
-  useEffect(() => {
-    if (collections.length > 0) {
-      const totalPages = Math.ceil(collections.length / collectionsPerPage);
-      setTotalPages(totalPages);
-      const indexOfLastCollection = currentPage * collectionsPerPage;
-      const currentCollections = collections.slice(
-        indexOfLastCollection - collectionsPerPage,
-        indexOfLastCollection
-      );
-      setPaginatedCollections(currentCollections);
-    } else {
-      setPaginatedCollections([]);
-      setTotalPages(1);
-    }
-  }, [collections, currentPage, collectionsPerPage]);
-
-  const handlePageChange = (pageNumber) => setCurrentPage(pageNumber);
 
   const handleStatusChange = async (collectionId, newStatus) => {
     try {
-      await CollectionAPI.updateCollectionStatus(collectionId, newStatus);  // ← use API
+      await CollectionAPI.updateCollectionStatus(collectionId, newStatus);
       setCollections(prev =>
         prev.map(c =>
           c.id === collectionId ? { ...c, status: newStatus } : c
@@ -166,7 +141,7 @@ function Collections() {
 
   const handleDelete = async (collectionId) => {
     try {
-      await CollectionAPI.deleteCollection(collectionId);  // ← use API
+      await CollectionAPI.deleteCollection(collectionId);
       setCollections(prev => prev.filter(c => c.id !== collectionId));
       setAllCollections(prev => prev.filter(c => c.id !== collectionId));
       toast.success(`Collection deleted`, {
@@ -182,7 +157,7 @@ function Collections() {
   const handleDuplicate = async (collectionId, title, description) => {
     try {
       setLoading(true);
-      const newId = await CollectionAPI.duplicateCollection(collectionId, title, description); // ← use API
+      const newId = await CollectionAPI.duplicateCollection(collectionId, title, description);
       navigate(`/collections/${newId}`);
     } catch {
       toast.error("Failed to duplicate collection", {
@@ -245,80 +220,11 @@ function Collections() {
                       canEdit={canEditCollection(collection)}
                     />
                   ))}
-                  {collections.length > collectionsPerPage && (
-                    <Pagination className="mt-6">
-                      <PaginationContent>
-                        <PaginationItem>
-                          <PaginationPrevious
-                            onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
-                            aria-disabled={currentPage === 1}
-                            className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
-                          />
-                        </PaginationItem>
-                        {/* First Page */}
-                        <PaginationItem>
-                          <PaginationLink
-                            isActive={currentPage === 1}
-                            onClick={() => handlePageChange(1)}
-                          >
-                            1
-                          </PaginationLink>
-                        </PaginationItem>
-                        {/* Ellipsis if needed */}
-                        {currentPage > 3 && (
-                          <PaginationItem>
-                            <PaginationEllipsis />
-                          </PaginationItem>
-                        )}
-                        {/* Previous Page */}
-                        {currentPage > 2 && (
-                          <PaginationItem>
-                            <PaginationLink onClick={() => handlePageChange(currentPage - 1)}>
-                              {currentPage - 1}
-                            </PaginationLink>
-                          </PaginationItem>
-                        )}
-                        {/* Current Page */}
-                        {currentPage > 1 && currentPage < totalPages && (
-                          <PaginationItem>
-                            <PaginationLink isActive>{currentPage}</PaginationLink>
-                          </PaginationItem>
-                        )}
-                        {/* Next Page */}
-                        {currentPage < totalPages - 1 && (
-                          <PaginationItem>
-                            <PaginationLink onClick={() => handlePageChange(currentPage + 1)}>
-                              {currentPage + 1}
-                            </PaginationLink>
-                          </PaginationItem>
-                        )}
-                        {/* Ellipsis if needed */}
-                        {currentPage < totalPages - 2 && (
-                          <PaginationItem>
-                            <PaginationEllipsis />
-                          </PaginationItem>
-                        )}
-                        {/* Last Page */}
-                        {totalPages > 1 && (
-                          <PaginationItem>
-                            <PaginationLink
-                              isActive={currentPage === totalPages}
-                              onClick={() => handlePageChange(totalPages)}
-                            >
-                              {totalPages}
-                            </PaginationLink>
-                          </PaginationItem>
-                        )}
-                        <PaginationItem>
-                          <PaginationNext
-                            onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
-                            aria-disabled={currentPage === totalPages}
-                            className={currentPage === totalPages ? "pointer-events-none opacity-50" : ""}
-                          />
-                        </PaginationItem>
-                      </PaginationContent>
-                    </Pagination>
-                  )}
+                  <CustomPagination 
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={handlePageChange}
+                  />
                 </>
               )}
             </div>

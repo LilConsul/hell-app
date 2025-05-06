@@ -1,26 +1,16 @@
-import { Button } from "@/components/ui/button"
-import { Navbar } from "@/components/navbar"
-import { Footer } from "@/components/footer"
-import { Link } from "react-router-dom"
+import StudentDashboard from "@/pages/student/Dashboard"
 
 function Dashboard() {
-  return (
-    <div className="flex flex-col min-h-screen">
-      <Navbar />
+  const { user } = useAuth();
 
-      <main className="flex-1 container py-10">
-        <h1 className="text-3xl font-bold mb-6">Dashboard</h1>
-        <p>Dashboard content will go here. For now, this is a placeholder.</p>
-        <div className="mt-4">
-          <Link to="/">
-            <Button variant="outline">Back to Home</Button>
-          </Link>
-        </div>
-      </main>
-
-      <Footer />
-    </div>
-  )
+  if (user.role === 'teacher' || user.role === 'admin') {
+    //student for now since teacher dashboard is on different branch
+    return <StudentDashboard />;
+  } else if (user.role === 'student') {
+    return <StudentDashboard />;
+  }
+  //some error handling
+  return <div>Unauthorized</div>;
 }
 
 export default Dashboard;

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useParams, useLocation, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -12,6 +12,8 @@ import { EmptyQuestionsState } from "@/components/collections/create/empty-quest
 import { CollectionDetailsForm } from "@/components/collections/create/collection-details-form";
 import { PageHeader } from "@/components/collections/create/page-header";
 import { QuestionControls } from "@/components/collections/create/question-controls";
+import { CustomPagination } from "@/components/pagination";
+import { usePagination } from "@/hooks/use-pagination";
 
 import CollectionAPI from "./Collections.api";
 
@@ -33,6 +35,17 @@ function CreateCollection() {
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+
+  const questionsPerPage = 10;
+
+  const allQuestions = useMemo(() => [...newQuestions, ...questions], [newQuestions, questions]);
+  
+  const {
+    currentPage,
+    totalPages,
+    paginatedItems: paginatedQuestions,
+    goToPage
+  } = usePagination(allQuestions, questionsPerPage);
 
   const statusDisplayMap = { draft: "Draft", published: "Public" };
 
@@ -382,43 +395,47 @@ function CreateCollection() {
             <TabsContent value="questions" className="space-y-4">
               <QuestionControls onAddQuestion={addQuestion} />
               <div className="space-y-4">
-                {newQuestions.map((q, i) => (
-                  <QuestionCard
-                    key={q.id}
-                    question={q}
-                    index={i}
-                    isNew
-                    onSave={handleSaveSingleQuestion}
-                    onRemove={removeQuestion}
-                    onUpdateText={updateQuestionText}
-                    onUpdateOption={updateOptionText}
-                    onUpdateCorrectOption={toggleCorrectOption}
-                    onAddOption={addOption}
-                    onRemoveOption={removeOption}
-                    onUpdateWeight={updateWeight}
-                    onUpdateShortAnswer={updateShortAnswer}
-                    canSave={!isNewCollection || !!collectionId}
-                  />
-                ))}
-                {questions.map((q, i) => (
-                  <QuestionCard
-                    key={q.id}
-                    question={q}
-                    index={i + newQuestions.length}
-                    onSave={handleSaveSingleQuestion}
-                    onRemove={removeQuestion}
-                    onUpdateText={updateQuestionText}
-                    onUpdateOption={updateOptionText}
-                    onUpdateCorrectOption={toggleCorrectOption}
-                    onAddOption={addOption}
-                    onRemoveOption={removeOption}
-                    onUpdateWeight={updateWeight}
-                    onUpdateShortAnswer={updateShortAnswer}
-                    canSave={!isNewCollection || !!collectionId}
-                  />
-                ))}
-                {!questions.length && !newQuestions.length && (
+                {allQuestions.length > 0 && (
+                  <div className="mb-4">
+                    <p className="text-sm text-gray-500">
+                      Showing {paginatedQuestions.length} of {allQuestions.length} questions 
+                      (Page {currentPage} of {totalPages})
+                    </p>
+                  </div>
+                )}
+                
+                {paginatedQuestions.map((q, i) => {
+                  const isNewQ = newQuestions.some(nq => nq.id === q.id);
+                  return (
+                    <QuestionCard
+                      key={q.id}
+                      question={q}
+                      index={i + (currentPage - 1) * questionsPerPage}
+                      isNew={isNewQ}
+                      onSave={handleSaveSingleQuestion}
+                      onRemove={removeQuestion}
+                      onUpdateText={updateQuestionText}
+                      onUpdateOption={updateOptionText}
+                      onUpdateCorrectOption={toggleCorrectOption}
+                      onAddOption={addOption}
+                      onRemoveOption={removeOption}
+                      onUpdateWeight={updateWeight}
+                      onUpdateShortAnswer={updateShortAnswer}
+                      canSave={!isNewCollection || !!collectionId}
+                    />
+                  );
+                })}
+                
+                {!allQuestions.length && (
                   <EmptyQuestionsState onAddQuestion={addQuestion} />
+                )}
+                
+                {allQuestions.length > questionsPerPage && (
+                  <CustomPagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={goToPage}
+                  />
                 )}
               </div>
             </TabsContent>

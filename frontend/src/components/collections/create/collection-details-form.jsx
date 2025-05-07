@@ -39,7 +39,7 @@ export function CollectionDetailsForm({ collectionData, onInputChange, onStatusC
           <div className="grid gap-2">
             <Label>Collection Status</Label>
             <RadioGroup
-              defaultValue={collectionData.status}
+              value={collectionData.status}
               onValueChange={onStatusChange}
               className="flex space-x-4"
             >

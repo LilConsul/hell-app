@@ -14,6 +14,7 @@ import { PageHeader } from "@/components/collections/create/page-header";
 import { QuestionControls } from "@/components/collections/create/question-controls";
 import { CustomPagination } from "@/components/pagination";
 import { usePagination } from "@/hooks/use-pagination";
+import { StatusAlerts } from "@/components/collections/create/status-alerts";
 
 import CollectionAPI from "./Collections.api";
 
@@ -35,6 +36,8 @@ function CreateCollection() {
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [questionError, setQuestionError] = useState(false);
+  const [questionErrorMessage, setQuestionErrorMessage] = useState("");
 
   const questionsPerPage = 10;
 
@@ -257,8 +260,8 @@ function CreateCollection() {
   };
 
   const handleSaveSingleQuestion = async (questionId) => {
-    setSaveError(false);
-    setErrorMessage("");
+    setQuestionError(false);
+    setQuestionErrorMessage("");
     const isNew = newQuestions.some((q) => q.id === questionId);
     const q = isNew
       ? newQuestions.find((q) => q.id === questionId)
@@ -266,12 +269,13 @@ function CreateCollection() {
     if (!q) return;
 
     if (!validateQuestion(q)) {
-      toast.error("Question is invalid. Please fix it before saving.");
+      setQuestionError(true);
+      setQuestionErrorMessage("Question is invalid. Please fix it before saving.");
       return;
     }
-
-    if (isNew && !collectionId) {
-      toast.error("Save the collection first before adding questions.");
+    if (isNew && collectionId === 'new') {
+      setQuestionError(true);
+      setQuestionErrorMessage("Save the collection first before adding questions.");
       return;
     }
 
@@ -297,7 +301,8 @@ function CreateCollection() {
 
       toast.success("Question saved successfully.");
     } catch {
-      toast.error("Failed to save question. Please try again.");
+      setQuestionError(true);
+      setQuestionErrorMessage("Failed to save question. Please try again.");
     }
   };
 
@@ -370,12 +375,7 @@ function CreateCollection() {
             onSave={handleSaveCollection}
             isSaveDisabled={!isFormValid() || isSaving}
           />
-          {saveError && (
-            <Alert className="bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700">  
-              <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
-              <AlertDescription>{errorMessage}</AlertDescription>
-            </Alert>
-          )}
+          <StatusAlerts error={saveError} errorMessage={errorMessage} />
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
             <TabsList>
               <TabsTrigger value="details">Collection Details</TabsTrigger>
@@ -394,6 +394,7 @@ function CreateCollection() {
             </TabsContent>
             <TabsContent value="questions" className="space-y-4">
               <QuestionControls onAddQuestion={addQuestion} />
+              <StatusAlerts error={questionError} errorMessage={questionErrorMessage} />
               <div className="space-y-4">
                 {allQuestions.length > 0 && (
                   <div className="mb-4">

@@ -13,12 +13,13 @@ export const CustomPagination = ({
   currentPage,
   totalPages,
   onPageChange,
-  className = ""
+  className = "",
 }) => {
   if (totalPages <= 1) return null;
 
+
   return (
-    <Pagination className={`mt-6 ${className}`}>
+    <Pagination className={`mt-6 cursor-default ${className}`}>
       <PaginationContent>
         <PaginationItem>
           <PaginationPrevious

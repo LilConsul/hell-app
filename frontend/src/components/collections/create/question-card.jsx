@@ -120,7 +120,7 @@ export function QuestionCard({
     !question.correct_input_answer.trim();
   
   return (
-    <Card className={!question.saved ? "border-amber-300 dark:border-amber-600" : ""}>
+    <Card className={!question.saved && !isNew ? "border-amber-300 dark:border-amber-600" : ""}>
       <CardHeader className="flex flex-row items-start justify-between space-y-0">
         <div className="flex items-center">
           <CardTitle className="text-base">Question {index + 1}</CardTitle>
@@ -129,7 +129,7 @@ export function QuestionCard({
             {getQuestionTypeLabel(question.type)}
           </Badge>
           {isNew && (
-            <Badge className="ml-2 bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 border-blue-200 dark:border-blue-700">
+            <Badge className="ml-2 text-neutral-950 dark:text-neutral-50 bg-blue-100 dark:bg-blue-900 border-blue-200 dark:border-blue-700">
               New
             </Badge>
           )}

@@ -2,7 +2,9 @@ import random
 from datetime import datetime, timezone
 from typing import List, Union
 
+from app.celery.tasks.email_tasks.tasks import exam_finish_confirmation
 from app.core.exceptions import ForbiddenError
+from app.core.utils import make_username
 from app.exam.models import PassFailStatus, QuestionType, StudentExamStatus
 from app.exam.repository import (
     StudentAttemptRepository,
@@ -147,8 +149,16 @@ class StudentExamService:
             if should_shuffle and options:
                 shuffled_indices = list(range(len(options)))
                 random.shuffle(shuffled_indices)
+
+                # Create a shuffled copy of the options
+                shuffled_options = [None] * len(options)
                 for i, option in enumerate(options):
-                    option_order[option.id] = shuffled_indices[i]
+                    new_index = shuffled_indices[i]
+                    shuffled_options[new_index] = option
+                    option_order[option.id] = new_index
+
+                # Replace the original options with the shuffled ones
+                question.options = shuffled_options
             else:
                 for i, option in enumerate(options):
                     option_order[option.id] = i
@@ -348,6 +358,20 @@ class StudentExamService:
 
         await self.student_exam_repository.update(
             student_exam.id, {"current_status": StudentExamStatus.SUBMITTED}
+        )
+
+        if attempt.started_at.tzinfo is None:
+            started_at_aware = attempt.started_at.replace(tzinfo=timezone.utc)
+        else:
+            started_at_aware = attempt.started_at
+
+        exam_finish_confirmation.delay(
+            recipient=student_exam.student_id.email,
+            username=make_username(student_exam.student_id),
+            exam_title=student_exam.exam_instance_id.title,
+            end_time=submitted_at,
+            start_time=started_at_aware,
+            question_count=len(responses),
         )
 
         return StudentAttemptBasic(

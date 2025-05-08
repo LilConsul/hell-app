@@ -92,7 +92,8 @@ class StudentExamService:
 
         return ReviewAttempt.model_validate(attempt)
 
-    def _validate_exam_time(self, start_date, end_date):
+    @staticmethod
+    def _validate_exam_time(start_date, end_date):
         """Validate if the current time is within the exam time range."""
         # TODO: Validata timezones
         current_time = datetime.now(timezone.utc)

@@ -1,7 +1,6 @@
 from datetime import datetime, timedelta, timezone
 from typing import List
 
-import pytz
 from app.auth.repository import UserRepository
 from app.celery.tasks.email_tasks.tasks import exam_reminder_notification
 from app.core.exceptions import ForbiddenError, NotFoundError
@@ -18,7 +17,6 @@ from app.exam.teacher.schemas import (
     UpdateExamInstanceSchema,
 )
 from app.settings import settings
-from app.utils import convert_to_user_timezone
 
 
 class ExamInstanceService:
@@ -216,27 +214,16 @@ class ExamInstanceService:
     async def check_datetime(
         start_date: datetime,
         end_date: datetime,
-        timezone=None,
     ):
         """Check if the start and end dates are valid."""
         if start_date.tzinfo is None:
-            start_date = pytz.utc.localize(start_date)
+            start_date = start_date.replace(tzinfo=timezone.utc)
         if end_date.tzinfo is None:
-            end_date = pytz.utc.localize(end_date)
+            end_date = end_date.replace(tzinfo=timezone.utc)
 
-        start_date_utc = start_date.astimezone(pytz.utc)
-        end_date_utc = end_date.astimezone(pytz.utc)
-        current_time_utc = datetime.now(pytz.utc)
-
-        if start_date_utc < current_time_utc:
-            if timezone:
-                user_time = convert_to_user_timezone(current_time_utc, timezone)
-                raise ForbiddenError(
-                    f"Start date must be in the future (current time: {user_time.strftime('%Y-%m-%d %H:%M:%S')} in your timezone)"
-                )
-            else:
-                raise ForbiddenError("Start date must be in the future")
-        if end_date_utc < start_date_utc:
+        if start_date < datetime.now(timezone.utc):
+            raise ForbiddenError("Start date must be in the future")
+        if end_date < start_date:
             raise ForbiddenError("End date must be after start date")
 
     async def _validate_students_exist(self, students: List[dict]) -> None:

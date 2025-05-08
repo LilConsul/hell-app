@@ -26,7 +26,7 @@ def convert_to_user_timezone(dt, timezone):
     return dt.astimezone(timezone)
 
 
-def convert_user_timezone_to_utc(dt, timezone):
+def convert_user_timezone_to_utc(dt):
     """Convert a datetime from the user's timezone to UTC"""
     if dt.tzinfo is None:
         dt = pytz.utc.localize(dt)

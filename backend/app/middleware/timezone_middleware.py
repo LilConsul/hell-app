@@ -17,7 +17,6 @@ class TimezoneMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next: Callable):
         timezone_name = request.headers.get("X-Timezone", self.default_timezone)
 
-        # Validate timezone
         try:
             timezone = pytz.timezone(timezone_name)
         except pytz.exceptions.UnknownTimeZoneError:

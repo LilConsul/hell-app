@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta, timezone
 from typing import List
 
+import pytz
 from app.auth.repository import UserRepository
 from app.celery.tasks.email_tasks.tasks import exam_reminder_notification
 from app.core.exceptions import ForbiddenError, NotFoundError
@@ -17,6 +18,7 @@ from app.exam.teacher.schemas import (
     UpdateExamInstanceSchema,
 )
 from app.settings import settings
+from app.utils import convert_to_user_timezone
 
 
 class ExamInstanceService:
@@ -214,16 +216,27 @@ class ExamInstanceService:
     async def check_datetime(
         start_date: datetime,
         end_date: datetime,
+        timezone=None,
     ):
         """Check if the start and end dates are valid."""
         if start_date.tzinfo is None:
-            start_date = start_date.replace(tzinfo=timezone.utc)
+            start_date = pytz.utc.localize(start_date)
         if end_date.tzinfo is None:
-            end_date = end_date.replace(tzinfo=timezone.utc)
+            end_date = pytz.utc.localize(end_date)
 
-        if start_date < datetime.now(timezone.utc):
-            raise ForbiddenError("Start date must be in the future")
-        if end_date < start_date:
+        start_date_utc = start_date.astimezone(pytz.utc)
+        end_date_utc = end_date.astimezone(pytz.utc)
+        current_time_utc = datetime.now(pytz.utc)
+
+        if start_date_utc < current_time_utc:
+            if timezone:
+                user_time = convert_to_user_timezone(current_time_utc, timezone)
+                raise ForbiddenError(
+                    f"Start date must be in the future (current time: {user_time.strftime('%Y-%m-%d %H:%M:%S')} in your timezone)"
+                )
+            else:
+                raise ForbiddenError("Start date must be in the future")
+        if end_date_utc < start_date_utc:
             raise ForbiddenError("End date must be after start date")
 
     async def _validate_students_exist(self, students: List[dict]) -> None:
@@ -254,7 +267,9 @@ class ExamInstanceService:
             raise ForbiddenError("You do not have access to this collection")
 
         if not collection.questions:
-            raise NotFoundError("Collection does not contain any questions. Please add questions to the collection before creating an exam instance.")
+            raise NotFoundError(
+                "Collection does not contain any questions. Please add questions to the collection before creating an exam instance."
+            )
 
         instance_data = instance_data.model_dump()
         instance_data["created_by"] = user_id
@@ -335,7 +350,9 @@ class ExamInstanceService:
                     added_students,
                     instance_id,
                     instance.title,
-                    instance.start_date if "start_date" not in update_data else start_date,
+                    instance.start_date
+                    if "start_date" not in update_data
+                    else start_date,
                     instance.end_date if "end_date" not in update_data else end_date,
                     instance.notification_settings.model_dump(),
                 )
@@ -353,4 +370,3 @@ class ExamInstanceService:
 
         if instance.created_by.ref.id != user_id:
             raise ForbiddenError("You do not own this exam instance")
-

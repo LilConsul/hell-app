@@ -37,10 +37,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.add_middleware(
-    TimezoneMiddleware,
-    default_timezone="UTC"
-)
+app.add_middleware(TimezoneMiddleware, default_timezone="UTC")
 
 app.include_router(router)
 

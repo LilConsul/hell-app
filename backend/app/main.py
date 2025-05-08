@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from .auth.dependencies import get_user_repository
 from .auth.service import AuthService
 from .database import init_db
+from .middleware.timezone_middleware import TimezoneMiddleware
 from .router import router
 from .settings import settings
 
@@ -34,6 +35,11 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+)
+
+app.add_middleware(
+    TimezoneMiddleware,
+    default_timezone="UTC"
 )
 
 app.include_router(router)

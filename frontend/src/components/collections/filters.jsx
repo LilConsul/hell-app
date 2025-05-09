@@ -200,6 +200,7 @@ export function CollectionFilters({
             <TabsTrigger value="all">All</TabsTrigger>
             <TabsTrigger value="published">Public</TabsTrigger>
             <TabsTrigger value="draft">Drafts</TabsTrigger>
+            <TabsTrigger value="archived">Archived</TabsTrigger>
           </TabsList>
         </Tabs>
       </div>

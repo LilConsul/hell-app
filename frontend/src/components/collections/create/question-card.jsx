@@ -23,6 +23,7 @@ export function QuestionCard({
   onUpdateWeight,
   onUpdateShortAnswer,
   canSave = true,
+  disabled = false
 }) {
   // Track field touches to show validation only after interaction
   const [touchedFields, setTouchedFields] = useState({
@@ -144,17 +145,21 @@ export function QuestionCard({
             variant={question.saved ? "ghost" : "outline"}
             size="sm"
             onClick={handleSaveClick}
-            disabled={question.saved || !canSave}
+            disabled={question.saved || !canSave || disabled}
             title={
-              !canSave 
-                ? "Save collection first to enable individual question saves" 
-                : ""
+              disabled ? "Cannot save while collection is archived" :
+              !canSave ? "Save collection first to enable individual question saves" : ""
             }
           >
             <Save className="h-4 w-4 mr-1" />
             {question.saved ? "Saved" : (canSave ? "Save Question" : "Save Collection First")}
           </Button>
-          <Button variant="ghost" size="icon" onClick={() => onRemove(question.id)}>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => onRemove(question.id)}
+            disabled={disabled}
+          >
             <Trash2 className="h-4 w-4" />
           </Button>
         </div>
@@ -169,6 +174,7 @@ export function QuestionCard({
             onChange={(e) => onUpdateText(question.id, e.target.value)}
             onBlur={() => markAsTouched('questionText')}
             className={showQuestionTextError ? "border-red-300 dark:border-red-700" : ""}
+            disabled={disabled}
           />
           {showQuestionTextError && (
             <p className="text-xs text-red-500 dark:text-red-400">Question text is required</p>
@@ -187,13 +193,11 @@ export function QuestionCard({
                 {question.type === "singlechoice" ? (
                   <RadioGroup
                     value={question.options.findIndex(o => o.is_correct) === optIndex ? optIndex.toString() : ""}
-                    onValueChange={() => {
-                      onUpdateCorrectOption(question.id, optIndex)
-                      markAsTouched('correctOption')
-                    }}
+                    onValueChange={() => onUpdateCorrectOption(question.id, optIndex)}
                     className="flex items-center"
+                    disabled={disabled}
                   >
-                    <RadioGroupItem value={optIndex.toString()} id={`q${question.id}-opt${optIndex}`} />
+                    <RadioGroupItem value={optIndex.toString()} id={`q${question.id}-opt${optIndex}`} disabled={disabled} />
                   </RadioGroup>
                 ) : (
                   <div className="flex items-center h-10 px-2">
@@ -201,11 +205,9 @@ export function QuestionCard({
                       type="checkbox"
                       id={`q${question.id}-opt${optIndex}-checkbox`}
                       checked={option.is_correct}
-                      onChange={() => {
-                        onUpdateCorrectOption(question.id, optIndex)
-                        markAsTouched('correctOption')
-                      }}
+                      onChange={() => onUpdateCorrectOption(question.id, optIndex)}
                       className="h-4 w-4"
+                      disabled={disabled}
                     />
                   </div>
                 )}
@@ -215,13 +217,14 @@ export function QuestionCard({
                   onChange={(e) => onUpdateOption(question.id, optIndex, e.target.value)}
                   onBlur={() => markAsTouched('options', optIndex)}
                   className={`flex-1 ${touchedFields.options[optIndex] && !option.text.trim() ? "border-red-300 dark:border-red-700" : ""}`}
+                  disabled={disabled}
                 />
                 <Button
                   variant="ghost"
                   size="icon"
                   className="h-8 w-8"
                   onClick={() => onRemoveOption(question.id, optIndex)}
-                  disabled={question.options.length <= 2}
+                  disabled={question.options.length <= 2 || disabled}
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
@@ -232,7 +235,13 @@ export function QuestionCard({
                 {question.type === "singlechoice" ? "Please select a correct answer" : "Please select at least one correct answer"}
               </p>
             )}
-            <Button variant="outline" size="sm" className="mt-2" onClick={() => onAddOption(question.id)}>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="mt-2" 
+              onClick={() => onAddOption(question.id)}
+              disabled={disabled}
+            >
               <Plus className="mr-2 h-4 w-4" />
               Add Option
             </Button>
@@ -248,6 +257,7 @@ export function QuestionCard({
               onChange={(e) => onUpdateShortAnswer(question.id, e.target.value)}
               onBlur={() => markAsTouched('correctAnswer')}
               className={showShortAnswerError ? "border-red-300 dark:border-red-700" : ""}
+              disabled={disabled}
             />
             {showShortAnswerError && (
               <p className="text-xs text-red-500 dark:text-red-400">Correct answer is required</p>
@@ -259,6 +269,7 @@ export function QuestionCard({
           <Select
             value={question.weight.toString()}
             onValueChange={(value) => onUpdateWeight(question.id, value)}
+            disabled={disabled}
           >
             <SelectTrigger id={`weight-${question.id}`}>
               <SelectValue placeholder="Select weight" />

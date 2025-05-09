@@ -7,7 +7,7 @@ import { Footer } from "@/components/footer";
 import { useAuth } from "@/contexts/auth-context";
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
-import { CollectionCard } from "@/components/collections/card";
+import { CollectionCard } from "@/components/collections/collection-card";
 import { CollectionFilters } from "@/components/collections/filters";
 import { CustomPagination } from "@/components/pagination";
 import { usePagination } from "@/hooks/use-pagination";
@@ -71,11 +71,16 @@ function Collections() {
 
   const applyAllFilters = useCallback(() => {
     if (!allCollections.length) return [];
-    return allCollections.filter(collection => {
-      if (activeFilter !== "all" && collection.status !== activeFilter) return false;
+    
+    let filteredCollections = allCollections.filter(collection => {
+      // Status filter
+      if (activeFilter !== "all" && activeFilter !== collection.status) return false;
+      // Filter by search query
       if (debouncedSearchQuery &&
           !collection.title.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) &&
           !collection.description.toLowerCase().includes(debouncedSearchQuery.toLowerCase())) return false;
+      
+      // Filter by date range
       if (filters.dateRange !== "all") {
         const collectionDate = new Date(collection.created_at);
         const now = new Date();
@@ -100,15 +105,33 @@ function Collections() {
             break;
         }
       }
+      
+      // Filter by question count
       const questionCount = collection.question_count || 0;
       if (questionCount < filters.questionCount[0] || questionCount > filters.questionCount[1]) return false;
+      
+      // Filter by creator
       if (filters.createdBy !== "all" && user) {
         const isCreatedByCurrentUser = collection.created_by?.id === user.id;
         if ((filters.createdBy === "me" && !isCreatedByCurrentUser) ||
             (filters.createdBy === "others" && isCreatedByCurrentUser)) return false;
       }
+      
       return true;
     });
+    
+    if (activeFilter === "all") {
+      filteredCollections.sort((a, b) => {
+        // First sort by archived status (non-archived first)
+        if (a.status === "archived" && b.status !== "archived") return 1;
+        if (a.status !== "archived" && b.status === "archived") return -1;
+        
+        // If both have same archived status sort by created date (newest first)
+        return new Date(b.created_at) - new Date(a.created_at);
+      });
+    }
+    
+    return filteredCollections;
   }, [activeFilter, debouncedSearchQuery, filters, allCollections, user]);
 
   useEffect(() => {
@@ -129,9 +152,22 @@ function Collections() {
           c.id === collectionId ? { ...c, status: newStatus } : c
         )
       );
+      
+      const statusMessage = {
+        published: "public",
+        draft: "draft",
+        archived: "archived"
+      };
+      
       toast.success(`Collection status updated`, {
-        description: `"${collections.find(c => c.id === collectionId)?.title}" is now ${newStatus}.`,
+        description: `"${collections.find(c => c.id === collectionId)?.title}" is now ${statusMessage[newStatus]}.`,
       });
+      
+      // Refresh the collections list to ensure sorting is applied
+      if (activeFilter === "all") {
+        const filtered = applyAllFilters();
+        setCollections(filtered);
+      }
     } catch {
       toast.error("Failed to update status", {
         description: "Please try again later.",

@@ -14,7 +14,6 @@ import { PageHeader } from "@/components/collections/create/page-header";
 import { QuestionControls } from "@/components/collections/create/question-controls";
 import { CustomPagination } from "@/components/pagination";
 import { usePagination } from "@/hooks/use-pagination";
-import { StatusAlerts } from "@/components/collections/create/status-alerts";
 
 import CollectionAPI from "./Collections.api";
 
@@ -34,12 +33,13 @@ function CreateCollection() {
   const [newQuestions, setNewQuestions] = useState([]);
   const [activeTab, setActiveTab] = useState("details");
   const [isSaving, setIsSaving] = useState(false);
-  const [saveError, setSaveError] = useState(false);
-  const [errorMessage, setErrorMessage] = useState("");
-  const [questionError, setQuestionError] = useState(false);
-  const [questionErrorMessage, setQuestionErrorMessage] = useState("");
+  const [error, setError] = useState({
+    isError: false,
+    message: ""
+  });
 
   const questionsPerPage = 10;
+  const isArchived = collectionData.status === "archived";
 
   const allQuestions = useMemo(() => [...newQuestions, ...questions], [newQuestions, questions]);
   
@@ -50,7 +50,11 @@ function CreateCollection() {
     goToPage
   } = usePagination(allQuestions, questionsPerPage);
 
-  const statusDisplayMap = { draft: "Draft", published: "Public" };
+  const statusDisplayMap = { 
+    draft: "Draft", 
+    published: "Public",
+    archived: "Archived"
+  };
 
   useEffect(() => {
     const isNew = location.pathname.includes("/new") || !collectionId;
@@ -90,9 +94,10 @@ function CreateCollection() {
       }
     } catch {
       setIsInvalid(true);
-      setErrorMessage(
-        "Collection not found. Please check the URL and try again."
-      );
+      setError({
+        isError: true,
+        message: "Collection not found. Please check the URL and try again."
+      });
     } finally {
       setIsLoading(false);
     }
@@ -115,7 +120,7 @@ function CreateCollection() {
         <main className="flex-1 p-8 pt-6">
           <Alert className="bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700">
             <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
-            <AlertDescription>{errorMessage}</AlertDescription>
+            <AlertDescription>{error.message}</AlertDescription>
           </Alert>
           <div className="flex justify-center mt-8">
             <Button asChild>
@@ -126,10 +131,46 @@ function CreateCollection() {
       </div>
     );
 
-  const handleInputChange = (e) =>
+  const handleInputChange = (e) => {
+    // Prevent changes if collection is archived
+    if (isArchived) {
+      toast.error("Cannot modify an archived collection. Restore to draft first.");
+      return;
+    }
     setCollectionData({ ...collectionData, [e.target.name]: e.target.value });
-  const handleStatusChange = (value) =>
-    setCollectionData({ ...collectionData, status: value });
+  };
+
+  const transitionToToast = {
+    "draft:published": () => toast.success("Collection is now public."),
+    "published:draft": () => toast.info("Collection is now draft."),
+    "archived:draft": () => toast.success("Collection restored to draft status. You can now make changes."),
+    "draft:archived": () => toast.info("Collection archived. Restore to draft status to make changes."),
+  };
+  
+  const handleStatusChange = async (value) => {
+    const oldStatus = collectionData.status;
+    if (isNewCollection) {
+      setCollectionData({ ...collectionData, status: value });
+      return;
+    }  
+    try {
+      await CollectionAPI.updateCollectionStatus(collectionId, value);
+      setCollectionData({ ...collectionData, status: value });
+      const key = `${oldStatus}:${value}`;
+      const toastFn = transitionToToast[key];
+      if (toastFn) toastFn();
+  
+    } catch (err) {
+      setError({
+        isError: true,
+        message:
+          value === "archived"
+            ? "Failed to archive collection. Please try again."
+            : `Failed to update collection status to ${value}. Please try again.`,
+      });
+    }
+  };
+  
 
   const createEmptyQuestion = (type) => ({
     id: `${Date.now()}-${Math.random()}`,
@@ -145,23 +186,44 @@ function CreateCollection() {
   });
 
   const addQuestion = (type) => {
+    if (isArchived) {
+      toast.error("Cannot add questions to an archived collection. Restore to draft first.");
+      return;
+    }
     setNewQuestions([createEmptyQuestion(type), ...newQuestions]);
     setActiveTab("questions");
   };
 
   const removeQuestion = async (id) => {
+    if (isArchived) {
+      toast.error("Cannot remove questions from an archived collection. Restore to draft first.");
+      return;
+    }
+    
     if (newQuestions.some((q) => q.id === id)) {
       setNewQuestions(newQuestions.filter((q) => q.id !== id));
     } else {
       const q = questions.find((q) => q.id === id);
       if (q?.server_id && !isNewCollection) {
-        await CollectionAPI.deleteQuestion(collectionId, q.server_id);
+        try { 
+          await CollectionAPI.deleteQuestion(collectionId, q.server_id);
+          toast.success("Question removed successfully.");
+        }
+        catch {
+          setError({
+            isError: true,
+            message: "Failed to remove question. Please try again."
+          });
+        }
       }
       setQuestions(questions.filter((q) => q.id !== id));
     }
   };
 
   const updateList = (list, setList, id, updater) => {
+    // Prevent updates if collection is archived
+    if (isArchived) return;
+    
     const idx = list.findIndex((q) => q.id === id);
     if (idx < 0) return;
     const updated = [...list];
@@ -170,6 +232,11 @@ function CreateCollection() {
   };
 
   const updateQuestionText = (id, text) => {
+    if (isArchived) {
+      toast.error("Cannot modify questions in an archived collection. Restore to draft first.");
+      return;
+    }
+    
     updateList(newQuestions, setNewQuestions, id, (q) => ({
       ...q,
       question_text: text,
@@ -181,6 +248,8 @@ function CreateCollection() {
   };
 
   const updateOptionText = (id, idx, text) => {
+    if (isArchived) return;
+    
     updateList(newQuestions, setNewQuestions, id, (q) => {
       if (!q.options) return q;
       const opts = [...q.options];
@@ -196,6 +265,8 @@ function CreateCollection() {
   };
 
   const toggleCorrectOption = (id, idx) => {
+    if (isArchived) return;
+    
     const toggle = (q) => {
       if (!q.options) return q;
       const opts =
@@ -211,6 +282,8 @@ function CreateCollection() {
   };
 
   const updateShortAnswer = (id, ans) => {
+    if (isArchived) return;
+    
     updateList(newQuestions, setNewQuestions, id, (q) => ({
       ...q,
       correct_input_answer: ans,
@@ -222,12 +295,16 @@ function CreateCollection() {
   };
 
   const updateWeight = (id, weight) => {
+    if (isArchived) return;
+    
     const w = parseInt(weight, 10);
     updateList(newQuestions, setNewQuestions, id, (q) => ({ ...q, weight: w }));
     updateList(questions, setQuestions, id, (q) => ({ ...q, weight: w }));
   };
 
   const addOption = (id) => {
+    if (isArchived) return;
+    
     updateList(newQuestions, setNewQuestions, id, (q) => ({
       ...q,
       options: [...(q.options || []), { text: "", is_correct: false }],
@@ -239,6 +316,8 @@ function CreateCollection() {
   };
 
   const removeOption = (id, idx) => {
+    if (isArchived) return;
+    
     updateList(newQuestions, setNewQuestions, id, (q) => ({
       ...q,
       options: (q.options || []).filter((_, i) => i !== idx),
@@ -260,8 +339,12 @@ function CreateCollection() {
   };
 
   const handleSaveSingleQuestion = async (questionId) => {
-    setQuestionError(false);
-    setQuestionErrorMessage("");
+    if (isArchived) {
+      toast.error("Cannot save questions in an archived collection. Restore to draft first.");
+      return;
+    }
+    
+    setError({ isError: false, message: "" });
     const isNew = newQuestions.some((q) => q.id === questionId);
     const q = isNew
       ? newQuestions.find((q) => q.id === questionId)
@@ -269,13 +352,17 @@ function CreateCollection() {
     if (!q) return;
 
     if (!validateQuestion(q)) {
-      setQuestionError(true);
-      setQuestionErrorMessage("Question is invalid. Please fix it before saving.");
+      setError({
+        isError: true,
+        message: "Question is invalid. Please fix it before saving."
+      });
       return;
     }
     if (isNew && collectionId === 'new') {
-      setQuestionError(true);
-      setQuestionErrorMessage("Save the collection first before adding questions.");
+      setError({
+        isError: true,
+        message: "Save the collection first before adding questions."
+      });
       return;
     }
 
@@ -301,17 +388,25 @@ function CreateCollection() {
 
       toast.success("Question saved successfully.");
     } catch {
-      setQuestionError(true);
-      setQuestionErrorMessage("Failed to save question. Please try again.");
+      setError({
+        isError: true,
+        message: "Failed to save question. Please try again."
+      });
     }
   };
 
   const handleSaveCollection = async () => {
-    setSaveError(false);
-    setErrorMessage("");
+    if (isArchived) {
+      toast.error("Cannot save changes to an archived collection. Restore to draft first.");
+      return;
+    }
+    
+    setError({ isError: false, message: "" });
     if (!collectionData.title.trim()) {
-      setSaveError(true);
-      setErrorMessage("Please provide a title for the collection.");
+      setError({
+        isError: true,
+        message: "Please provide a title for the collection."
+      });
       return;
     }
     setIsSaving(true);
@@ -320,6 +415,7 @@ function CreateCollection() {
       let collId = collectionId;
       if (isNewCollection) {
         const res = await CollectionAPI.createCollection(collectionData);
+        toast.success("Collection created successfully.");
         collId = res.data.collection_id;
       } else {
         await CollectionAPI.updateCollection(collectionId, collectionData);
@@ -343,8 +439,10 @@ function CreateCollection() {
       if (valid.length)
         toast.success(`Saved ${valid.length} question${valid.length > 1 ? "s" : ""}`);
       if (invalid.length) {
-        setSaveError(true);
-        setErrorMessage(`${invalid.length} question${invalid.length > 1 ? "s" : ""} invalid; please fix.`);
+        setError({
+          isError: true,
+          message: `${invalid.length} question${invalid.length > 1 ? "s" : ""} invalid; please fix.`
+        });
       } else {
         toast.success("Collection saved successfully.");
         if (isNewCollection && collId) {
@@ -353,14 +451,23 @@ function CreateCollection() {
         }
       }
     } catch {
-      setSaveError(true);
-      setErrorMessage("Failed to save collection. Please try again.");
+      setError({
+        isError: true,
+        message: "Failed to save collection. Please try again."
+      });
     } finally {
       setIsSaving(false);
     }
   };
 
   const isFormValid = () => collectionData.title.trim() !== "";
+
+  // Determine subtitle based on collection status
+  const getSubtitle = () => {
+    if (isNewCollection) return "Create a new collection of test questions";
+    if (isArchived) return "This collection is archived and cannot be edited";
+    return "Edit collection details and questions";
+  };
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -369,13 +476,15 @@ function CreateCollection() {
       <main className="flex-1 p-8 pt-6">
         <div className="max-w-7xl mx-auto">
           <PageHeader
+            title={isNewCollection ? "Create Test Collection" : `Edit ${collectionData.title}`}
+            subtitle={getSubtitle()}
             status={collectionData.status}
-            displayStatus={statusDisplayMap[collectionData.status]}
             onStatusChange={handleStatusChange}
             onSave={handleSaveCollection}
-            isSaveDisabled={!isFormValid() || isSaving}
+            isSaveDisabled={!isFormValid() || isSaving || isArchived}
+            error={error.isError}
+            errorMessage={error.message}
           />
-          <StatusAlerts error={saveError} errorMessage={errorMessage} />
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
             <TabsList>
               <TabsTrigger value="details">Collection Details</TabsTrigger>
@@ -387,14 +496,13 @@ function CreateCollection() {
               <CollectionDetailsForm
                 collectionData={collectionData}
                 onInputChange={handleInputChange}
-                onStatusChange={handleStatusChange}
                 statusDisplayMap={statusDisplayMap}
                 onContinue={() => setActiveTab("questions")}
+                isArchived={isArchived}
               />
             </TabsContent>
             <TabsContent value="questions" className="space-y-4">
-              <QuestionControls onAddQuestion={addQuestion} />
-              <StatusAlerts error={questionError} errorMessage={questionErrorMessage} />
+              <QuestionControls onAddQuestion={addQuestion} disabled={isArchived} />
               <div className="space-y-4">
                 {allQuestions.length > 0 && (
                   <div className="mb-4">
@@ -423,12 +531,13 @@ function CreateCollection() {
                       onUpdateWeight={updateWeight}
                       onUpdateShortAnswer={updateShortAnswer}
                       canSave={!isNewCollection || !!collectionId}
+                      disabled={isArchived}
                     />
                   );
                 })}
                 
                 {!allQuestions.length && (
-                  <EmptyQuestionsState onAddQuestion={addQuestion} />
+                  <EmptyQuestionsState onAddQuestion={addQuestion} disabled={isArchived} />
                 )}
                 
                 {allQuestions.length > questionsPerPage && (
@@ -441,22 +550,6 @@ function CreateCollection() {
               </div>
             </TabsContent>
           </Tabs>
-          <div className="flex justify-end space-x-2 mt-6">
-            <Button variant="outline" asChild>
-              <Link to="/collections">Cancel</Link>
-            </Button>
-            <Button
-              onClick={handleSaveCollection}
-              disabled={!isFormValid() || isSaving}
-              className="bg-primary hover:bg-primary/90 text-primary-foreground"
-            >
-              {isSaving
-                ? "Saving..."
-                : isNewCollection
-                ? "Save Collection"
-                : "Update Collection"}
-            </Button>
-          </div>
         </div>
       </main>
     </div>

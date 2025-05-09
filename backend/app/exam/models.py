@@ -162,8 +162,7 @@ class Collection(Document, TimestampMixin):
         """Delete all questions linked to this collection when the collection is deleted"""
         question_ids = []
         for q in self.questions:
-            question_obj = await q.fetch()
-            question_ids.append(question_obj.id)
+            question_ids.append(q.ref.id)
         if question_ids:
             await Question.find({"_id": {"$in": question_ids}}).delete()
 

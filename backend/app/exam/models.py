@@ -95,6 +95,7 @@ class SecurityEvent(BaseModel):
 
 class Question(Document, TimestampMixin):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    position: int = 0
     question_text: str
     type: QuestionType
     created_by: Link[User]  # Reference to the user, must be teacher
@@ -162,8 +163,7 @@ class Collection(Document, TimestampMixin):
         """Delete all questions linked to this collection when the collection is deleted"""
         question_ids = []
         for q in self.questions:
-            question_obj = await q.fetch()
-            question_ids.append(question_obj.id)
+            question_ids.append(q.ref.id)
         if question_ids:
             await Question.find({"_id": {"$in": question_ids}}).delete()
 
@@ -302,6 +302,11 @@ class StudentAttempt(Document, TimestampMixin):
         use_state_management = True
         indexes = ["student_exam_id", "status", "grade"]
 
+    @before_event(Delete)
+    async def before_delete(self):
+        """Delete all responses associated with this attempt when deleted"""
+        await StudentResponse.find(StudentResponse.attempt_id.id == self.id).delete()
+
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
         json_schema_extra={
@@ -349,6 +354,25 @@ class StudentExam(Document, TimestampMixin):
         use_state_management = True
         indexes = ["exam_instance_id", "student_id", "current_status"]
 
+    @before_event(Delete)
+    async def before_delete(self):
+        """Delete all attempts associated with this student exam when deleted"""
+        attempts = await StudentAttempt.find(
+            StudentAttempt.student_exam_id.id == self.id
+        ).to_list()
+
+        for attempt in attempts:
+            await attempt.delete()
+
+        exam_instance = await self.exam_instance_id.fetch()
+        if exam_instance:
+            exam_instance.assigned_students = [
+                student
+                for student in exam_instance.assigned_students
+                if student.student_id.ref.id != self.student_id.ref.id
+            ]
+            await exam_instance.save()
+
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
         json_schema_extra={
@@ -372,12 +396,19 @@ async def cascade_delete_user(user_id: str, role: UserRole):
     """
     # Delete all questions created by the user (can be teacher or admin)
     if role == UserRole.TEACHER or role == UserRole.ADMIN:
-        await Collection.find(Collection.created_by.id == user_id).delete()
+        # await Collection.find(Collection.created_by.id == user_id).delete()
+        # to support the cascade delete of collections
+        collections = await Collection.find(
+            Collection.created_by.id == user_id
+        ).to_list()
+        for collection in collections:
+            await collection.delete()
         await ExamInstance.find(ExamInstance.created_by.id == user_id).delete()
 
     # Delete all student exams and responses
-    if role == UserRole.STUDENT:
-        # TODO: Implement this logic
-        pass
-
-    print(f"Deleted all data related to user {user_id}")
+    if role == UserRole.STUDENT or role == UserRole.ADMIN:
+        student_exams = await StudentExam.find(
+            StudentExam.student_id.id == user_id
+        ).to_list()
+        for exam in student_exams:
+            await exam.delete()

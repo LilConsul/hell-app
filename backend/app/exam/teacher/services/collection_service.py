@@ -1,7 +1,12 @@
 import uuid
 from typing import List
 
-from app.core.exceptions import ForbiddenError, NotFoundError
+from app.core.exceptions import (
+    ForbiddenError,
+    NotFoundError,
+    BadRequestError,
+    UnprocessableEntityError,
+)
 from app.exam.models import ExamStatus, QuestionType
 from app.exam.repository import CollectionRepository, QuestionRepository
 from app.exam.teacher.schemas import (
@@ -47,6 +52,11 @@ class CollectionService:
         if not (is_owner or is_public):
             raise ForbiddenError("You don't have access to this collection")
 
+        if getattr(collection, "questions", None):
+            collection.questions.sort(
+                key=lambda q: getattr(q, "position", float("inf"))
+            )
+
         return collection.model_dump()
 
     async def update_collection(
@@ -80,35 +90,35 @@ class CollectionService:
             question_data: The question data to validate
 
         Raises:
-            ValueError: If the question data is invalid for its type
+            UnprocessableEntityError: If the question data is invalid for its type
         """
         question_type = question_data.get("type")
         if not question_type:
-            raise ValueError("Question type is required")
+            raise UnprocessableEntityError("Question type is required")
 
         # For MCQ and SINGLECHOICE: validate options
         if question_type in [QuestionType.MCQ, QuestionType.SINGLECHOICE]:
             options = question_data.get("options", [])
             if not options:
-                raise ValueError(f"{question_type} question must have options")
+                raise UnprocessableEntityError(f"{question_type} question must have options")
 
             # Check for correct answers
             correct_count = sum(1 for opt in options if opt.get("is_correct"))
 
             if correct_count == 0:
-                raise ValueError(
+                raise UnprocessableEntityError(
                     f"{question_type} question must have at least one correct answer"
                 )
 
             if question_type == QuestionType.SINGLECHOICE and correct_count > 1:
-                raise ValueError(
+                raise UnprocessableEntityError(
                     f"{QuestionType.SINGLECHOICE} question must have exactly one correct answer"
                 )
 
         # For SHORTANSWER: validate correct_input_answer
         elif question_type == QuestionType.SHORTANSWER:
             if not question_data.get("correct_input_answer"):
-                raise ValueError(
+                raise UnprocessableEntityError(
                     f"{QuestionType.SHORTANSWER} question must have a correct_input_answer"
                 )
 
@@ -126,6 +136,19 @@ class CollectionService:
             raise ForbiddenError(
                 "You don't have permission to add questions to this collection"
             )
+
+        # Check if the question position is already taken
+        existing_positions = [
+            q.position for q in collection.questions if hasattr(q, "position")
+        ]
+        if not question_data.position:
+            available_position = 0
+            while available_position in existing_positions:
+                available_position += 1
+            question_data.position = available_position
+
+        if question_data.position in existing_positions:
+            raise UnprocessableEntityError(f"Question with position {question_data.position} already exists in the collection")
 
         # Prepare question data
         question_data_dict = question_data.model_dump()
@@ -164,6 +187,12 @@ class CollectionService:
         # Check if user owns the question
         if question.created_by.id != user_id:
             raise ForbiddenError("You do not own this question")
+
+        # Check if the question position is already taken
+        if hasattr(question_data, 'position') and question_data.position != question.position:
+            existing_positions = [q.position for q in question.collection.questions if hasattr(q, 'position')]
+            if question_data.position in existing_positions:
+                raise UnprocessableEntityError(f"Question with position {question_data.position} already exists in the collection")
 
         update_data = question_data.model_dump(exclude_unset=True)
         if "_id" in update_data:

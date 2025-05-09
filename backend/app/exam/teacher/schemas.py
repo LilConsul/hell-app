@@ -24,6 +24,7 @@ class QuestionOptionSchema(BaseModel):
 
 
 class QuestionBase(BaseModel):
+    position: int | None = None
     question_text: str
     type: QuestionType
     has_katex: bool = False
@@ -41,6 +42,7 @@ class QuestionSchema(QuestionBase):
         arbitrary_types_allowed=True,
         json_schema_extra={
             "example": {
+                "position": 1,
                 "question_text": "What is the capital of France?",
                 "type": "mcq",
                 "has_katex": False,
@@ -60,6 +62,7 @@ class CreateQuestionSchema(QuestionBase):
 
 
 class UpdateQuestionSchema(BaseModel):
+    position: int | None = None
     question_text: str | None = None
     type: QuestionType | None = None
     has_katex: bool | None = None

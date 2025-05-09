@@ -95,6 +95,7 @@ class SecurityEvent(BaseModel):
 
 class Question(Document, TimestampMixin):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    position: int = 0
     question_text: str
     type: QuestionType
     created_by: Link[User]  # Reference to the user, must be teacher

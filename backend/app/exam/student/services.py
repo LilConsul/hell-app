@@ -37,12 +37,12 @@ class StudentExamService:
         """
         Get all exams for a student.
         """
-        exam = await self.student_exam_repository.get_all(
+        exams = await self.student_exam_repository.get_all(
             {"student_id._id": student_id}, fetch_links=True
         )
-        if not exam:
+        if not exams:
             return []
-        return [StudentExamBase.model_validate(exam) for exam in exam]
+        return [StudentExamBase.model_validate(exam) for exam in exams]
 
     async def get_student_exam(
         self, student_id: str, student_exam_id: str
@@ -50,16 +50,21 @@ class StudentExamService:
         """
         Get a specific exam for a student.
         """
-        exams = await self.student_exam_repository.get_by_id(
+        exam = await self.student_exam_repository.get_by_id(
             student_exam_id, fetch_links=True
         )
-        if not exams:
+        if not exam:
             raise ForbiddenError("Exam not found")
 
-        if exams.student_id.id != student_id:
+        if exam.student_id.id != student_id:
             raise ForbiddenError("You do not have permission to access this exam")
-        exams.latest_attempt_id = exams.latest_attempt_id.ref.id
-        return StudentExamDetail.model_validate(exams)
+
+        if exam.latest_attempt_id:
+            exam.latest_attempt_id = exam.latest_attempt_id.ref.id
+        question_count = len(exam.exam_instance_id.collection_id.questions)
+        exam_detail = StudentExamDetail.model_validate(exam)
+        exam_detail.question_count = question_count
+        return exam_detail
 
     async def get_student_attempt(
         self, student_id: str, attempt_id: str
@@ -137,6 +142,8 @@ class StudentExamService:
             question_ids, questions = zip(*combined) if combined else ([], [])
             question_ids = list(question_ids)
             questions = list(questions)
+        else:
+            questions = sorted(questions, key=lambda q: q.position)
 
         attempt = await self.student_attempt_repository.create_exam_attempt(
             student_exam, question_ids

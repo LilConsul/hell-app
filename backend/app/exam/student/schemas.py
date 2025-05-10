@@ -134,6 +134,7 @@ class StudentExamDetail(StudentExamBase):
 
     latest_attempt_id: Optional[str] = None
     attempts: List["StudentAttemptBasic"] = []
+    question_count: int = 0
 
     model_config = ConfigDict(arbitrary_types_allowed=True, from_attributes=True)
 

@@ -6,6 +6,7 @@ from app.auth.security import (
     TokenType,
     create_verification_token,
     decode_verification_token,
+    delete_verification_token,
     get_password_hash,
     verify_password,
 )
@@ -59,7 +60,7 @@ class UserService:
         if not user:
             raise NotFoundError("User not found")
 
-        user_deletion_token = create_verification_token(
+        user_deletion_token = await create_verification_token(
             user_id=user_id, token_type=TokenType.USER_DELETION
         )
 
@@ -75,7 +76,7 @@ class UserService:
         )
 
     async def delete_user_info(self, user_id: str, token: str) -> None:
-        delete_data = decode_verification_token(token)
+        delete_data = await decode_verification_token(token)
         if not delete_data or not delete_data.get("type"):
             raise AuthenticationError("Invalid or expired token")
 
@@ -95,6 +96,7 @@ class UserService:
             date_registered=user.created_at,
             username=user.first_name + " " + user.last_name,
         )
+        await delete_verification_token(token)
 
     async def change_password(
         self, user_id: str, old_password: str, new_password: str

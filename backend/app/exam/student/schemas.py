@@ -3,12 +3,14 @@ from typing import Dict, List, Optional
 
 from app.auth.schemas import UserResponse
 from app.exam.models import (
+    ExamStatus,
+    NotificationSettings,
     PassFailStatus,
     QuestionType,
     SecurityEvent,
+    SecuritySettings,
     StudentExamStatus,
 )
-from app.exam.teacher.schemas import ExamInstanceBase
 from pydantic import BaseModel, ConfigDict
 
 
@@ -89,13 +91,21 @@ class QuestionWithUserResponse(QuestionWithOptions):
 
 
 # Exam instance schemas
-class ExamInstanceBasic(ExamInstanceBase):
+class ExamInstanceBase(BaseModel):
     """
     Basic exam instance data visible to students.
     Used when displaying exam information in student views.
     """
 
     id: str
+    title: str
+    start_date: datetime
+    end_date: datetime
+    status: ExamStatus
+    max_attempts: int = 1
+    passing_score: int = 50
+    security_settings: SecuritySettings
+    notification_settings: NotificationSettings
     created_by: UserResponse
 
     model_config = ConfigDict(arbitrary_types_allowed=True, from_attributes=True)
@@ -109,7 +119,7 @@ class StudentExamBase(BaseModel):
     """
 
     id: str
-    exam_instance_id: ExamInstanceBasic
+    exam_instance_id: ExamInstanceBase
     current_status: StudentExamStatus
     attempts_count: int
 
@@ -124,6 +134,7 @@ class StudentExamDetail(StudentExamBase):
 
     latest_attempt_id: Optional[str] = None
     attempts: List["StudentAttemptBasic"] = []
+    question_count: int = 0
 
     model_config = ConfigDict(arbitrary_types_allowed=True, from_attributes=True)
 

@@ -1,1 +1,3 @@
 TODO:add timezone support to the app
+TODO:fix question order for students in creation exam if not random
+TODO:add amount of questions to student exam details

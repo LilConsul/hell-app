@@ -211,6 +211,16 @@ class ExamInstance(Document, TimestampMixin):
             "assigned_students.student_id",  # Index for finding exams assigned to student
         ]
 
+    @before_event(Delete)
+    async def before_delete(self):
+        """Delete all student exams associated with this exam instance when deleted"""
+        student_exams = await StudentExam.find(
+            StudentExam.exam_instance_id.id == self.id
+        ).to_list()
+
+        for exam in student_exams:
+            await exam.delete()
+
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
         json_schema_extra={

@@ -1,4 +1,5 @@
 import StudentDashboard from "@/pages/student/Dashboard"
+import { useAuth } from "@/contexts/auth-context";
 
 function Dashboard() {
   const { user } = useAuth();

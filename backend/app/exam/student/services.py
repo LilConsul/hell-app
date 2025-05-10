@@ -2,7 +2,9 @@ import random
 from datetime import datetime, timezone
 from typing import List, Union
 
+from app.celery.tasks.email_tasks.tasks import exam_finish_confirmation
 from app.core.exceptions import ForbiddenError
+from app.core.utils import make_username, convert_to_user_timezone
 from app.exam.models import PassFailStatus, QuestionType, StudentExamStatus
 from app.exam.repository import (
     StudentAttemptRepository,
@@ -31,36 +33,77 @@ class StudentExamService:
         self.student_attempt_repository = student_attempt_repository
         self.student_response_repository = student_response_repository
 
-    async def get_student_exams(self, student_id: str) -> List[StudentExamBase]:
+    async def get_student_exams(
+        self, student_id: str, user_timezone=None
+    ) -> List[StudentExamBase]:
         """
         Get all exams for a student.
         """
-        exam = await self.student_exam_repository.get_all(
+        exams = await self.student_exam_repository.get_all(
             {"student_id._id": student_id}, fetch_links=True
         )
-        if not exam:
+        if not exams:
             return []
-        return [StudentExamBase.model_validate(exam) for exam in exam]
+        if user_timezone:
+            for exam in exams:
+                if hasattr(exam.exam_instance_id, "start_date"):
+                    exam.exam_instance_id.start_date = convert_to_user_timezone(
+                        exam.exam_instance_id.start_date, user_timezone
+                    )
+                if hasattr(exam.exam_instance_id, "end_date"):
+                    exam.exam_instance_id.end_date = convert_to_user_timezone(
+                        exam.exam_instance_id.end_date, user_timezone
+                    )
+        return [StudentExamBase.model_validate(exam) for exam in exams]
 
     async def get_student_exam(
-        self, student_id: str, student_exam_id: str
+        self, student_id: str, student_exam_id: str, user_timezone=None
     ) -> StudentExamDetail:
         """
         Get a specific exam for a student.
         """
-        exams = await self.student_exam_repository.get_by_id(
+        exam = await self.student_exam_repository.get_by_id(
             student_exam_id, fetch_links=True
         )
-        if not exams:
+        if not exam:
             raise ForbiddenError("Exam not found")
 
-        if exams.student_id.id != student_id:
+        if exam.student_id.id != student_id:
             raise ForbiddenError("You do not have permission to access this exam")
-        exams.latest_attempt_id = exams.latest_attempt_id.ref.id
-        return StudentExamDetail.model_validate(exams)
+
+        if (
+            exam.latest_attempt_id
+            and exam.current_status != StudentExamStatus.NOT_STARTED
+        ):
+            exam.latest_attempt_id = exam.latest_attempt_id.ref.id
+        question_count = len(exam.exam_instance_id.collection_id.questions)
+        exam_detail = StudentExamDetail.model_validate(exam)
+
+        exam_detail.question_count = question_count
+
+        if user_timezone:
+            if hasattr(exam_detail.exam_instance_id, "start_date"):
+                exam_detail.exam_instance_id.start_date = convert_to_user_timezone(
+                    exam_detail.exam_instance_id.start_date, user_timezone
+                )
+            if hasattr(exam_detail.exam_instance_id, "end_date"):
+                exam_detail.exam_instance_id.end_date = convert_to_user_timezone(
+                    exam_detail.exam_instance_id.end_date, user_timezone
+                )
+
+            for attempt in exam_detail.attempts:
+                if attempt.started_at:
+                    attempt.started_at = convert_to_user_timezone(
+                        attempt.started_at, user_timezone
+                    )
+                if attempt.submitted_at:
+                    attempt.submitted_at = convert_to_user_timezone(
+                        attempt.submitted_at, user_timezone
+                    )
+        return exam_detail
 
     async def get_student_attempt(
-        self, student_id: str, attempt_id: str
+        self, student_id: str, attempt_id: str, user_timezone=None
     ) -> Union[ReviewAttempt, StudentAttemptBasic]:
         """
         Get a specific attempt for a student.
@@ -84,13 +127,24 @@ class StudentExamService:
         exam_instance = attempt.student_exam_id.exam_instance_id
         allow_review = exam_instance.security_settings.allow_review
 
+        if user_timezone:
+            if hasattr(attempt, "started_at"):
+                attempt.started_at = convert_to_user_timezone(
+                    attempt.started_at, user_timezone
+                )
+            if hasattr(attempt, "submitted_at"):
+                attempt.submitted_at = convert_to_user_timezone(
+                    attempt.submitted_at, user_timezone
+                )
+
         # If review is not allowed, return basic schema
         if not allow_review:
             return StudentAttemptBasic.model_validate(attempt)
 
         return ReviewAttempt.model_validate(attempt)
 
-    def _validate_exam_time(self, start_date, end_date):
+    @staticmethod
+    def _validate_exam_time(start_date, end_date):
         """Validate if the current time is within the exam time range."""
         # TODO: Validata timezones
         current_time = datetime.now(timezone.utc)
@@ -134,6 +188,8 @@ class StudentExamService:
             question_ids, questions = zip(*combined) if combined else ([], [])
             question_ids = list(question_ids)
             questions = list(questions)
+        else:
+            questions = sorted(questions, key=lambda q: q.position)
 
         attempt = await self.student_attempt_repository.create_exam_attempt(
             student_exam, question_ids
@@ -147,8 +203,16 @@ class StudentExamService:
             if should_shuffle and options:
                 shuffled_indices = list(range(len(options)))
                 random.shuffle(shuffled_indices)
+
+                # Create a shuffled copy of the options
+                shuffled_options = [None] * len(options)
                 for i, option in enumerate(options):
-                    option_order[option.id] = shuffled_indices[i]
+                    new_index = shuffled_indices[i]
+                    shuffled_options[new_index] = option
+                    option_order[option.id] = new_index
+
+                # Replace the original options with the shuffled ones
+                question.options = shuffled_options
             else:
                 for i, option in enumerate(options):
                     option_order[option.id] = i
@@ -170,7 +234,9 @@ class StudentExamService:
 
         return [QuestionWithOptions.model_validate(question) for question in questions]
 
-    async def _get_active_attempt(self, student_id: str, student_exam_id: str):
+    async def _get_active_attempt(
+        self, student_id: str, student_exam_id: str, check_time: bool = True
+    ):
         """
         Get and validate the active attempt for a student exam.
 
@@ -189,7 +255,8 @@ class StudentExamService:
             raise ForbiddenError("Exam not in progress")
 
         exam_instance = student_exam.exam_instance_id
-        self._validate_exam_time(exam_instance.start_date, exam_instance.end_date)
+        if check_time:
+            self._validate_exam_time(exam_instance.start_date, exam_instance.end_date)
 
         if not student_exam.latest_attempt_id:
             raise ForbiddenError("No active attempt found")
@@ -272,7 +339,7 @@ class StudentExamService:
     ) -> StudentAttemptBasic:
         """Submit the exam for grading."""
         student_exam, attempt = await self._get_active_attempt(
-            student_id, student_exam_id
+            student_id, student_exam_id, check_time=False
         )
 
         if not attempt:
@@ -348,6 +415,20 @@ class StudentExamService:
 
         await self.student_exam_repository.update(
             student_exam.id, {"current_status": StudentExamStatus.SUBMITTED}
+        )
+
+        if attempt.started_at.tzinfo is None:
+            started_at_aware = attempt.started_at.replace(tzinfo=timezone.utc)
+        else:
+            started_at_aware = attempt.started_at
+
+        exam_finish_confirmation.delay(
+            recipient=student_exam.student_id.email,
+            username=make_username(student_exam.student_id),
+            exam_title=student_exam.exam_instance_id.title,
+            end_time=submitted_at,
+            start_time=started_at_aware,
+            question_count=len(responses),
         )
 
         return StudentAttemptBasic(

@@ -158,8 +158,8 @@ export function RegisterModal({ isOpen, onClose, onLoginClick }) {
           </Button>
 
           <div className="flex flex-col items-center justify-center space-y-4 py-6">
-            <div className="h-12 w-12 rounded-full bg-green-100 text-green-600 flex items-center justify-center">
-              <Shield className="h-6 w-6" />
+            <div className="h-12 w-12 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+              <Shield className="text-green-600 dark:text-green-400 h-6 w-6" />
             </div>
             <h2 className="text-2xl font-bold">Registration Successful!</h2>
             <p className="text-muted-foreground">

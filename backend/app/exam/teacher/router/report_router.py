@@ -3,10 +3,11 @@ from typing import Optional
 
 from app.auth.dependencies import get_current_teacher_id
 from app.core.schemas import BaseReturn
+from app.core.utils import get_timezone
 from app.exam.teacher.dependencies import get_report_service
 from app.exam.teacher.schemas import ExamReportFilter, ExamReportResponse
 from app.exam.teacher.services import ReportService
-from fastapi import APIRouter, Depends, Query, Response
+from fastapi import APIRouter, Depends, Query, Response, Request
 
 router = APIRouter(
     prefix="/report",
@@ -29,11 +30,13 @@ async def get_exam_report(
     title: Optional[str] = None,
     only_last_attempt: Optional[bool] = True,
     report_service: ReportService = Depends(get_report_service),
+    request: Request = None,
 ):
     """
     Get comprehensive exam report with statistics, pass rate, and visualization data.
     Supports filtering by date range, student group, and subject (exam title).
     """
+    user_timezone = get_timezone(request)
     # Parse group IDs if provided
     student_ids = student_ids.split(",") if student_ids else None
 
@@ -47,7 +50,7 @@ async def get_exam_report(
     )
 
     report = await report_service.get_exam_report(
-        exam_instance_id=exam_instance_id, filters=filters
+        exam_instance_id=exam_instance_id, filters=filters, user_timezone=user_timezone
     )
 
     return BaseReturn(message="Exam report retrieved successfully", data=report)
@@ -69,12 +72,14 @@ async def export_exam_report_pdf(
     only_last_attempt: Optional[bool] = True,
     include_visualizations: bool = True,
     report_service: ReportService = Depends(get_report_service),
+    request: Request = None,
 ):
     """
     Export exam report as PDF with statistics, visualizations, and student performance breakdown.
     Includes timeline and histogram charts when include_visualizations is True.
     When only_last_attempt is False, all attempts for each student are grouped together.
     """
+    user_timezone = get_timezone(request)
     # Parse student IDs if provided
     student_ids = student_ids.split(",") if student_ids else None
 
@@ -92,6 +97,7 @@ async def export_exam_report_pdf(
         exam_instance_id=exam_instance_id,
         filters=filters,
         include_visualizations=include_visualizations,
+        user_timezone=user_timezone,
     )
 
     # Create a downloadable response

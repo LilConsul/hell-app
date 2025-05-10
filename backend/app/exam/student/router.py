@@ -2,6 +2,7 @@ from typing import List, Union
 
 from app.auth.dependencies import get_current_student_id
 from app.core.schemas import BaseReturn
+from app.core.utils import get_timezone
 from app.exam.student.dependencies import get_student_exam_service
 from app.exam.student.schemas import (
     AnswerSubmission,
@@ -14,7 +15,7 @@ from app.exam.student.schemas import (
     StudentExamDetail,
 )
 from app.exam.student.services import StudentExamService
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 
 router = APIRouter(
     prefix="/student",
@@ -27,11 +28,13 @@ router = APIRouter(
 async def get_student_exams(
     student_id: str = Depends(get_current_student_id),
     student_exam_service: StudentExamService = Depends(get_student_exam_service),
+    request: Request = None,
 ):
     """
     Get all exams for a student.
     """
-    data = await student_exam_service.get_student_exams(student_id)
+    user_timezone = get_timezone(request)
+    data = await student_exam_service.get_student_exams(student_id, user_timezone)
     return {
         "message": "Exams retrieved successfully",
         "data": data,
@@ -43,11 +46,15 @@ async def get_student_exam(
     student_exam_id: str,
     student_id: str = Depends(get_current_student_id),
     student_exam_service: StudentExamService = Depends(get_student_exam_service),
+    request: Request = None,
 ):
     """
     Get a specific exam for a student.
     """
-    data = await student_exam_service.get_student_exam(student_id, student_exam_id)
+    user_timezone = get_timezone(request)
+    data = await student_exam_service.get_student_exam(
+        student_id, student_exam_id, user_timezone
+    )
     return {
         "message": "Exam retrieved successfully",
         "data": data,
@@ -62,13 +69,17 @@ async def get_student_attempt(
     attempt_id: str,
     student_id: str = Depends(get_current_student_id),
     student_exam_service: StudentExamService = Depends(get_student_exam_service),
+    request: Request = None,
 ):
     """
     Get a specific attempt for a student.
     If allow_review is true, includes detailed information about correct answers.
     Otherwise returns basic attempt info without correct answers.
     """
-    data = await student_exam_service.get_student_attempt(student_id, attempt_id)
+    user_timezone = get_timezone(request)
+    data = await student_exam_service.get_student_attempt(
+        student_id, attempt_id, user_timezone
+    )
     return {
         "message": "Attempt retrieved successfully",
         "data": data,

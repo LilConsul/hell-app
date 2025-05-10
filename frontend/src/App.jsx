@@ -14,7 +14,8 @@ import Settings from './pages/Settings';
 import EmailVerification from './pages/EmailVerification';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import PasswordReset from './pages/PasswordReset';
-import DeleteAccount from "./pages/DeleteAccount";
+import DeleteAccount from "./pages/DeleteAccount"; 
+import NotFoundPage from './pages/NotFoundPage';
 import AdminPanel from "./pages/Admin-Panel.jsx";
 
 function HomeWithLoginModal() {
@@ -24,10 +25,10 @@ function HomeWithLoginModal() {
         window.openLoginModal();
       }
     }, 100);
-    
+
     return () => clearTimeout(timer);
   }, []);
-  
+
   return <Home />;
 }
 
@@ -36,13 +37,15 @@ export default function App() {
     <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
       <AuthProvider>
         <Routes>
-          {/* Public routes */}
+          
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<HomeWithLoginModal />} />
           <Route path="/verify/:token" element={<EmailVerification />} />
           <Route path="/password-reset/:token" element={<PasswordReset />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/delete-account/:token" element={<DeleteAccount />} />
+          <Route path="*" element={<NotFoundPage />} />
+
 
           {/* Standard protected routes */}
           <Route element={<ProtectedLayout />}>
@@ -65,6 +68,7 @@ export default function App() {
               </AdminProvider>
             } />
           </Route>
+          
         </Routes>
       </AuthProvider>
     </ThemeProvider>

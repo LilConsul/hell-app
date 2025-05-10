@@ -15,17 +15,6 @@ import { cn, apiRequest } from "@/lib/utils"
 import { Footer } from "@/components/footer"
 
 export default function DeleteAccount() {
-  // Detect and apply system color scheme
-  useEffect(() => {
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    const applyTheme = (e) => {
-      document.documentElement.classList.toggle('dark', e.matches);
-    };
-    applyTheme(mediaQuery);
-    mediaQuery.addEventListener('change', applyTheme);
-    return () => mediaQuery.removeEventListener('change', applyTheme);
-  }, []);
-
   const params = useParams()
   const navigate = useNavigate()
   const token = params.token
@@ -48,12 +37,6 @@ export default function DeleteAccount() {
     if (requestedRef.current) return
     requestedRef.current = true
     setStatus("deleting")
-
-    if (!token) {
-      setStatus("error")
-      setErrorMessage("Missing deletion token. Please retry from your email link.")
-      return
-    }
 
     try {
       await apiRequest("/api/v1/users/me", {

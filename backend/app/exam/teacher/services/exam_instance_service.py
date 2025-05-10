@@ -4,7 +4,11 @@ from typing import List
 from app.auth.repository import UserRepository
 from app.celery.tasks.email_tasks.tasks import exam_reminder_notification
 from app.core.exceptions import ForbiddenError, NotFoundError
-from app.core.utils import make_username
+from app.core.utils import (
+    make_username,
+    convert_to_user_timezone,
+    convert_user_timezone_to_utc,
+)
 from app.exam.models import ExamStatus, NotificationSettings
 from app.exam.repository import (
     CollectionRepository,
@@ -32,15 +36,22 @@ class ExamInstanceService:
         self.user_repository = user_repository
         self.student_exam_repository = student_exam_repository
 
-    async def get_by_creator(self, user_id: str) -> List[GetExamInstance]:
+    async def get_by_creator(
+        self, user_id: str, user_timezone=None
+    ) -> List[GetExamInstance]:
         """Get all exam instances created by a specific teacher."""
         instances = await self.exam_instance_repository.get_all(
             {"created_by._id": user_id}, fetch_links=True
         )
 
-        return [await self._process_instance(instance) for instance in instances]
+        return [
+            await self._process_instance(instance, user_timezone)
+            for instance in instances
+        ]
 
-    async def get_by_id(self, user_id: str, instance_id: str) -> GetExamInstance:
+    async def get_by_id(
+        self, user_id: str, instance_id: str, user_timezone=None
+    ) -> GetExamInstance:
         """Get an exam instance by its ID."""
         instance = await self.exam_instance_repository.get_by_field(
             "_id", instance_id, fetch_links=True
@@ -52,10 +63,16 @@ class ExamInstanceService:
         if not (user_id and instance.created_by.id == user_id):
             raise ForbiddenError("You don't have access to this exam instance")
 
-        return await self._process_instance(instance)
+        return await self._process_instance(instance, user_timezone)
 
-    async def _process_instance(self, instance) -> GetExamInstance:
+    async def _process_instance(self, instance, user_timezone) -> GetExamInstance:
         data = instance.model_dump()
+
+        if user_timezone:
+            data["start_date"] = convert_to_user_timezone(
+                data["start_date"], user_timezone
+            )
+            data["end_date"] = convert_to_user_timezone(data["end_date"], user_timezone)
 
         data["assigned_students"] = await self._process_assigned_students(
             data.get("assigned_students", [])
@@ -239,6 +256,7 @@ class ExamInstanceService:
         self,
         user_id: str,
         instance_data: CreateExamInstanceSchema,
+        user_timezone=None,
     ) -> str:
         """Create a new exam instance."""
         collection = await self.collection_repository.get_by_id(
@@ -260,6 +278,15 @@ class ExamInstanceService:
 
         instance_data = instance_data.model_dump()
         instance_data["created_by"] = user_id
+
+        if user_timezone:
+            instance_data["start_date"] = convert_user_timezone_to_utc(
+                instance_data["start_date"], user_timezone
+            )
+            instance_data["end_date"] = convert_user_timezone_to_utc(
+                instance_data["end_date"], user_timezone
+            )
+
         await self.check_datetime(
             instance_data["start_date"], instance_data["end_date"]
         )
@@ -287,6 +314,7 @@ class ExamInstanceService:
         user_id: str,
         instance_id: str,
         instance_data: UpdateExamInstanceSchema,
+        user_timezone=None,
     ) -> None:
         """Update an existing exam instance."""
         instance = await self.exam_instance_repository.get_by_id(
@@ -298,6 +326,16 @@ class ExamInstanceService:
         if instance.created_by.id != user_id:
             raise ForbiddenError("You do not own this exam instance")
         update_data = instance_data.model_dump(exclude_unset=True)
+
+        if user_timezone:
+            if "start_date" in update_data:
+                update_data["start_date"] = convert_user_timezone_to_utc(
+                    update_data["start_date"], user_timezone
+                )
+            if "end_date" in update_data:
+                update_data["end_date"] = convert_user_timezone_to_utc(
+                    update_data["end_date"], user_timezone
+                )
 
         if "start_date" in update_data and "end_date" in update_data:
             start_date = update_data["start_date"]

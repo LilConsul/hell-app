@@ -32,6 +32,6 @@ class TimezoneMiddleware(BaseHTTPMiddleware):
         response = await call_next(request)
 
         # Return timezone info in response for debugging (optional)
-        response.headers["X-Server-Timezone"] = str(timezone)
+        # response.headers["X-Server-Timezone"] = str(timezone)
 
         return response

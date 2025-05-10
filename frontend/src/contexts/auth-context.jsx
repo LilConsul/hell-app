@@ -1,12 +1,15 @@
 import { createContext, useContext, useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { apiRequest } from "@/lib/utils";
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(() => {
+    const storedUser = sessionStorage.getItem('user');
+    return storedUser ? JSON.parse(storedUser) : null;
+  });
   const [loading, setLoading] = useState(true);
-  const [initialized, setInitialized] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -16,44 +19,33 @@ export function AuthProvider({ children }) {
 
   const fetchUser = async ({ signal } = {}) => {
     const now = Date.now();
-    if (user && now - lastFetchRef.current < FETCH_INTERVAL) {
-      return;
-    }
+    if (user && now - lastFetchRef.current < FETCH_INTERVAL) return;
     lastFetchRef.current = now;
 
     setLoading(true);
     try {
-      const response = await fetch("/api/v1/users/me", {
-        credentials: "include",
-        signal,
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setUser(data.data);
-      } else {
-        setUser(null);
-      }
+      const data = await apiRequest("/api/v1/users/me", { signal });
+      setUser(data.data);
+      sessionStorage.setItem('user', JSON.stringify(data.data));
     } catch (error) {
       if (error.name !== 'AbortError') {
         setUser(null);
+        sessionStorage.removeItem('user');
       }
     } finally {
       setLoading(false);
-      setInitialized(true);
     }
   };
 
   useEffect(() => {
     const { pathname } = location;
     const isVerificationPage = pathname.includes('/verify/');
-  
+
     if (isVerificationPage) {
       setLoading(false);
-      setInitialized(true);
       return;
     }
-  
+
     const controller = new AbortController();
     fetchUser({ signal: controller.signal });
     return () => controller.abort();
@@ -66,20 +58,16 @@ export function AuthProvider({ children }) {
     document.addEventListener('visibilitychange', onVisible);
     return () => document.removeEventListener('visibilitychange', onVisible);
   }, []);
-  
-  
 
   const login = async (credentials) => {
     setLoading(true);
     try {
-      const response = await fetch('/api/v1/auth/login', {
+      const result = await apiRequest('/api/v1/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(credentials),
-        credentials: 'include',
+        credentials: 'include'
       });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.detail || "Login error");
       lastFetchRef.current = 0;
       await fetchUser();
       navigate("/dashboard");
@@ -91,11 +79,9 @@ export function AuthProvider({ children }) {
 
   const logout = async () => {
     try {
-      await fetch("/api/v1/auth/logout", {
-        method: "POST",
-        credentials: "include",
-      });
+      await apiRequest("/api/v1/auth/logout", { method: "POST", credentials: "include" });
       setUser(null);
+      sessionStorage.removeItem('user');
       navigate("/");
     } catch (error) {
       console.error("Logout failed:", error);
@@ -103,16 +89,8 @@ export function AuthProvider({ children }) {
   };
 
   const value = useMemo(
-    () => ({
-      user,
-      loading,
-      isAuthenticated: !!user,
-      initialized,
-      login,
-      logout,
-      refreshUser: fetchUser,
-    }),
-    [user, loading, initialized, login, logout, fetchUser]
+    () => ({ user, loading, isAuthenticated: !!user, login, logout, refreshUser: fetchUser }),
+    [user, loading, login, logout, fetchUser]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -120,8 +98,6 @@ export function AuthProvider({ children }) {
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
+  if (!context) throw new Error("useAuth must be used within an AuthProvider");
   return context;
 };

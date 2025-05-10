@@ -254,7 +254,9 @@ class ExamInstanceService:
             raise ForbiddenError("You do not have access to this collection")
 
         if not collection.questions:
-            raise NotFoundError("Collection does not contain any questions. Please add questions to the collection before creating an exam instance.")
+            raise NotFoundError(
+                "Collection does not contain any questions. Please add questions to the collection before creating an exam instance."
+            )
 
         instance_data = instance_data.model_dump()
         instance_data["created_by"] = user_id
@@ -335,7 +337,9 @@ class ExamInstanceService:
                     added_students,
                     instance_id,
                     instance.title,
-                    instance.start_date if "start_date" not in update_data else start_date,
+                    instance.start_date
+                    if "start_date" not in update_data
+                    else start_date,
                     instance.end_date if "end_date" not in update_data else end_date,
                     instance.notification_settings.model_dump(),
                 )
@@ -353,4 +357,3 @@ class ExamInstanceService:
 
         if instance.created_by.ref.id != user_id:
             raise ForbiddenError("You do not own this exam instance")
-

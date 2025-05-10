@@ -1,4 +1,6 @@
+import pytz
 from app.auth.models import User
+from fastapi import Request
 
 
 def make_username(user: User) -> str:
@@ -15,3 +17,21 @@ def make_username(user: User) -> str:
         return user.last_name
 
     return user.email.split("@")[0]
+
+
+def convert_to_user_timezone(dt, timezone):
+    """Convert a datetime to the user's timezone"""
+    if dt.tzinfo is None:
+        dt = pytz.utc.localize(dt)
+    return dt.astimezone(timezone)
+
+
+def convert_user_timezone_to_utc(dt):
+    """Convert a datetime from the user's timezone to UTC"""
+    if dt.tzinfo is None:
+        dt = pytz.utc.localize(dt)
+    return dt.astimezone(pytz.utc)
+
+
+def get_timezone(request: Request):
+    return request.state.timezone

@@ -152,6 +152,8 @@ class ExamInstanceService:
             # Send notification immediately
             exam_reminder_notification.apply_async(kwargs=data)
 
+            data["exam_instance_id"] = exam_instance_id
+
             exam_id_str = str(exam_instance_id)
             if exam_id_str not in user.notifications_tasks_id:
                 user.notifications_tasks_id[exam_id_str] = []

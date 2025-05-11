@@ -1,7 +1,8 @@
+from fastapi import Depends
+
 from app.auth.dependencies import get_user_repository
 from app.auth.repository import UserRepository
 from app.users.services import UserService
-from fastapi import Depends
 
 
 def get_user_service(

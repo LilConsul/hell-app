@@ -1,19 +1,9 @@
-from app.exam.models import (
-    Collection,
-    ExamInstance,
-    Question,
-    StudentAttempt,
-    StudentExam,
-    StudentResponse,
-)
-from app.exam.repository import (
-    CollectionRepository,
-    ExamInstanceRepository,
-    QuestionRepository,
-    StudentAttemptRepository,
-    StudentExamRepository,
-    StudentResponseRepository,
-)
+from app.exam.models import (Collection, ExamInstance, Question,
+                             StudentAttempt, StudentExam, StudentResponse)
+from app.exam.repository import (CollectionRepository, ExamInstanceRepository,
+                                 QuestionRepository, StudentAttemptRepository,
+                                 StudentExamRepository,
+                                 StudentResponseRepository)
 
 
 def get_question_repository() -> QuestionRepository:

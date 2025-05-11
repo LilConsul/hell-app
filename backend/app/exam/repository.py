@@ -2,16 +2,9 @@ from datetime import datetime, timezone
 from typing import Dict, List
 
 from app.core.repository.base_repository import BaseRepository
-from app.exam.models import (
-    Collection,
-    ExamInstance,
-    ExamStatus,
-    Question,
-    StudentAttempt,
-    StudentExam,
-    StudentExamStatus,
-    StudentResponse,
-)
+from app.exam.models import (Collection, ExamInstance, ExamStatus, Question,
+                             StudentAttempt, StudentExam, StudentExamStatus,
+                             StudentResponse)
 
 
 class CollectionRepository(BaseRepository[Collection]):

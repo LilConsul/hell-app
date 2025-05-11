@@ -1,9 +1,9 @@
 from fastapi import APIRouter
 
-from app.users.router import router as users_router
+from app.admin.router import router as admin_router
 from app.auth.router import router as auth_router
 from app.exam.router import router as exam_router
-from app.admin.router import router as admin_router
+from app.users.router import router as users_router
 
 router = APIRouter(prefix="/v1")
 

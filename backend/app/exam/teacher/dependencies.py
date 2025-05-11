@@ -1,25 +1,17 @@
+from fastapi import Depends
+
 from app.auth.dependencies import get_user_repository
 from app.auth.repository import UserRepository
-from app.exam.dependencies import (
-    get_collection_repository,
-    get_exam_instance_repository,
-    get_question_repository,
-    get_student_attempt_repository,
-    get_student_exam_repository,
-)
-from app.exam.repository import (
-    CollectionRepository,
-    ExamInstanceRepository,
-    QuestionRepository,
-    StudentAttemptRepository,
-    StudentExamRepository,
-)
-from app.exam.teacher.services import (
-    CollectionService,
-    ExamInstanceService,
-    ReportService,
-)
-from fastapi import Depends
+from app.exam.dependencies import (get_collection_repository,
+                                   get_exam_instance_repository,
+                                   get_question_repository,
+                                   get_student_attempt_repository,
+                                   get_student_exam_repository)
+from app.exam.repository import (CollectionRepository, ExamInstanceRepository,
+                                 QuestionRepository, StudentAttemptRepository,
+                                 StudentExamRepository)
+from app.exam.teacher.services import (CollectionService, ExamInstanceService,
+                                       ReportService)
 
 
 def get_collection_service(

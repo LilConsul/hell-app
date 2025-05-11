@@ -1,15 +1,11 @@
 from datetime import datetime
-from typing import List, Any, Dict
+from typing import Any, Dict, List
+
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.auth.schemas import UserResponse
-from app.exam.models import (
-    ExamInstance,
-    ExamStatus,
-    NotificationSettings,
-    QuestionType,
-    SecuritySettings,
-)
-from pydantic import BaseModel, ConfigDict, Field
+from app.exam.models import (ExamInstance, ExamStatus, NotificationSettings,
+                             QuestionType, SecuritySettings)
 
 
 class TimeStamp(BaseModel):

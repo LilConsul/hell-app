@@ -1,11 +1,12 @@
 from datetime import datetime
 
-from app.celery.worker import celery
 from asgiref.sync import async_to_sync
-
-from app.settings import settings
-from .manager import create_message, mail
 from celery import signals
+
+from app.celery.worker import celery
+from app.settings import settings
+
+from .manager import create_message, mail
 
 
 @celery.task
@@ -108,9 +109,11 @@ def exam_reminder_notification_post(sender, **kwargs):
     if not (task_id and exam_instance_id and recipient):
         return
 
-    from pymongo import MongoClient
-    from app.settings import settings
     import logging
+
+    from pymongo import MongoClient
+
+    from app.settings import settings
 
     try:
         client = MongoClient(settings.MONGODB_URL)

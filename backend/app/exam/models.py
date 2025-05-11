@@ -3,11 +3,12 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
+from beanie import BackLink, Delete, Document, Link, before_event
+from pydantic import BaseModel, ConfigDict, Field
+
 from app.auth.models import User
 from app.auth.schemas import UserRole
 from app.database.mixins import TimestampMixin
-from beanie import BackLink, Delete, Document, Link, before_event
-from pydantic import BaseModel, ConfigDict, Field
 
 
 class QuestionType(str, Enum):

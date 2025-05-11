@@ -1,6 +1,6 @@
 from fastapi import Depends
-from app.admin.service import AdminService
 
+from app.admin.service import AdminService
 from app.auth.dependencies import get_user_repository
 from app.auth.repository import UserRepository
 

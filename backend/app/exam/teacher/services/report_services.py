@@ -3,25 +3,23 @@ from datetime import datetime, timezone
 from io import BytesIO
 from typing import Any, Dict, List, Optional, Tuple
 
-from app.core.exceptions import NotFoundError
-from app.core.utils import convert_user_timezone_to_utc, convert_to_user_timezone
-from app.exam.models import StudentAttempt
-from app.exam.repository import (
-    ExamInstanceRepository,
-    StudentAttemptRepository,
-    StudentExamRepository,
-)
-from app.exam.teacher.schemas import (
-    ExamReportFilter,
-    ExamReportResponse,
-    ExamStatistics,
-    HistogramDataPoint,
-    TimelineDataPoint,
-)
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet
-from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+from reportlab.platypus import (Paragraph, SimpleDocTemplate, Spacer, Table,
+                                TableStyle)
+
+from app.core.exceptions import NotFoundError
+from app.core.utils import (convert_to_user_timezone,
+                            convert_user_timezone_to_utc)
+from app.exam.models import StudentAttempt
+from app.exam.repository import (ExamInstanceRepository,
+                                 StudentAttemptRepository,
+                                 StudentExamRepository)
+from app.exam.teacher.schemas import (ExamReportFilter, ExamReportResponse,
+                                      ExamStatistics, HistogramDataPoint,
+                                      TimelineDataPoint)
+from app.i18n import _
 
 
 class ReportService:
@@ -55,7 +53,7 @@ class ReportService:
             exam_instance_id, fetch_links=True
         )
         if not exam_instance:
-            raise NotFoundError("Exam instance not found")
+            raise NotFoundError(_("Exam instance not found"))
 
         if filters.title and filters.title.lower() != exam_instance.title.lower():
             return ExamReportResponse(

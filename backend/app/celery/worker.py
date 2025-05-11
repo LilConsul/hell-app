@@ -1,5 +1,6 @@
-from app.settings import settings
 from celery import Celery
+
+from app.settings import settings
 
 celery = Celery(
     "worker",

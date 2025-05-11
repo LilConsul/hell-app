@@ -1,15 +1,12 @@
-from app.exam.dependencies import (
-    get_student_attempt_repository,
-    get_student_exam_repository,
-    get_student_response_repository,
-)
-from app.exam.repository import (
-    StudentAttemptRepository,
-    StudentExamRepository,
-    StudentResponseRepository,
-)
-from app.exam.student.services import StudentExamService
 from fastapi import Depends
+
+from app.exam.dependencies import (get_student_attempt_repository,
+                                   get_student_exam_repository,
+                                   get_student_response_repository)
+from app.exam.repository import (StudentAttemptRepository,
+                                 StudentExamRepository,
+                                 StudentResponseRepository)
+from app.exam.student.services import StudentExamService
 
 
 def get_student_exam_service(

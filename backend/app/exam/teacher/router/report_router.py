@@ -1,13 +1,15 @@
 from datetime import datetime
 from typing import Optional
 
+from fastapi import APIRouter, Depends, Query, Request, Response
+
 from app.auth.dependencies import get_current_teacher_id
 from app.core.schemas import BaseReturn
 from app.core.utils import get_timezone
 from app.exam.teacher.dependencies import get_report_service
 from app.exam.teacher.schemas import ExamReportFilter, ExamReportResponse
 from app.exam.teacher.services import ReportService
-from fastapi import APIRouter, Depends, Query, Response, Request
+from app.i18n import _
 
 router = APIRouter(
     prefix="/report",
@@ -53,7 +55,7 @@ async def get_exam_report(
         exam_instance_id=exam_instance_id, filters=filters, user_timezone=user_timezone
     )
 
-    return BaseReturn(message="Exam report retrieved successfully", data=report)
+    return BaseReturn(message=_("Exam report retrieved successfully"), data=report)
 
 
 @router.get("/{exam_instance_id}/export-pdf", response_class=Response)

@@ -4,24 +4,16 @@ from unittest.mock import patch
 
 import jwt
 import pytest
+
 from app.auth.models import User
 from app.auth.schemas import UserRole
 from app.auth.security import get_password_hash
-from app.exam.models import (
-    ExamStatus,
-    PassFailStatus,
-    StudentAttempt,
-    StudentExam,
-    StudentExamStatus,
-)
-from app.exam.student.schemas import (
-    CurrentAttempt,
-    QuestionWithOptions,
-    QuestionWithUserResponse,
-    StudentAttemptBasic,
-    StudentExamBase,
-    StudentExamDetail,
-)
+from app.exam.models import (ExamStatus, PassFailStatus, StudentAttempt,
+                             StudentExam, StudentExamStatus)
+from app.exam.student.schemas import (CurrentAttempt, QuestionWithOptions,
+                                      QuestionWithUserResponse,
+                                      StudentAttemptBasic, StudentExamBase,
+                                      StudentExamDetail)
 from app.settings import settings
 
 

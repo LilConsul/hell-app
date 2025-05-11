@@ -1,6 +1,7 @@
-import gettext
 import contextvars
+import gettext
 from pathlib import Path
+
 from fastapi import Request
 
 # Store current language per request

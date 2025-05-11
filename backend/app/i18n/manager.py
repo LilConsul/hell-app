@@ -33,9 +33,10 @@ def _(message: str) -> str:
 
 
 async def set_locale(request: Request):
-    lang = (
-        request.headers.get("X-User-Language")
-        or request.headers.get("Accept-Language")
-        or "en"
-    )
+    # lang = (
+    #     request.headers.get("X-User-Language")
+    #     or request.headers.get("Accept-Language")
+    #     or "en"
+    # )
+    lang = request.headers.get("X-User-Language", "en")
     set_language(lang)

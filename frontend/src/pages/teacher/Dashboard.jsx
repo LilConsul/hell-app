@@ -103,7 +103,7 @@ const fetchStats = async () => {
   };
 };
 
-export function TeacherDashboard() {
+function TeacherDashboard() {
   const [stats, setStats] = useState({
     recentCollections: [],
     upcomingExams: [],
@@ -450,3 +450,5 @@ export function TeacherDashboard() {
     </div>
   );
 }
+
+export default TeacherDashboard;

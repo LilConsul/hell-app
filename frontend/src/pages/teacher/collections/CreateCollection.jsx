@@ -19,7 +19,7 @@ import { DuplicateCollectionModal } from "@/components/collections/confirm-opera
 
 import CollectionAPI from "./Collections.api";
 
-export default function CreateCollection() {
+function CreateCollection() {
   const { user: currentUser } = useAuth();
   const navigate = useNavigate();
   const { collectionId } = useParams();
@@ -576,3 +576,5 @@ export default function CreateCollection() {
     </div>
   );
 }
+
+export default CreateCollection; 

@@ -6,13 +6,15 @@ export function cn(...inputs) {
 }
 
 export const apiRequest = async (url, options = {}) => {
+  const { headers: customHeaders = {}, signal, ...rest } = options;
   const response = await fetch(url, {
+    signal,
     headers: {
-      "Content-Type": "application/json",
-      "X-Timezone": Intl.DateTimeFormat().resolvedOptions().timeZone,
-      ...(options.headers || {})
+      'Content-Type': 'application/json',
+      'X-Timezone': Intl.DateTimeFormat().resolvedOptions().timeZone,
+      ...customHeaders,
     },
-    ...options
+    ...rest,
   });
 
   if (!response.ok) {

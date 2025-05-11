@@ -6,9 +6,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from .auth.dependencies import get_user_repository
 from .auth.service import AuthService
 from .database import init_db
-from .middleware.timezone_middleware import TimezoneMiddleware
+from .middleware import LanguageMiddleware, TimezoneMiddleware
 from .router import router
 from .settings import settings
+from .i18n import _
 
 
 @asynccontextmanager
@@ -38,10 +39,11 @@ app.add_middleware(
 )
 
 app.add_middleware(TimezoneMiddleware)
+app.add_middleware(LanguageMiddleware)
 
 app.include_router(router)
 
 
 @app.get("/")
 async def root():
-    return {"message": "Hello World"}
+    return {"message": _("Hello World")}

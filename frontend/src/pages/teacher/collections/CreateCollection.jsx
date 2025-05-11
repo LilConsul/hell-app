@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useParams, useLocation, Link } from "react-router-dom";
+import { useAuth } from "@/contexts/auth-context";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Navbar } from "@/components/navbar";
@@ -14,13 +15,16 @@ import { PageHeader } from "@/components/collections/create/page-header";
 import { QuestionControls } from "@/components/collections/create/question-controls";
 import { CustomPagination } from "@/components/pagination";
 import { usePagination } from "@/hooks/use-pagination";
+import { DuplicateCollectionModal } from "@/components/collections/confirm-operation-modals";
 
 import CollectionAPI from "./Collections.api";
 
-function CreateCollection() {
+export default function CreateCollection() {
+  const { user: currentUser } = useAuth();
   const navigate = useNavigate();
   const { collectionId } = useParams();
   const location = useLocation();
+
   const [isNewCollection, setIsNewCollection] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [isInvalid, setIsInvalid] = useState(false);
@@ -29,31 +33,34 @@ function CreateCollection() {
     description: "",
     status: "draft",
   });
+  const [createdBy, setCreatedBy] = useState(null);
+  const [canEdit, setCanEdit] = useState(true);
   const [questions, setQuestions] = useState([]);
   const [newQuestions, setNewQuestions] = useState([]);
   const [activeTab, setActiveTab] = useState("details");
   const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState({
-    isError: false,
-    message: ""
-  });
+  const [error, setError] = useState({ isError: false, message: "" });
+  const [isDuplicateModalOpen, setIsDuplicateModalOpen] = useState(false);
 
   const questionsPerPage = 10;
   const isArchived = collectionData.status === "archived";
 
-  const allQuestions = useMemo(() => [...newQuestions, ...questions], [newQuestions, questions]);
-  
+  const allQuestions = useMemo(
+    () => [...newQuestions, ...questions],
+    [newQuestions, questions]
+  );
+
   const {
     currentPage,
     totalPages,
     paginatedItems: paginatedQuestions,
-    goToPage
+    goToPage,
   } = usePagination(allQuestions, questionsPerPage);
 
-  const statusDisplayMap = { 
-    draft: "Draft", 
+  const statusDisplayMap = {
+    draft: "Draft",
     published: "Public",
-    archived: "Archived"
+    archived: "Archived",
   };
 
   useEffect(() => {
@@ -63,6 +70,7 @@ function CreateCollection() {
       fetchCollectionData(collectionId);
     } else {
       setNewQuestions([]);
+      setCanEdit(true);
     }
   }, [collectionId, location.pathname]);
 
@@ -72,11 +80,21 @@ function CreateCollection() {
       const res = await CollectionAPI.getCollection(id);
       const data = res.data;
       if (!data) throw new Error();
+
       setCollectionData({
         title: data.title || "",
         description: data.description || "",
         status: data.status || "draft",
       });
+
+      if (data.created_by) {
+        setCreatedBy(data.created_by);
+      }
+
+      // only creator can edit
+      const canUserEdit = currentUser?.id === data.created_by?.id;
+      setCanEdit(canUserEdit);
+
       if (Array.isArray(data.questions)) {
         setQuestions(
           data.questions.map((q) => ({
@@ -96,7 +114,7 @@ function CreateCollection() {
       setIsInvalid(true);
       setError({
         isError: true,
-        message: "Collection not found. Please check the URL and try again."
+        message: "Collection not found. Please check the URL and try again.",
       });
     } finally {
       setIsLoading(false);
@@ -132,11 +150,6 @@ function CreateCollection() {
     );
 
   const handleInputChange = (e) => {
-    // Prevent changes if collection is archived
-    if (isArchived) {
-      toast.error("Cannot modify an archived collection. Restore to draft first.");
-      return;
-    }
     setCollectionData({ ...collectionData, [e.target.name]: e.target.value });
   };
 
@@ -171,6 +184,30 @@ function CreateCollection() {
     }
   };
   
+  const handleDuplicateClick = () => {
+    setIsDuplicateModalOpen(true);
+  };
+  
+  const handleDuplicateConfirm = async (title, description) => {
+    try {
+      const newCollectionId = await CollectionAPI.duplicateCollection(
+        collectionId, 
+        title, 
+        description
+      );
+      
+      setIsDuplicateModalOpen(false);
+      toast.success("Collection duplicated successfully!");
+      
+      navigate(`/collections/${newCollectionId}`);
+    } catch (err) {
+      setError({
+        isError: true,
+        message: "Failed to remove question. Please try again."
+      });
+      setIsDuplicateModalOpen(false);
+    }
+  };
 
   const createEmptyQuestion = (type) => ({
     id: `${Date.now()}-${Math.random()}`,
@@ -190,16 +227,15 @@ function CreateCollection() {
       toast.error("Cannot add questions to an archived collection. Restore to draft first.");
       return;
     }
+    if (!canEdit) {
+      toast.error("Duplicate collection to make any changes.");
+      return;
+    }
     setNewQuestions([createEmptyQuestion(type), ...newQuestions]);
     setActiveTab("questions");
   };
 
-  const removeQuestion = async (id) => {
-    if (isArchived) {
-      toast.error("Cannot remove questions from an archived collection. Restore to draft first.");
-      return;
-    }
-    
+  const removeQuestion = async (id) => {    
     if (newQuestions.some((q) => q.id === id)) {
       setNewQuestions(newQuestions.filter((q) => q.id !== id));
     } else {
@@ -221,8 +257,8 @@ function CreateCollection() {
   };
 
   const updateList = (list, setList, id, updater) => {
-    // Prevent updates if collection is archived
-    if (isArchived) return;
+    // Prevent updates if collection is archived or user can't edit
+    if (isArchived || !canEdit) return;
     
     const idx = list.findIndex((q) => q.id === id);
     if (idx < 0) return;
@@ -231,12 +267,7 @@ function CreateCollection() {
     setList(updated);
   };
 
-  const updateQuestionText = (id, text) => {
-    if (isArchived) {
-      toast.error("Cannot modify questions in an archived collection. Restore to draft first.");
-      return;
-    }
-    
+  const updateQuestionText = (id, text) => {    
     updateList(newQuestions, setNewQuestions, id, (q) => ({
       ...q,
       question_text: text,
@@ -248,7 +279,7 @@ function CreateCollection() {
   };
 
   const updateOptionText = (id, idx, text) => {
-    if (isArchived) return;
+    if (isArchived || !canEdit) return;
     
     updateList(newQuestions, setNewQuestions, id, (q) => {
       if (!q.options) return q;
@@ -265,8 +296,6 @@ function CreateCollection() {
   };
 
   const toggleCorrectOption = (id, idx) => {
-    if (isArchived) return;
-    
     const toggle = (q) => {
       if (!q.options) return q;
       const opts =
@@ -282,8 +311,6 @@ function CreateCollection() {
   };
 
   const updateShortAnswer = (id, ans) => {
-    if (isArchived) return;
-    
     updateList(newQuestions, setNewQuestions, id, (q) => ({
       ...q,
       correct_input_answer: ans,
@@ -295,16 +322,12 @@ function CreateCollection() {
   };
 
   const updateWeight = (id, weight) => {
-    if (isArchived) return;
-    
     const w = parseInt(weight, 10);
     updateList(newQuestions, setNewQuestions, id, (q) => ({ ...q, weight: w }));
     updateList(questions, setQuestions, id, (q) => ({ ...q, weight: w }));
   };
 
   const addOption = (id) => {
-    if (isArchived) return;
-    
     updateList(newQuestions, setNewQuestions, id, (q) => ({
       ...q,
       options: [...(q.options || []), { text: "", is_correct: false }],
@@ -316,8 +339,6 @@ function CreateCollection() {
   };
 
   const removeOption = (id, idx) => {
-    if (isArchived) return;
-    
     updateList(newQuestions, setNewQuestions, id, (q) => ({
       ...q,
       options: (q.options || []).filter((_, i) => i !== idx),
@@ -339,11 +360,6 @@ function CreateCollection() {
   };
 
   const handleSaveSingleQuestion = async (questionId) => {
-    if (isArchived) {
-      toast.error("Cannot save questions in an archived collection. Restore to draft first.");
-      return;
-    }
-    
     setError({ isError: false, message: "" });
     const isNew = newQuestions.some((q) => q.id === questionId);
     const q = isNew
@@ -396,11 +412,6 @@ function CreateCollection() {
   };
 
   const handleSaveCollection = async () => {
-    if (isArchived) {
-      toast.error("Cannot save changes to an archived collection. Restore to draft first.");
-      return;
-    }
-    
     setError({ isError: false, message: "" });
     if (!collectionData.title.trim()) {
       setError({
@@ -460,15 +471,6 @@ function CreateCollection() {
     }
   };
 
-  const isFormValid = () => collectionData.title.trim() !== "";
-
-  // Determine subtitle based on collection status
-  const getSubtitle = () => {
-    if (isNewCollection) return "Create a new collection of test questions";
-    if (isArchived) return "This collection is archived and cannot be edited";
-    return "Edit collection details and questions";
-  };
-
   return (
     <div className="flex min-h-screen flex-col">
       <Navbar />
@@ -476,84 +478,101 @@ function CreateCollection() {
       <main className="flex-1 p-8 pt-6">
         <div className="max-w-7xl mx-auto">
           <PageHeader
-            title={isNewCollection ? "Create Test Collection" : `Edit ${collectionData.title}`}
-            subtitle={getSubtitle()}
+            title={collectionData.title}
             status={collectionData.status}
             onStatusChange={handleStatusChange}
             onSave={handleSaveCollection}
-            isSaveDisabled={!isFormValid() || isSaving || isArchived}
+            onDuplicateClick={handleDuplicateClick}
             error={error.isError}
             errorMessage={error.message}
+            canEdit={canEdit || isSaving}
+            isNewCollection={isNewCollection}
           />
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+
+          <Tabs
+            value={activeTab}
+            onValueChange={setActiveTab}
+            className="space-y-4"
+          >
             <TabsList>
               <TabsTrigger value="details">Collection Details</TabsTrigger>
               <TabsTrigger value="questions">
-                Questions ({questions.length + newQuestions.length})
+                Questions ({allQuestions.length})
               </TabsTrigger>
             </TabsList>
+
             <TabsContent value="details" className="space-y-4">
               <CollectionDetailsForm
                 collectionData={collectionData}
                 onInputChange={handleInputChange}
-                statusDisplayMap={statusDisplayMap}
                 onContinue={() => setActiveTab("questions")}
                 isArchived={isArchived}
+                canEdit={canEdit}
+                createdBy={createdBy}
               />
             </TabsContent>
+
             <TabsContent value="questions" className="space-y-4">
-              <QuestionControls onAddQuestion={addQuestion} disabled={isArchived} />
-              <div className="space-y-4">
-                {allQuestions.length > 0 && (
-                  <div className="mb-4">
-                    <p className="text-sm text-gray-500">
-                      Showing {paginatedQuestions.length} of {allQuestions.length} questions 
-                      (Page {currentPage} of {totalPages})
-                    </p>
-                  </div>
-                )}
-                
-                {paginatedQuestions.map((q, i) => {
-                  const isNewQ = newQuestions.some(nq => nq.id === q.id);
-                  return (
-                    <QuestionCard
-                      key={q.id}
-                      question={q}
-                      index={i + (currentPage - 1) * questionsPerPage}
-                      isNew={isNewQ}
-                      onSave={handleSaveSingleQuestion}
-                      onRemove={removeQuestion}
-                      onUpdateText={updateQuestionText}
-                      onUpdateOption={updateOptionText}
-                      onUpdateCorrectOption={toggleCorrectOption}
-                      onAddOption={addOption}
-                      onRemoveOption={removeOption}
-                      onUpdateWeight={updateWeight}
-                      onUpdateShortAnswer={updateShortAnswer}
-                      canSave={!isNewCollection || !!collectionId}
-                      disabled={isArchived}
+              <QuestionControls
+                onAddQuestion={addQuestion}
+                disabled={isArchived || !canEdit}
+              />
+
+              {allQuestions.length > 0 ? (
+                <>
+                  <p className="text-sm text-gray-500 mb-4">
+                    Showing {paginatedQuestions.length} of {allQuestions.length}{" "}
+                    questions (Page {currentPage} of {totalPages})
+                  </p>
+
+                  {paginatedQuestions.map((q, i) => {
+                    const isNewQ = newQuestions.some((nq) => nq.id === q.id);
+                    return (
+                      <QuestionCard
+                        key={q.id}
+                        question={q}
+                        index={i + (currentPage - 1) * questionsPerPage}
+                        isNew={isNewQ}
+                        onSave={handleSaveSingleQuestion}
+                        onRemove={removeQuestion}
+                        onUpdateText={updateQuestionText}
+                        onUpdateOption={updateOptionText}
+                        onUpdateCorrectOption={toggleCorrectOption}
+                        onAddOption={addOption}
+                        onRemoveOption={removeOption}
+                        onUpdateWeight={updateWeight}
+                        onUpdateShortAnswer={updateShortAnswer}
+                        canSave={!isNewCollection && canEdit}
+                        disabled={isArchived || !canEdit}
+                      />
+                    );
+                  })}
+
+                  {allQuestions.length > questionsPerPage && (
+                    <CustomPagination
+                      currentPage={currentPage}
+                      totalPages={totalPages}
+                      onPageChange={goToPage}
                     />
-                  );
-                })}
-                
-                {!allQuestions.length && (
-                  <EmptyQuestionsState onAddQuestion={addQuestion} disabled={isArchived} />
-                )}
-                
-                {allQuestions.length > questionsPerPage && (
-                  <CustomPagination
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    onPageChange={goToPage}
-                  />
-                )}
-              </div>
+                  )}
+                </>
+              ) : (
+                <EmptyQuestionsState
+                  onAddQuestion={addQuestion}
+                />
+              )}
             </TabsContent>
           </Tabs>
         </div>
       </main>
+
+      <DuplicateCollectionModal
+        isOpen={isDuplicateModalOpen}
+        onClose={() => setIsDuplicateModalOpen(false)}
+        onConfirm={handleDuplicateConfirm}
+        originalTitle={collectionData.title}
+        originalDescription={collectionData.description}
+      />
     </div>
   );
 }
-
-export default CreateCollection;

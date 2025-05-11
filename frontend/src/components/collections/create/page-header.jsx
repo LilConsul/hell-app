@@ -1,20 +1,22 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Globe, Lock, Save, Archive } from "lucide-react";
+import { ArrowLeft, Globe, Lock, Save, Archive, Copy } from "lucide-react";
 import { Link } from "react-router-dom";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { StatusAlerts } from "./status-alerts";
 import { ArchiveConfirmationModal } from "../confirm-operation-modals";
 
 export function PageHeader({ 
-  title = "Create Test Collection", 
-  subtitle = "Create a new collection of test questions", 
+  title = "Create Test Collection",
   status,
   onStatusChange, 
   onSave, 
+  onDuplicateClick, 
   isSaveDisabled,
   error = false,
-  errorMessage = "There was an error. Please try again."
+  errorMessage = "There was an error. Please try again.",
+  canEdit = true,
+  isNewCollection = true
 }) {
   const [isSticky, setIsSticky] = useState(false);
   const [isArchiveModalOpen, setIsArchiveModalOpen] = useState(false);
@@ -27,6 +29,19 @@ export function PageHeader({
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  const getDisplayTitle = () => {
+    if (isNewCollection) return "Create Test Collection";
+    if (!canEdit) return `View Collection${title ? ': ' + title : ''}`;
+    return `Edit ${title}`;
+  };
+
+  const getDisplaySubtitle = () => {
+    if (isNewCollection) return "Create a new collection of test questions";
+    if (!canEdit) return "View this collection of test questions";
+    if (status === "archived") return "This collection is archived and cannot be edited";
+    return "Edit collection details and questions";
+  };
 
   const getStatusButtonVariant = () => {
     switch(status) {
@@ -87,69 +102,88 @@ export function PageHeader({
                   </Link>
                 </Button>
                 <div>
-                  <h2 className="text-3xl font-bold tracking-tight">{title}</h2>
-                  <p className="text-muted-foreground">{subtitle}</p>
+                  <h2 className="text-3xl font-bold tracking-tight">{getDisplayTitle()}</h2>
+                  <p className="text-muted-foreground">{getDisplaySubtitle()}</p>
                 </div>
               </div>
               <div className="flex items-center space-x-2">
-                {status === "archived" ? (
-                  // For archived status, show a dropdown with restore option
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={getStatusButtonVariant()}
-                      >
-                        <Archive className="mr-2 h-4 w-4" />
-                        Archived
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => onStatusChange("draft")} className="cursor-pointer">
-                        <Lock className="mr-2 h-4 w-4" />
-                        Restore to Draft
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                ) : (
-                  // For non-archived statuses, show a dropdown with status options
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={getStatusButtonVariant()}
-                      >
-                        {renderStatusIcon()}
-                        {getStatusDisplay()}
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      {status !== "draft" && (
+                {/* Status button/dropdown, Show static if user can't edit */}
+                {canEdit ? (
+                  status === "archived" ? (
+                    // For archived status, show a dropdown with restore option
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={getStatusButtonVariant()}
+                        >
+                          <Archive className="mr-2 h-4 w-4" />
+                          Archived
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
                         <DropdownMenuItem onClick={() => onStatusChange("draft")} className="cursor-pointer">
                           <Lock className="mr-2 h-4 w-4" />
-                          Make Draft
+                          Restore to Draft
                         </DropdownMenuItem>
-                      )}
-                      {status !== "published" && (
-                        <DropdownMenuItem onClick={() => onStatusChange("published")} className="cursor-pointer">
-                          <Globe className="mr-2 h-4 w-4" />
-                          Make Public
-                        </DropdownMenuItem>
-                      )}
-                      {status !== "archived" && (
-                        <DropdownMenuItem onClick={handleArchiveClick} className="cursor-pointer">
-                          <Archive className="mr-2 h-4 w-4" />
-                          Archive
-                        </DropdownMenuItem>
-                      )}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  ) : (
+                    // For non-archived statuses, show a dropdown with status options
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={getStatusButtonVariant()}
+                        >
+                          {renderStatusIcon()}
+                          {getStatusDisplay()}
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        {status !== "draft" && (
+                          <DropdownMenuItem onClick={() => onStatusChange("draft")} className="cursor-pointer">
+                            <Lock className="mr-2 h-4 w-4" />
+                            Make Draft
+                          </DropdownMenuItem>
+                        )}
+                        {status !== "published" && (
+                          <DropdownMenuItem onClick={() => onStatusChange("published")} className="cursor-pointer">
+                            <Globe className="mr-2 h-4 w-4" />
+                            Make Public
+                          </DropdownMenuItem>
+                        )}
+                        {status !== "archived" && (
+                          <DropdownMenuItem onClick={handleArchiveClick} className="cursor-pointer">
+                            <Archive className="mr-2 h-4 w-4" />
+                            Archive
+                          </DropdownMenuItem>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )
+                ) : (
+                  // For other user's just show status
+                  <Button
+                    variant="outline"
+                    className={getStatusButtonVariant()}
+                  >
+                    {renderStatusIcon()}
+                    {getStatusDisplay()}
+                  </Button>
                 )}
                 
-                <Button onClick={onSave} disabled={isSaveDisabled || status === "archived"}>
-                  <Save className="mr-2 h-4 w-4" />
-                  Save Collection
-                </Button>
+                {canEdit ? (
+                  <Button onClick={onSave} disabled={canEdit || status === "archived"}>
+                    <Save className="mr-2 h-4 w-4" />
+                    Save Collection
+                  </Button>
+                ) : (
+                  <Button onClick={onDuplicateClick}>
+                    <Copy className="mr-2 h-4 w-4" />
+                    Duplicate Collection
+                  </Button>
+                )}
               </div>
             </div>
           </div>

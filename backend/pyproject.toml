@@ -14,7 +14,6 @@ dependencies = [
     "fastapi[standard]>=0.115.11",
     "flower>=2.0.1",
     "itsdangerous>=2.2.0",
-    "pydantic-i18n>=0.4.5",
     "pydantic-settings>=2.8.1",
     "pyjwt>=2.10.1",
     "redis>=5.2.1",

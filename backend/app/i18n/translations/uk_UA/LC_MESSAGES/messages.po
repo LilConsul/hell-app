@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2025-05-11 18:57+0200\n"
+"POT-Creation-Date: 2025-05-11 20:39+0200\n"
 "PO-Revision-Date: 2025-05-11 17:40+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: uk_UA\n"
@@ -31,7 +31,7 @@ msgstr "Користувачів успішно отримано"
 msgid "User role changed successfully"
 msgstr "Роль користувача успішно змінено"
 
-#: app/admin/router.py:65 app/users/router.py:75
+#: app/admin/router.py:65 app/users/router.py:73
 msgid "User deleted successfully"
 msgstr "Користувача успішно видалено"
 
@@ -40,240 +40,246 @@ msgid "User verified successfully"
 msgstr "Користувача успішно верифіковано"
 
 #: app/admin/service.py:23 app/admin/service.py:31 app/admin/service.py:38
-#: app/auth/service.py:106 app/auth/service.py:152 app/users/services.py:39
-#: app/users/services.py:48 app/users/services.py:62 app/users/services.py:92
-#: app/users/services.py:107
+#: app/auth/service.py:102 app/auth/service.py:148 app/users/services.py:33
+#: app/users/services.py:42 app/users/services.py:56 app/users/services.py:86
+#: app/users/services.py:101
 msgid "User not found"
 msgstr "Користувача не знайдено"
 
-#: app/auth/dependencies.py:43 app/auth/infrastructure.py:51
+#: app/auth/dependencies.py:44 app/auth/infrastructure.py:52
 msgid "Not authenticated"
 msgstr "Не автентифіковано"
 
-#: app/auth/dependencies.py:51 app/auth/dependencies.py:60
-#: app/auth/dependencies.py:68 app/auth/dependencies.py:81
-#: app/auth/dependencies.py:94
+#: app/auth/dependencies.py:52 app/auth/dependencies.py:61
+#: app/auth/dependencies.py:69 app/auth/dependencies.py:82
+#: app/auth/dependencies.py:95
 msgid "Invalid token"
 msgstr "Недійсний токен"
 
-#: app/auth/dependencies.py:73
+#: app/auth/dependencies.py:74
 msgid "Only students can access this resource"
 msgstr "Лише студенти мають доступ до цього ресурсу"
 
-#: app/auth/dependencies.py:86
+#: app/auth/dependencies.py:87
 msgid "Only teachers can access this resource"
 msgstr "Лише викладачі мають доступ до цього ресурсу"
 
-#: app/auth/dependencies.py:96
+#: app/auth/dependencies.py:97
 msgid "Only admins can access this resource"
 msgstr "Лише адміністратори мають доступ до цього ресурсу"
 
-#: app/auth/router.py:29
+#: app/auth/router.py:20
 msgid "User registered successfully. Please verify your email."
-msgstr "Користувача успішно зареєстровано. Будь ласка, підтвердіть вашу електронну пошту."
+msgstr ""
+"Користувача успішно зареєстровано. Будь ласка, підтвердіть вашу "
+"електронну пошту."
 
-#: app/auth/router.py:40
+#: app/auth/router.py:31
 msgid "Login successful"
 msgstr "Вхід успішний"
 
-#: app/auth/router.py:50
+#: app/auth/router.py:41
 msgid "Logout successful"
 msgstr "Вихід успішний"
 
-#: app/auth/router.py:62
+#: app/auth/router.py:53
 msgid "Email verified successfully"
 msgstr "Електронну пошту успішно підтверджено"
 
-#: app/auth/router.py:76
+#: app/auth/router.py:67
 msgid "Password reset email sent. Please check your inbox."
-msgstr "Електронний лист для скидання пароля надіслано. Будь ласка, перевірте вашу поштову скриньку."
+msgstr ""
+"Електронний лист для скидання пароля надіслано. Будь ласка, перевірте "
+"вашу поштову скриньку."
 
-#: app/auth/router.py:92
+#: app/auth/router.py:83
 msgid "Password reset successfully"
 msgstr "Пароль успішно скинуто"
 
-#: app/auth/router.py:109
+#: app/auth/router.py:100
 msgid "Google login successful"
 msgstr "Вхід через Google успішний"
 
-#: app/auth/service.py:34
+#: app/auth/service.py:30
 #, python-brace-format
 msgid "User with email {email} already exists"
 msgstr "Користувач з електронною поштою {email} вже існує"
 
-#: app/auth/service.py:58 app/auth/service.py:61
+#: app/auth/service.py:54 app/auth/service.py:57
 msgid "Invalid username or password"
 msgstr "Недійсне ім'я користувача або пароль"
 
-#: app/auth/service.py:65
+#: app/auth/service.py:61
 msgid "Email not verified. Please verify your email first."
-msgstr "Електронну пошту не підтверджено. Будь ласка, спочатку підтвердіть вашу електронну пошту."
+msgstr ""
+"Електронну пошту не підтверджено. Будь ласка, спочатку підтвердіть вашу "
+"електронну пошту."
 
-#: app/auth/service.py:96
+#: app/auth/service.py:92
 msgid "Invalid or expired verification token"
 msgstr "Недійсний або прострочений токен верифікації"
 
-#: app/auth/service.py:102 app/auth/service.py:148 app/users/services.py:85
+#: app/auth/service.py:98 app/auth/service.py:144 app/users/services.py:79
 msgid "Invalid token type"
 msgstr "Недійсний тип токена"
 
-#: app/auth/service.py:109
+#: app/auth/service.py:105
 msgid "User is already verified"
 msgstr "Користувача вже верифіковано"
 
-#: app/auth/service.py:124
+#: app/auth/service.py:120
 #, python-brace-format
 msgid "No user found with email {email}"
 msgstr "Не знайдено користувача з електронною поштою {email}"
 
-#: app/auth/service.py:142
+#: app/auth/service.py:138
 msgid "Invalid or expired password reset token"
 msgstr "Недійсний або прострочений токен для скидання пароля"
 
-#: app/exam/student/router.py:40
+#: app/exam/student/router.py:36
 msgid "Exams retrieved successfully"
 msgstr "Іспити успішно отримано"
 
-#: app/exam/student/router.py:60
+#: app/exam/student/router.py:56
 msgid "Exam retrieved successfully"
 msgstr "Іспит успішно отримано"
 
-#: app/exam/student/router.py:85
+#: app/exam/student/router.py:81
 msgid "Attempt retrieved successfully"
 msgstr "Спробу успішно отримано"
 
-#: app/exam/student/router.py:101
+#: app/exam/student/router.py:97
 msgid "Exam started successfully"
 msgstr "Іспит успішно розпочато"
 
-#: app/exam/student/router.py:115
+#: app/exam/student/router.py:111
 msgid "Answer saved successfully"
 msgstr "Відповідь успішно збережено"
 
-#: app/exam/student/router.py:132
+#: app/exam/student/router.py:128
 msgid "Question flagged successfully"
 msgstr "Питання успішно позначено"
 
-#: app/exam/student/router.py:147
+#: app/exam/student/router.py:143
 msgid "Exam reloaded successfully"
 msgstr "Іспит успішно перезавантажено"
 
-#: app/exam/student/router.py:162
+#: app/exam/student/router.py:158
 msgid "Exam submitted successfully"
 msgstr "Іспит успішно подано"
 
-#: app/exam/student/services.py:70 app/exam/student/services.py:166
-#: app/exam/student/services.py:249
+#: app/exam/student/services.py:63 app/exam/student/services.py:159
+#: app/exam/student/services.py:242
 msgid "Exam not found"
 msgstr "Іспит не знайдено"
 
-#: app/exam/student/services.py:73 app/exam/student/services.py:169
-#: app/exam/student/services.py:252
+#: app/exam/student/services.py:66 app/exam/student/services.py:162
+#: app/exam/student/services.py:245
 msgid "You do not have permission to access this exam"
 msgstr "У вас немає дозволу на доступ до цього іспиту"
 
-#: app/exam/student/services.py:118
+#: app/exam/student/services.py:111
 msgid "Attempt not found"
 msgstr "Спробу не знайдено"
 
-#: app/exam/student/services.py:121
+#: app/exam/student/services.py:114
 msgid "You do not have permission to access this attempt"
 msgstr "У вас немає дозволу на доступ до цієї спроби"
 
-#: app/exam/student/services.py:125
+#: app/exam/student/services.py:118
 msgid "Attempt is still in progress"
 msgstr "Спроба все ще триває"
 
-#: app/exam/student/services.py:154
+#: app/exam/student/services.py:147
 msgid "Exam is not available yet"
 msgstr "Іспит ще не доступний"
 
-#: app/exam/student/services.py:156
+#: app/exam/student/services.py:149
 msgid "Exam has already ended"
 msgstr "Іспит вже закінчився"
 
-#: app/exam/student/services.py:172
+#: app/exam/student/services.py:165
 msgid "Exam already started"
 msgstr "Іспит вже розпочато"
 
-#: app/exam/student/services.py:176
+#: app/exam/student/services.py:169
 msgid "Max attempts reached"
 msgstr "Досягнуто максимальної кількості спроб"
 
-#: app/exam/student/services.py:255
+#: app/exam/student/services.py:248
 msgid "Exam not in progress"
 msgstr "Іспит не в процесі"
 
-#: app/exam/student/services.py:262 app/exam/student/services.py:266
-#: app/exam/student/services.py:346
+#: app/exam/student/services.py:255 app/exam/student/services.py:259
+#: app/exam/student/services.py:339
 msgid "No active attempt found"
 msgstr "Не знайдено активної спроби"
 
-#: app/exam/student/services.py:269
+#: app/exam/student/services.py:262
 msgid "Attempt is not in progress"
 msgstr "Спроба не в процесі"
 
-#: app/exam/student/services.py:285 app/exam/student/services.py:327
+#: app/exam/student/services.py:278 app/exam/student/services.py:320
 msgid "Question not found in this attempt"
 msgstr "Питання не знайдено в цій спробі"
 
-#: app/exam/student/services.py:292
+#: app/exam/student/services.py:285
 msgid "Multiple choice question requires option selections"
 msgstr "Питання з множинним вибором вимагає вибору варіантів"
 
-#: app/exam/student/services.py:299
+#: app/exam/student/services.py:292
 msgid "Single choice question requires exactly one option"
 msgstr "Питання з одиночним вибором вимагає вибору рівно одного варіанту"
 
-#: app/exam/student/services.py:305
+#: app/exam/student/services.py:298
 msgid "Short answer question requires text input"
 msgstr "Питання з короткою відповіддю вимагає введення тексту"
 
-#: app/exam/student/services.py:352
+#: app/exam/student/services.py:345
 msgid "No responses found for this attempt"
 msgstr "Не знайдено відповідей для цієї спроби"
 
-#: app/exam/student/services.py:500
+#: app/exam/student/services.py:493
 msgid "No questions found for this attempt"
 msgstr "Не знайдено питань для цієї спроби"
 
-#: app/exam/teacher/router/collections_router.py:36
+#: app/exam/teacher/router/collections_router.py:32
 msgid "Collection created successfully"
 msgstr "Колекцію успішно створено"
 
-#: app/exam/teacher/router/collections_router.py:49
+#: app/exam/teacher/router/collections_router.py:45
 msgid "Collections retrieved successfully"
 msgstr "Колекції успішно отримано"
 
-#: app/exam/teacher/router/collections_router.py:61
+#: app/exam/teacher/router/collections_router.py:57
 msgid "Public collections retrieved successfully"
 msgstr "Публічні колекції успішно отримано"
 
-#: app/exam/teacher/router/collections_router.py:75
+#: app/exam/teacher/router/collections_router.py:71
 msgid "Collection retrieved successfully"
 msgstr "Колекцію успішно отримано"
 
-#: app/exam/teacher/router/collections_router.py:92
+#: app/exam/teacher/router/collections_router.py:88
 msgid "Collection updated successfully"
 msgstr "Колекцію успішно оновлено"
 
-#: app/exam/teacher/router/collections_router.py:105
+#: app/exam/teacher/router/collections_router.py:101
 msgid "Collection deleted successfully"
 msgstr "Колекцію успішно видалено"
 
-#: app/exam/teacher/router/collections_router.py:121
+#: app/exam/teacher/router/collections_router.py:117
 msgid "Question added successfully"
 msgstr "Питання успішно додано"
 
-#: app/exam/teacher/router/collections_router.py:136
+#: app/exam/teacher/router/collections_router.py:132
 msgid "Questions reordered successfully"
 msgstr "Питання успішно переупорядковано"
 
-#: app/exam/teacher/router/collections_router.py:152
+#: app/exam/teacher/router/collections_router.py:148
 msgid "Question updated successfully"
 msgstr "Питання успішно оновлено"
 
-#: app/exam/teacher/router/collections_router.py:167
+#: app/exam/teacher/router/collections_router.py:163
 msgid "Question deleted successfully"
 msgstr "Питання успішно видалено"
 
@@ -281,142 +287,144 @@ msgstr "Питання успішно видалено"
 msgid "Exam instances retrieved successfully"
 msgstr "Екземпляри іспиту успішно отримано"
 
-#: app/exam/teacher/router/exam_instance_router.py:44
+#: app/exam/teacher/router/exam_instance_router.py:45
 msgid "Exam instance created successfully"
 msgstr "Екземпляр іспиту успішно створено"
 
-#: app/exam/teacher/router/exam_instance_router.py:56
+#: app/exam/teacher/router/exam_instance_router.py:57
 msgid "Exam instance retrieved successfully"
 msgstr "Екземпляр іспиту успішно отримано"
 
-#: app/exam/teacher/router/exam_instance_router.py:71
+#: app/exam/teacher/router/exam_instance_router.py:72
 msgid "Exam instance updated successfully"
 msgstr "Екземпляр іспиту успішно оновлено"
 
-#: app/exam/teacher/router/exam_instance_router.py:81
+#: app/exam/teacher/router/exam_instance_router.py:82
 msgid "Exam instance deleted successfully"
 msgstr "Екземпляр іспиту успішно видалено"
 
-#: app/exam/teacher/router/report_router.py:57
+#: app/exam/teacher/router/report_router.py:58
 msgid "Exam report retrieved successfully"
 msgstr "Звіт про іспит успішно отримано"
 
-#: app/exam/teacher/services/collection_service.py:49
-#: app/exam/teacher/services/collection_service.py:70
-#: app/exam/teacher/services/collection_service.py:81
-#: app/exam/teacher/services/collection_service.py:256
-#: app/exam/teacher/services/exam_instance_service.py:269
+#: app/exam/teacher/services/collection_service.py:40
+#: app/exam/teacher/services/collection_service.py:61
+#: app/exam/teacher/services/collection_service.py:72
+#: app/exam/teacher/services/collection_service.py:247
+#: app/exam/teacher/services/exam_instance_service.py:263
 msgid "Collection not found"
 msgstr "Колекцію не знайдено"
 
-#: app/exam/teacher/services/collection_service.py:55
+#: app/exam/teacher/services/collection_service.py:46
 msgid "You don't have access to this collection"
 msgstr "У вас немає доступу до цієї колекції"
 
-#: app/exam/teacher/services/collection_service.py:72
-#: app/exam/teacher/services/collection_service.py:83
-#: app/exam/teacher/services/collection_service.py:258
+#: app/exam/teacher/services/collection_service.py:63
+#: app/exam/teacher/services/collection_service.py:74
+#: app/exam/teacher/services/collection_service.py:249
 msgid "You do not own this collection"
 msgstr "Ви не є власником цієї колекції"
 
-#: app/exam/teacher/services/collection_service.py:99
+#: app/exam/teacher/services/collection_service.py:90
 msgid "Question type is required"
 msgstr "Тип питання є обов'язковим"
 
-#: app/exam/teacher/services/collection_service.py:106
+#: app/exam/teacher/services/collection_service.py:97
 #, python-brace-format
 msgid "{question_type} question must have options"
 msgstr "Питання типу {question_type} повинно мати варіанти"
 
-#: app/exam/teacher/services/collection_service.py:116
+#: app/exam/teacher/services/collection_service.py:107
 #, python-brace-format
 msgid "{question_type} question must have at least one correct answer"
-msgstr "Питання типу {question_type} повинно мати принаймні одну правильну відповідь"
+msgstr ""
+"Питання типу {question_type} повинно мати принаймні одну правильну "
+"відповідь"
 
-#: app/exam/teacher/services/collection_service.py:123
+#: app/exam/teacher/services/collection_service.py:114
 #, python-brace-format
 msgid "{QuestionType} question must have exactly one correct answer"
 msgstr "Питання типу {QuestionType} повинно мати рівно одну правильну відповідь"
 
-#: app/exam/teacher/services/collection_service.py:132
+#: app/exam/teacher/services/collection_service.py:123
 #, python-brace-format
 msgid "{QuestionType} question must have a correct_input_answer"
 msgstr "Питання типу {QuestionType} повинно мати correct_input_answer"
 
-#: app/exam/teacher/services/collection_service.py:145
+#: app/exam/teacher/services/collection_service.py:136
 #, python-brace-format
 msgid "Collection with ID {collection_id} not found"
 msgstr "Колекцію з ідентифікатором {collection_id} не знайдено"
 
-#: app/exam/teacher/services/collection_service.py:152
+#: app/exam/teacher/services/collection_service.py:143
 msgid "You don't have permission to add questions to this collection"
 msgstr "У вас немає дозволу додавати питання до цієї колекції"
 
-#: app/exam/teacher/services/collection_service.py:168
-#: app/exam/teacher/services/collection_service.py:223
+#: app/exam/teacher/services/collection_service.py:159
+#: app/exam/teacher/services/collection_service.py:214
 #, python-brace-format
 msgid "Question with position {question_data} already exists in the collection"
 msgstr "Питання з позицією {question_data} вже існує в колекції"
 
-#: app/exam/teacher/services/collection_service.py:204
-#: app/exam/teacher/services/collection_service.py:339
+#: app/exam/teacher/services/collection_service.py:195
+#: app/exam/teacher/services/collection_service.py:330
 msgid "Question not found"
 msgstr "Питання не знайдено"
 
-#: app/exam/teacher/services/collection_service.py:208
-#: app/exam/teacher/services/collection_service.py:342
+#: app/exam/teacher/services/collection_service.py:199
+#: app/exam/teacher/services/collection_service.py:333
 msgid "You do not own this question"
 msgstr "Ви не є власником цього питання"
 
-#: app/exam/teacher/services/collection_service.py:265
+#: app/exam/teacher/services/collection_service.py:256
 #, python-brace-format
 msgid "Question ID {question_id} does not exist in the collection"
 msgstr "Ідентифікатор питання {question_id} не існує в колекції"
 
-#: app/exam/teacher/services/collection_service.py:279
+#: app/exam/teacher/services/collection_service.py:270
 #, python-brace-format
 msgid "Position cannot be negative for question {question_id}"
 msgstr "Позиція не може бути від'ємною для питання {question_id}"
 
-#: app/exam/teacher/services/collection_service.py:286
+#: app/exam/teacher/services/collection_service.py:277
 #, python-brace-format
 msgid "Duplicate position {position} found. Positions must be unique"
 msgstr "Знайдено дублікат позиції {position}. Позиції повинні бути унікальними"
 
-#: app/exam/teacher/services/collection_service.py:291
+#: app/exam/teacher/services/collection_service.py:282
 #, python-brace-format
 msgid "Position {position} is already used by another question"
 msgstr "Позиція {position} вже використовується іншим питанням"
 
-#: app/exam/teacher/services/exam_instance_service.py:62
-#: app/exam/teacher/services/exam_instance_service.py:327
-#: app/exam/teacher/services/exam_instance_service.py:397
-#: app/exam/teacher/services/report_services.py:59
+#: app/exam/teacher/services/exam_instance_service.py:54
+#: app/exam/teacher/services/exam_instance_service.py:323
+#: app/exam/teacher/services/exam_instance_service.py:393
+#: app/exam/teacher/services/report_services.py:56
 msgid "Exam instance not found"
 msgstr "Екземпляр іспиту не знайдено"
 
-#: app/exam/teacher/services/exam_instance_service.py:65
+#: app/exam/teacher/services/exam_instance_service.py:57
 msgid "You don't have access to this exam instance"
 msgstr "У вас немає доступу до цього екземпляру іспиту"
 
-#: app/exam/teacher/services/exam_instance_service.py:245
+#: app/exam/teacher/services/exam_instance_service.py:237
 msgid "Start date must be in the future"
 msgstr "Дата початку повинна бути в майбутньому"
 
-#: app/exam/teacher/services/exam_instance_service.py:247
+#: app/exam/teacher/services/exam_instance_service.py:239
 msgid "End date must be after start date"
 msgstr "Дата завершення повинна бути після дати початку"
 
-#: app/exam/teacher/services/exam_instance_service.py:256
+#: app/exam/teacher/services/exam_instance_service.py:249
 #, python-brace-format
 msgid "Student with ID {} not found"
 msgstr "Студента з ідентифікатором {} не знайдено"
 
-#: app/exam/teacher/services/exam_instance_service.py:275
+#: app/exam/teacher/services/exam_instance_service.py:269
 msgid "You do not have access to this collection"
 msgstr "У вас немає доступу до цієї колекції"
 
-#: app/exam/teacher/services/exam_instance_service.py:279
+#: app/exam/teacher/services/exam_instance_service.py:274
 msgid ""
 "Collection does not contain any questions. Please add questions to the "
 "collection before creating an exam instance."
@@ -424,39 +432,40 @@ msgstr ""
 "Колекція не містить жодних питань. Будь ласка, додайте питання до "
 "колекції перед створенням екземпляру іспиту."
 
-#: app/exam/teacher/services/exam_instance_service.py:330
-#: app/exam/teacher/services/exam_instance_service.py:400
+#: app/exam/teacher/services/exam_instance_service.py:326
+#: app/exam/teacher/services/exam_instance_service.py:396
 msgid "You do not own this exam instance"
 msgstr "Ви не є власником цього екземпляру іспиту"
 
-#: app/users/router.py:27
+#: app/users/router.py:25
 msgid "User info retrieved successfully"
 msgstr "Інформацію про користувача успішно отримано"
 
-#: app/users/router.py:43
+#: app/users/router.py:41
 msgid "User info updated successfully"
 msgstr "Інформацію про користувача успішно оновлено"
 
-#: app/users/router.py:60
+#: app/users/router.py:58
 msgid "User deletion requested successfully"
 msgstr "Запит на видалення користувача успішно надіслано"
 
-#: app/users/router.py:96
+#: app/users/router.py:94
 msgid "Password changed successfully"
 msgstr "Пароль успішно змінено"
 
-#: app/users/router.py:114
+#: app/users/router.py:112
 msgid "Students retrieved successfully"
 msgstr "Студентів успішно отримано"
 
-#: app/users/services.py:82
+#: app/users/services.py:76
 msgid "Invalid or expired token"
 msgstr "Недійсний або прострочений токен"
 
-#: app/users/services.py:88
+#: app/users/services.py:82
 msgid "Token does not match current user"
 msgstr "Токен не відповідає поточному користувачеві"
 
-#: app/users/services.py:109
+#: app/users/services.py:103
 msgid "Invalid password"
 msgstr "Недійсний пароль"
+

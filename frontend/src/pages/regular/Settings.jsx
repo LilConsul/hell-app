@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { useAuth } from "@/contexts/auth-context";
@@ -6,357 +6,375 @@ import { usePasswordValidation } from "@/components/password/password-validation
 import { useNavigate } from "react-router-dom";
 import { apiRequest } from "@/lib/utils";
 
-// Import refactored components
+import { Separator } from "@/components/ui/separator";
+
 import { SettingsTabs } from "@/components/settings/SettingsTabs";
 import { SettingsModals } from "@/components/settings/SettingsModals";
 import { FeedbackAlerts } from "@/components/settings/FeedbackAlerts";
 
-
 export default function Settings() {
-  // Auth context
-  const { user, refreshUser, logout } = useAuth();
+  const { user, updateUser, logout } = useAuth();
   const navigate = useNavigate();
-  
-  // User data state
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [language, setLanguage] = useState("en");
-  const [notifications, setNotifications] = useState({ email: true });
-  
-  // UI state
+
+  const [formData, setFormData] = useState({
+    firstName: "",
+    lastName: "",
+    language: "en",
+    notifications: { email: true },
+  });
+
   const [activeTab, setActiveTab] = useState("account");
   const [editField, setEditField] = useState("");
   const [isUpdating, setIsUpdating] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
-  
-  // Password modal state
-  const [showCurrentPasswordModal, setShowCurrentPasswordModal] = useState(false);
-  const [showNewPasswordModal, setShowNewPasswordModal] = useState(false);
-  const [currentPassword, setCurrentPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
-  const [showNewPassword, setShowNewPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [errorMessage, setErrorMessage] = useState("");
-  
-  // Delete account modal state
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [deleteConfirmText, setDeleteConfirmText] = useState("");
-  const [isDeletionEmailSent, setIsDeletionEmailSent] = useState(false);
-  const [showDeletionEmailSentModal, setShowDeletionEmailSentModal] = useState(false);
-  const [accountDeleted, setAccountDeleted] = useState(false);
-  
-  // Password validation
-  const { passwordErrors, showRequirements, setShowRequirements, isPasswordValid } = usePasswordValidation(newPassword);
 
-  // Single effect to fetch user data on mount
-  useEffect(() => {
-    // Only fetch user data once on component mount
-    refreshUser();
-  }, []);
+  const [passwordState, setPasswordState] = useState({
+    showCurrentPasswordModal: false,
+    showNewPasswordModal: false,
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+    showCurrentPassword: false,
+    showNewPassword: false,
+    showConfirmPassword: false,
+    errorMessage: "",
+  });
 
-  // Update local state when user data changes
+  const [deletionState, setDeletionState] = useState({
+    showDeleteModal: false,
+    deleteConfirmText: "",
+    isDeletionEmailSent: false,
+    showDeletionEmailSentModal: false,
+    accountDeleted: false,
+  });
+
+  const { passwordErrors, showRequirements, setShowRequirements, isPasswordValid } = 
+    usePasswordValidation(passwordState.newPassword);
+
   useEffect(() => {
     if (user) {
-      setFirstName(user.first_name || "");
-      setLastName(user.last_name || "");
-      setLanguage(user.language || "en");
-      // Ensure we're setting the initial state correctly with proper fallback
-      setNotifications({ email: user.receive_notifications === false ? false : true });
+      setFormData({
+        firstName: user.first_name || "",
+        lastName: user.last_name || "",
+        language: user.language || "en",
+        notifications: { email: user.receive_notifications === false ? false : true },
+      });
     }
   }, [user]);
 
-  // Handle name updates
-  const handleSaveName = async (field) => {
-    // Prevent multiple submissions
+  const showSuccess = useCallback((msg) => {
+    setSuccessMessage(msg);
+    setTimeout(() => setSuccessMessage(""), 3000);
+  }, []);
+
+  const showError = useCallback((msg) => {
+    setErrorMsg(msg);
+    setTimeout(() => setErrorMsg(""), 5000);
+  }, []);
+
+  const handleUserUpdate = useCallback(async (endpoint, payload, successMsg, fieldName) => {
     if (isUpdating) return;
+
+    try {
+      setIsUpdating(true);
+
+      const response = await apiRequest(endpoint, {
+        method: "PUT",
+        body: JSON.stringify(payload)
+      });
+
+      if (response && response.data) {
+        updateUser(response.data);
+        
+        if (fieldName) setEditField("");
+        
+        showSuccess(successMsg);
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error(`Error updating ${endpoint}:`, error);
+      showError(`Failed to update: ${error.message}`);
+      return false;
+    } finally {
+      setIsUpdating(false);
+    }
+  }, [isUpdating, updateUser, showSuccess, showError]);
+
+  const handleSaveName = useCallback(async (field) => {
+    const payload = {};
     
-    try {
-      setIsUpdating(true);
-      const payload = {};
-      
-      if (field === "firstName") {
-        payload.first_name = firstName;
-      } else if (field === "lastName") {
-        payload.last_name = lastName;
-      }
-      
-      const response = await apiRequest("/api/v1/users/me", {
-        method: "PUT",
-        body: JSON.stringify(payload),
-      });
-
-      // Update both local state and auth context
-      // This helps maintain UI consistency without an extra API call
-      if (response && response.data) {
-        // Assuming refreshUser can accept direct data to avoid an API call
-        refreshUser(response.data);
-      }
-      
-      setEditField("");
-      showSuccess("Profile updated successfully!");
-    } catch (error) {
-      console.error("Error updating profile:", error);
-      showError(`Failed to update profile: ${error.message}`);
-    } finally {
-      setIsUpdating(false);
+    if (field === "firstName") {
+      payload.first_name = formData.firstName;
+    } else if (field === "lastName") {
+      payload.last_name = formData.lastName;
     }
-  };
 
-  // Handle language change
-  const handleChangeLanguage = async (value) => {
-    try {
-      // Set loading state
-      setIsUpdating(true);
-      
-      // Update local state immediately for better UX
-      setLanguage(value);
-      
-      const response = await apiRequest("/api/v1/users/me", {
-        method: "PUT",
-        body: JSON.stringify({
-          language: value
-        }),
-      });
-      
-      // Update both the local state and the auth context
-      if (response && response.data) {
-        // Update the auth context with the new user data
-        refreshUser(response.data);
-      }
-      
-      showSuccess("Language updated successfully!");
-    } catch (error) {
-      // Revert on error
-      setLanguage(user?.language || "en");
-      console.error("Error updating language:", error);
-      showError(`Failed to update language: ${error.message}`);
-    } finally {
-      setIsUpdating(false);
+    await handleUserUpdate(
+      "/api/v1/users/me", 
+      payload, 
+      "Profile updated successfully!", 
+      field
+    );
+  }, [formData, handleUserUpdate]);
+
+  const handleChangeLanguage = useCallback(async (value) => {
+    if (formData.language === value) return;
+    
+    setFormData(prev => ({ ...prev, language: value }));
+    
+    const success = await handleUserUpdate(
+      "/api/v1/users/me",
+      { language: value },
+      "Language updated successfully!"
+    );
+
+    if (!success) {
+      setFormData(prev => ({ 
+        ...prev, 
+        language: user?.language || "en" 
+      }));
     }
-  };
-  
-  // FIXED toggle function that prevents immediate reversion
-  const handleToggleNotifications = async (value) => {
-    try {
-      // Prevent multiple submissions
-      if (isUpdating) return;
-      
-      // Set loading state
-      setIsUpdating(true);
-      
-      // Store the original value in case we need to revert
-      const originalValue = notifications.email;
-      
-      // Update local state immediately for better user experience
-      setNotifications({ ...notifications, email: value });
-      
-      const response = await apiRequest("/api/v1/users/me", {
-        method: "PUT",
-        body: JSON.stringify({
-          receive_notifications: value
-        }),
-      });
-      
-      // Success case
-      if (response && response.data) {
-        // Don't call refreshUser here as it might override our local state
-        // Just show success message
-        showSuccess("Notification preferences updated successfully!");
-      }
-    } catch (error) {
-      // Revert local state change if API call fails
-      setNotifications(prev => ({ ...prev, email: !value }));
-      console.error("Error updating notification preferences:", error);
-      showError(`Failed to update notification preferences: ${error.message}`);
-    } finally {
-      // Reset loading state
-      setIsUpdating(false);
+  }, [formData, user, handleUserUpdate]);
+
+  const handleToggleNotifications = useCallback(async (value) => {
+    if (formData.notifications.email === value) return;
+    setFormData(prev => ({ 
+      ...prev, 
+      notifications: { ...prev.notifications, email: value } 
+    }));
+    
+    const success = await handleUserUpdate(
+      "/api/v1/users/me",
+      { receive_notifications: value },
+      "Notification preferences updated successfully!"
+    );
+    
+    if (!success) {
+      setFormData(prev => ({ 
+        ...prev, 
+        notifications: { ...prev.notifications, email: !value } 
+      }));
     }
-  };
+  }, [formData, handleUserUpdate]);
 
-  // Password handling functions
-  const handleOpenCurrentPasswordModal = () => {
-    setErrorMessage("");
-    setCurrentPassword("");
-    setShowCurrentPasswordModal(true);
-  };
+  const handleOpenCurrentPasswordModal = useCallback(() => {
+    setPasswordState(prev => ({
+      ...prev,
+      errorMessage: "",
+      currentPassword: "",
+      showCurrentPasswordModal: true
+    }));
+  }, []);
 
-  const handleProceedCurrentPassword = () => {
-    if (currentPassword.length < 6) {
-      setErrorMessage("Password must be at least 6 characters!");
+  const handleProceedCurrentPassword = useCallback(() => {
+    if (passwordState.currentPassword.length < 6) {
+      setPasswordState(prev => ({
+        ...prev,
+        errorMessage: "Password must be at least 6 characters!"
+      }));
       return;
     }
-    setErrorMessage("");
-    setShowCurrentPasswordModal(false);
-    setNewPassword("");
-    setConfirmPassword("");
-    setShowNewPasswordModal(true);
-  };
+    
+    setPasswordState(prev => ({
+      ...prev,
+      errorMessage: "",
+      showCurrentPasswordModal: false,
+      newPassword: "",
+      confirmPassword: "",
+      showNewPasswordModal: true
+    }));
+  }, [passwordState]);
 
-  const handlePasswordChange = async () => {
+  const handlePasswordChange = useCallback(async () => {
+    const { currentPassword, newPassword, confirmPassword } = passwordState;
+    
     if (newPassword !== confirmPassword) {
-      setErrorMessage("Passwords do not match. Please make sure your passwords match and try again.");
+      setPasswordState(prev => ({
+        ...prev,
+        errorMessage: "Passwords do not match. Please make sure your passwords match and try again."
+      }));
       return;
     }
 
     if (!isPasswordValid) {
-      setErrorMessage("Please ensure your password meets all requirements.");
+      setPasswordState(prev => ({
+        ...prev,
+        errorMessage: "Please ensure your password meets all requirements."
+      }));
       return;
     }
 
     try {
       setIsUpdating(true);
-      
+
       await apiRequest("/api/v1/users/me/change-password", {
         method: "PUT",
         body: JSON.stringify({
           password: currentPassword,
-          new_password: newPassword,
-        }),
+          new_password: newPassword
+        })
       });
 
-      setShowNewPasswordModal(false);
-      setCurrentPassword("");
-      setNewPassword("");
-      setConfirmPassword("");
+      setPasswordState(prev => ({
+        ...prev,
+        showNewPasswordModal: false,
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: ""
+      }));
+      
       showSuccess("Password changed successfully!");
     } catch (error) {
-      setErrorMessage(`Password change failed: ${error.message}`);
+      setPasswordState(prev => ({
+        ...prev,
+        errorMessage: `Password change failed: ${error.message}`
+      }));
     } finally {
       setIsUpdating(false);
     }
-  };
+  }, [passwordState, isPasswordValid, showSuccess]);
 
-  // Account deletion handling
-  const handleSendDeleteConfirmation = async () => {
-    if (deleteConfirmText !== "DELETE") {
-      setErrorMessage("Please type DELETE to confirm sending the confirmation email");
+  const handleSendDeleteConfirmation = useCallback(async () => {
+    if (deletionState.deleteConfirmText !== "DELETE") {
+      setPasswordState(prev => ({
+        ...prev,
+        errorMessage: "Please type DELETE to confirm sending the confirmation email"
+      }));
       return;
     }
-  
+
     try {
-      setIsDeletionEmailSent(true);
-  
+      setDeletionState(prev => ({
+        ...prev,
+        isDeletionEmailSent: true
+      }));
+
       await apiRequest("/api/v1/users/me/request-delete", {
-        method: "POST",
+        method: "POST"
       });
-      
-      // Close the delete confirmation modal
-      setShowDeleteModal(false);
-      setDeleteConfirmText("");
-      
-      // Show the confirmation email sent modal
-      setShowDeletionEmailSentModal(true);
-      
+
+      setDeletionState(prev => ({
+        ...prev,
+        showDeleteModal: false,
+        deleteConfirmText: "",
+        showDeletionEmailSentModal: true
+      }));
     } catch (error) {
       console.error("Error sending confirmation email:", error);
-      setErrorMessage(`Failed to send confirmation email: ${error.message}`);
-      setIsDeletionEmailSent(false);
+      setPasswordState(prev => ({
+        ...prev,
+        errorMessage: `Failed to send confirmation email: ${error.message}`
+      }));
+      setDeletionState(prev => ({
+        ...prev,
+        isDeletionEmailSent: false
+      }));
     }
-  };
-  
-  // Feedback handling
-  const showSuccess = (msg) => {
-    setSuccessMessage(msg);
-    setTimeout(() => setSuccessMessage(""), 3000);
-  };
-  
-  const showError = (msg) => {
-    setErrorMsg(msg);
-    setTimeout(() => setErrorMsg(""), 5000);
-  };
-  
-  return (
-    <div className="flex flex-col min-h-screen bg-muted/30">
-      <Navbar />
-      <main className="flex-1 container max-w-4xl mx-auto py-10 px-4 space-y-8">
-        <div className="space-y-1">
-          <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
-          <p className="text-muted-foreground">
-            Manage your account settings and preferences.
-          </p>
-        </div>
-        
-        {/* Success and error feedback */}
-        <FeedbackAlerts 
-          successMessage={successMessage} 
-          errorMsg={errorMsg} 
-        />
-  
-        {/* Main settings tabs */}
-        <SettingsTabs
-          activeTab={activeTab}
-          setActiveTab={setActiveTab}
-          user={user}
-          firstName={firstName}
-          lastName={lastName}
-          language={language}
-          notifications={notifications}
-          editField={editField}
-          setEditField={setEditField}
-          isUpdating={isUpdating}
-          setFirstName={setFirstName}
-          setLastName={setLastName}
-          handleSaveName={handleSaveName}
-          handleChangeLanguage={handleChangeLanguage}
-          handleToggleNotifications={handleToggleNotifications}
-          handleOpenCurrentPasswordModal={handleOpenCurrentPasswordModal}
-          setShowDeleteModal={setShowDeleteModal}
-        />
+  }, [deletionState]);
 
-        {/* Modal dialogs */}
-        <SettingsModals
-          // Current Password Modal props
-          showCurrentPasswordModal={showCurrentPasswordModal}
-          setShowCurrentPasswordModal={setShowCurrentPasswordModal}
-          currentPassword={currentPassword}
-          setCurrentPassword={setCurrentPassword}
-          showCurrentPassword={showCurrentPassword}
-          setShowCurrentPassword={setShowCurrentPassword}
-          handleProceedCurrentPassword={handleProceedCurrentPassword}
-          
-          // New Password Modal props
-          showNewPasswordModal={showNewPasswordModal}
-          setShowNewPasswordModal={setShowNewPasswordModal}
-          newPassword={newPassword}
-          setNewPassword={setNewPassword}
-          confirmPassword={confirmPassword}
-          setConfirmPassword={setConfirmPassword}
-          showNewPassword={showNewPassword}
-          setShowNewPassword={setShowNewPassword}
-          showConfirmPassword={showConfirmPassword}
-          setShowConfirmPassword={setShowConfirmPassword}
-          handlePasswordChange={handlePasswordChange}
-          
-          // Password validation props
-          passwordErrors={passwordErrors}
-          showRequirements={showRequirements}
-          setShowRequirements={setShowRequirements}
-          isPasswordValid={isPasswordValid}
-          
-          // Delete Account Modal props
-          showDeleteModal={showDeleteModal}
-          setShowDeleteModal={setShowDeleteModal}
-          deleteConfirmText={deleteConfirmText}
-          setDeleteConfirmText={setDeleteConfirmText}
-          handleSendDeleteConfirmation={handleSendDeleteConfirmation}
-          isDeletionEmailSent={isDeletionEmailSent}
-          
-          // Email Sent Confirmation Modal props
-          showDeletionEmailSentModal={showDeletionEmailSentModal}
-          setShowDeletionEmailSentModal={setShowDeletionEmailSentModal}
-          
-          // Auth props
-          logout={logout}
-          
-          // General props
-          errorMessage={errorMessage}
-          user={user}
-        />
-      </main>
+  const handleFieldChange = useCallback((field, value) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  }, []);
+
+  const updatePasswordState = useCallback((field, value) => {
+    setPasswordState(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  }, []);
+
+  const updateDeletionState = useCallback((field, value) => {
+    setDeletionState(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  }, []);
+
+  return (
+    <div className="flex flex-col min-h-screen bg-background">
+      <Navbar />
+      <div className="flex-1">
+        <div className="container mx-auto px-4">
+          <div className="py-10 space-y-6">
+            <div className="w-full max-w-5xl mx-auto">
+              <div className="flex flex-col">
+                <h1 className="text-3xl font-bold tracking-tight text-foreground">Settings</h1>
+                <p className="text-muted-foreground pl-0.5">
+                  Manage your account settings and preferences.
+                </p>
+              </div>
+              
+              <Separator className="my-6 bg-border w-3/4" />
+              
+              <div className="space-y-6">
+                <FeedbackAlerts successMessage={successMessage} errorMsg={errorMsg} />
+
+                <SettingsTabs
+                  activeTab={activeTab}
+                  setActiveTab={setActiveTab}
+                  user={user}
+                  firstName={formData.firstName}
+                  lastName={formData.lastName}
+                  language={formData.language}
+                  notifications={formData.notifications}
+                  editField={editField}
+                  setEditField={setEditField}
+                  isUpdating={isUpdating}
+                  setFirstName={(value) => handleFieldChange('firstName', value)}
+                  setLastName={(value) => handleFieldChange('lastName', value)}
+                  handleSaveName={handleSaveName}
+                  handleChangeLanguage={handleChangeLanguage}
+                  handleToggleNotifications={handleToggleNotifications}
+                  handleOpenCurrentPasswordModal={handleOpenCurrentPasswordModal}
+                  setShowDeleteModal={(value) => updateDeletionState('showDeleteModal', value)}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <SettingsModals
+        showCurrentPasswordModal={passwordState.showCurrentPasswordModal}
+        setShowCurrentPasswordModal={(value) => updatePasswordState('showCurrentPasswordModal', value)}
+        currentPassword={passwordState.currentPassword}
+        setCurrentPassword={(value) => updatePasswordState('currentPassword', value)}
+        showCurrentPassword={passwordState.showCurrentPassword}
+        setShowCurrentPassword={(value) => updatePasswordState('showCurrentPassword', value)}
+        handleProceedCurrentPassword={handleProceedCurrentPassword}
+        showNewPasswordModal={passwordState.showNewPasswordModal}
+        setShowNewPasswordModal={(value) => updatePasswordState('showNewPasswordModal', value)}
+        newPassword={passwordState.newPassword}
+        setNewPassword={(value) => updatePasswordState('newPassword', value)}
+        confirmPassword={passwordState.confirmPassword}
+        setConfirmPassword={(value) => updatePasswordState('confirmPassword', value)}
+        showNewPassword={passwordState.showNewPassword}
+        setShowNewPassword={(value) => updatePasswordState('showNewPassword', value)}
+        showConfirmPassword={passwordState.showConfirmPassword}
+        setShowConfirmPassword={(value) => updatePasswordState('showConfirmPassword', value)}
+        handlePasswordChange={handlePasswordChange}
+        passwordErrors={passwordErrors}
+        showRequirements={showRequirements}
+        setShowRequirements={setShowRequirements}
+        isPasswordValid={isPasswordValid}
+        showDeleteModal={deletionState.showDeleteModal}
+        setShowDeleteModal={(value) => updateDeletionState('showDeleteModal', value)}
+        deleteConfirmText={deletionState.deleteConfirmText}
+        setDeleteConfirmText={(value) => updateDeletionState('deleteConfirmText', value)}
+        handleSendDeleteConfirmation={handleSendDeleteConfirmation}
+        isDeletionEmailSent={deletionState.isDeletionEmailSent}
+        showDeletionEmailSentModal={deletionState.showDeletionEmailSentModal}
+        setShowDeletionEmailSentModal={(value) => updateDeletionState('showDeletionEmailSentModal', value)}
+        logout={logout}
+        errorMessage={passwordState.errorMessage}
+        user={user}
+      />
+      
       <Footer />
     </div>
   );

@@ -44,10 +44,7 @@ class TranslationWrapper:
         # src/translation
         locales_dir = Path(__file__).parent / "translations"
         self.translations = gettext.translation(
-            "messages",
-            localedir=locales_dir,
-            languages=[lang],
-            fallback=True
+            "messages", localedir=locales_dir, languages=[lang], fallback=True
         )
         self.translations.install()
 
@@ -76,7 +73,18 @@ async def set_locale(request: Request):
     """
     translation_wrapper = TranslationWrapper()
 
-    lang = request.headers.get("Accept-Language", "en")
+    """
+    Sets the language for translations based on request headers:
+    1. X-User-Language
+    2. Accept-Language I removed this because it is not used
+    3. Default 'en'
+    """
+    # lang = (
+    #     request.headers.get("X-User-Language")
+    #     or request.headers.get("Accept-Language")
+    #     or "en"
+    # )
+    lang = request.headers.get("X-User-Language", "en")
     locales_dir = Path(__file__).parent / "translations"
 
     translation_wrapper.translations = gettext.translation(

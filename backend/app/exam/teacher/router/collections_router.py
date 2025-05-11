@@ -10,6 +10,7 @@ from app.exam.teacher.schemas import (
     QuestionSchema,
     UpdateCollection,
     UpdateQuestionSchema,
+    QuestionOrderSchema,
 )
 from app.exam.teacher.services import CollectionService
 from fastapi import APIRouter, Depends, status
@@ -118,6 +119,21 @@ async def add_question_to_collection(
     return BaseReturn(
         message="Question added successfully",
         data={"question_id": question_id},
+    )
+
+
+@router.post("/{collection_id}/questions/reorder")
+async def reorder_questions(
+    collection_id: str,
+    question_ids: QuestionOrderSchema,
+    teacher_id: str = Depends(get_current_teacher_id),
+    collection_service: CollectionService = Depends(get_collection_service),
+):
+    """Reorder questions in a collection"""
+    await collection_service.reorder_questions(collection_id, teacher_id, question_ids)
+    return BaseReturn(
+        message="Questions reordered successfully",
+        data={"collection_id": collection_id},
     )
 
 

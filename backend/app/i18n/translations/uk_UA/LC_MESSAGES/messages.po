@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2025-05-11 17:20+0200\n"
-"PO-Revision-Date: 2025-05-11 17:21+0200\n"
+"PO-Revision-Date: 2025-05-11 17:40+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: uk_UA\n"
 "Language-Team: uk_UA <LL@li.org>\n"
@@ -21,5 +21,5 @@ msgstr ""
 
 #: app/main.py:49
 msgid "Hello World"
-msgstr "Привіт, Світ"
+msgstr ""
 

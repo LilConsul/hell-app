@@ -1,3 +1,3 @@
-from .manager import set_locale, _, TranslationWrapper
+from .manager import set_locale, _
 
-__all__ = ["set_locale", "_", "TranslationWrapper"]
+__all__ = ["set_locale", "_"]

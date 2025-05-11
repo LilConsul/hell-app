@@ -19,6 +19,3 @@ COPY . /code/
 WORKDIR /code/
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --extra "test" --frozen --no-dev
-
-# i18n translations compilation
-RUN uv run pybabel compile -d ./app/i18n/translations

@@ -175,7 +175,7 @@ function TeacherDashboard() {
             </Card>
           </Link>
 
-          <Link to="/teacher/exams">
+          <Link to="/exams">
             <Card className="bg-card rounded-2xl shadow hover:shadow-lg transition-all p-4 flex flex-col items-start gap-10 h-full">
               <FileCheck2 className="h-8 w-8 text-primary mt-2"  />
               <div>

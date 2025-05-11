@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from './components/theme-provider';
 import { ProtectedRoute } from './components/protected-route';
@@ -10,6 +10,9 @@ import { TeacherDashboard as Dashboard } from './pages/teacher/Dashboard';
 
 import Collections from './pages/teacher/collections/Collections';
 import CreateCollection from './pages/teacher/collections/CreateCollection';
+import TeacherExams from './pages/teacher/exams/TeacherExams';
+import AllExams from './pages/teacher/exams/AllExams';
+import CreateExams from './pages/teacher/exams/CreateExams';
 import Exams from './pages/Exams';
 import Students from './pages/Students';
 import Reports from './pages/Reports';
@@ -22,14 +25,10 @@ import AdminPanel from "./pages/Admin-Panel.jsx";
 function HomeWithLoginModal() {
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (window.openLoginModal) {
-        window.openLoginModal();
-      }
+      if (window.openLoginModal) window.openLoginModal();
     }, 100);
-    
     return () => clearTimeout(timer);
   }, []);
-  
   return <Home />;
 }
 
@@ -48,18 +47,55 @@ export default function App() {
           {/* Protected routes */}
           <Route path="/dashboard" element={<ProtectedRoute element={<Dashboard />} />} />
           <Route path="/exams" element={<ProtectedRoute element={<Exams />} />} />
-          <Route path="/students" element={<ProtectedRoute element={<Students />} allowedRoles={['teacher', 'admin']} />} />
-          <Route path="/reports" element={<ProtectedRoute element={<Reports />} allowedRoles={['teacher', 'admin']} />} />
-          <Route path="/settings" element={<ProtectedRoute element={<Settings/>}/>}/>
-          <Route path="/collections" element={<ProtectedRoute element={<Collections />} allowedRoles={['teacher', 'admin']} />} />
-          <Route path="/collections/:collectionId" element={<ProtectedRoute element={<CreateCollection />} allowedRoles={['teacher', 'admin']} />} />
+          <Route
+            path="/students"
+            element={<ProtectedRoute element={<Students />} allowedRoles={['teacher', 'admin']} />}
+          />
+          <Route
+            path="/reports"
+            element={<ProtectedRoute element={<Reports />} allowedRoles={['teacher', 'admin']} />}
+          />
+          <Route path="/settings" element={<ProtectedRoute element={<Settings />} />} />
+          <Route
+            path="/collections"
+            element={<ProtectedRoute element={<Collections />} allowedRoles={['teacher', 'admin']} />}
+          />
+           <Route
+        path="/teacher/exams"
+        element={<ProtectedRoute element={<TeacherExams />} />}
+          />
 
-          {/*Admin routes*/}
-          <Route path="/admin" element={<ProtectedRoute element={
-            <AdminProvider>
-              <AdminPanel/>
-            </AdminProvider>
-          } allowedRoles={['admin']}/>}/>
+          <Route
+            path="/all-exams"
+            element={<ProtectedRoute element={<AllExams />} allowedRoles={['teacher', 'admin']} />}
+          />
+
+          <Route
+            path="/teacher/exams/CreateExams"
+            element={<ProtectedRoute element={<CreateExams />} allowedRoles={['teacher', 'admin']} />}
+          />
+          
+          <Route
+            path="/collections/:collectionId"
+            element={<ProtectedRoute element={<CreateCollection />} allowedRoles={['teacher', 'admin']} />}
+          />
+
+          {/* Admin routes */}
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute
+                element={
+                  <AdminProvider>
+                    <AdminPanel />
+                  </AdminProvider>
+                }
+                allowedRoles={['admin']}
+              />
+            }
+          />
+
+          
         </Routes>
       </AuthProvider>
     </ThemeProvider>

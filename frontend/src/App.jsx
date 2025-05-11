@@ -9,7 +9,7 @@ import { ProtectedLayout } from './components/protected-layout';
 import Home from './pages/regular/Home';
 import Settings from './pages/regular/Settings'; 
 import PrivacyPolicy from './pages/regular/PrivacyPolicy';
-import NotFoundPage from './pages/NotFoundPage';
+import NotFoundPage from './pages/regular/NotFoundPage';
 import DeleteAccount from './pages/regular/DeleteAccount';
 import PasswordReset from './pages/regular/PasswordReset';
 import EmailVerification from './pages/regular/EmailVerification';

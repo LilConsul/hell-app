@@ -16,6 +16,7 @@ from app.exam.teacher.schemas import (
     QuestionSchema,
     UpdateCollection,
     UpdateQuestionSchema,
+    QuestionOrderSchema,
 )
 
 
@@ -52,7 +53,7 @@ class CollectionService:
         if not (is_owner or is_public):
             raise ForbiddenError("You don't have access to this collection")
 
-        if getattr(collection, "questions", None):
+        if collection.questions:
             collection.questions.sort(
                 key=lambda q: getattr(q, "position", float("inf"))
             )
@@ -100,9 +101,10 @@ class CollectionService:
         if question_type in [QuestionType.MCQ, QuestionType.SINGLECHOICE]:
             options = question_data.get("options", [])
             if not options:
-                raise UnprocessableEntityError(f"{question_type} question must have options")
+                raise UnprocessableEntityError(
+                    f"{question_type} question must have options"
+                )
 
-            # Check for correct answers
             correct_count = sum(1 for opt in options if opt.get("is_correct"))
 
             if correct_count == 0:
@@ -148,7 +150,9 @@ class CollectionService:
             question_data.position = available_position
 
         if question_data.position in existing_positions:
-            raise UnprocessableEntityError(f"Question with position {question_data.position} already exists in the collection")
+            raise UnprocessableEntityError(
+                f"Question with position {question_data.position} already exists in the collection"
+            )
 
         # Prepare question data
         question_data_dict = question_data.model_dump()
@@ -189,10 +193,19 @@ class CollectionService:
             raise ForbiddenError("You do not own this question")
 
         # Check if the question position is already taken
-        if hasattr(question_data, 'position') and question_data.position != question.position:
-            existing_positions = [q.position for q in question.collection.questions if hasattr(q, 'position')]
+        if (
+            hasattr(question_data, "position")
+            and question_data.position != question.position
+        ):
+            existing_positions = [
+                q.position
+                for q in question.collection.questions
+                if hasattr(q, "position")
+            ]
             if question_data.position in existing_positions:
-                raise UnprocessableEntityError(f"Question with position {question_data.position} already exists in the collection")
+                raise UnprocessableEntityError(
+                    f"Question with position {question_data.position} already exists in the collection"
+                )
 
         update_data = question_data.model_dump(exclude_unset=True)
         if "_id" in update_data:
@@ -213,8 +226,47 @@ class CollectionService:
 
         self._validate_question_by_type(merged_data)
 
-        # Update the question
         await self.question_repository.update(question_id, update_data)
+
+    async def reorder_questions(
+        self, collection_id, teacher_id, question_ids: QuestionOrderSchema
+    ):
+        """Reorder questions in a collection based on provided positions."""
+        collection = await self.collection_repository.get_by_id(
+            collection_id, fetch_links=True
+        )
+        if not collection:
+            raise NotFoundError("Collection not found")
+        if collection.created_by.id != teacher_id:
+            raise ForbiddenError("You do not own this collection")
+
+        collection_question_ids = {q.id for q in collection.questions}
+        for question_id in question_ids.question_orders:
+            if question_id not in collection_question_ids:
+                raise BadRequestError(f"Question ID {question_id} does not exist in the collection")
+
+        existing_positions = {
+            q.position for q in collection.questions
+            if q.id not in question_ids.question_orders and hasattr(q, "position")
+        }
+
+        new_positions = set()
+        for question_id, position in question_ids.question_orders.items():
+            if position < 0:
+                raise BadRequestError(f"Position cannot be negative for question {question_id}")
+            if position in new_positions:
+                raise BadRequestError(f"Duplicate position {position} found. Positions must be unique")
+            if position in existing_positions:
+                raise BadRequestError(f"Position {position} is already used by another question")
+
+            new_positions.add(position)
+
+        for question_id, position in question_ids.question_orders.items():
+            await self.question_repository.update(question_id, {"position": position})
+
+        collection = await self.collection_repository.get_by_id(collection_id, fetch_links=True)
+        collection.questions.sort(key=lambda q: getattr(q, "position", float("inf")))
+        await self.collection_repository.save(collection)
 
     async def get_teacher_collections(
         self, user_id: str

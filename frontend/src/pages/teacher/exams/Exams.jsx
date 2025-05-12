@@ -131,7 +131,7 @@ export default function TeacherExams() {
             </p>
           </div>
           <Button asChild size="lg" className="h-10">
-            <Link to="/teacher/exams/CreateExams">
+            <Link to="/create-exams">
               <PlusCircle className="mr-2 h-5 w-5" />
               Create New Exam
             </Link>
@@ -602,3 +602,4 @@ export default function TeacherExams() {
     </div>
   );
 }
+

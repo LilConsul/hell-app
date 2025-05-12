@@ -1,22 +1,26 @@
 from datetime import timedelta
 
-from fastapi import Response
-
 from app.auth.repository import UserRepository
 from app.auth.schemas import UserCreate, UserLogin, UserResponse, UserRole
-from app.auth.security import (TokenType, create_access_token,
-                               create_verification_token,
-                               decode_verification_token,
-                               delete_verification_token, get_password_hash,
-                               verify_password)
-from app.celery.tasks.email_tasks.tasks import (user_password_reset_mail,
-                                                user_verify_mail_event,
-                                                user_welcome_mail_event)
-from app.core.exceptions import (AuthenticationError, BadRequestError,
-                                 NotFoundError)
+from app.auth.security import (
+    TokenType,
+    create_access_token,
+    create_verification_token,
+    decode_verification_token,
+    delete_verification_token,
+    get_password_hash,
+    verify_password,
+)
+from app.celery.tasks.email_tasks.tasks import (
+    user_password_reset_mail,
+    user_verify_mail_event,
+    user_welcome_mail_event,
+)
+from app.core.exceptions import AuthenticationError, BadRequestError, NotFoundError
 from app.core.utils import make_username
 from app.i18n import _
 from app.settings import settings
+from fastapi import Response
 
 
 class AuthService:
@@ -43,7 +47,7 @@ class AuthService:
         user = await self.user_repository.create(user_dict)
 
         verification_token = await create_verification_token(
-            user_id=user.id, token_type=TokenType.VERIFICATION
+            user_id=user.id, token_type=TokenType.VERIFICATION, use_redis=False
         )
         link = f"{settings.VERIFY_MAIL_URL}/{verification_token}"
         user_verify_mail_event.delay(user_data.email, link, make_username(user))
@@ -87,7 +91,7 @@ class AuthService:
         )
 
     async def verify_token(self, token: str) -> None:
-        token_data = await decode_verification_token(token)
+        token_data = await decode_verification_token(token, use_redis=False)
         if not token_data:
             raise AuthenticationError(_("Invalid or expired verification token"))
 
@@ -110,8 +114,6 @@ class AuthService:
 
         date_registered = user.created_at.strftime("%Y-%m-%d %H:%M:%S")
         user_welcome_mail_event.delay(user.email, date_registered, make_username(user))
-
-        await delete_verification_token(token)
 
     async def send_password_reset_token(self, email: str) -> None:
         user = await self.user_repository.get_by_email(email)

@@ -21,10 +21,12 @@ services:
       - ./backend/:/code
       - /code/.venv
     env_file:
-        - ./.env
+      - ./.env
     networks:
       - app-network
-    command: sh -c "uv run fastapi dev --port ${BACKEND_PORT_INTERNAL} --host 0.0.0.0 --reload --proxy-headers"
+    command: sh -c "\
+      uv run pybabel compile -d /code/app/i18n/translations && \ 
+      uv run fastapi dev --port ${BACKEND_PORT_INTERNAL} --host 0.0.0.0 --reload --proxy-headers"
 
   celery_worker:
     depends_on:
@@ -39,7 +41,7 @@ services:
       - ./backend/:/code
       - /code/.venv
     env_file:
-        - ./.env
+      - ./.env
     networks:
       - app-network
 

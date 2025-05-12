@@ -3,11 +3,12 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
+from beanie import BackLink, Delete, Document, Link, before_event
+from pydantic import BaseModel, ConfigDict, Field
+
 from app.auth.models import User
 from app.auth.schemas import UserRole
 from app.database.mixins import TimestampMixin
-from beanie import BackLink, Delete, Document, Link, before_event
-from pydantic import BaseModel, ConfigDict, Field
 
 
 class QuestionType(str, Enum):
@@ -210,6 +211,16 @@ class ExamInstance(Document, TimestampMixin):
             ("start_date", "end_date"),  # Compound index for date range queries
             "assigned_students.student_id",  # Index for finding exams assigned to student
         ]
+
+    @before_event(Delete)
+    async def before_delete(self):
+        """Delete all student exams associated with this exam instance when deleted"""
+        student_exams = await StudentExam.find(
+            StudentExam.exam_instance_id.id == self.id
+        ).to_list()
+
+        for exam in student_exams:
+            await exam.delete()
 
     model_config = ConfigDict(
         arbitrary_types_allowed=True,

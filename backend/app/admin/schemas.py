@@ -1,6 +1,8 @@
-from pydantic import Field, ConfigDict
-from app.auth.models import User
 from typing import Any
+
+from pydantic import ConfigDict, Field
+
+from app.auth.models import User
 
 
 class UserSchema(User):

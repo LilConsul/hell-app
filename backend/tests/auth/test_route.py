@@ -2,6 +2,7 @@ from unittest.mock import patch
 
 import jwt
 import pytest
+
 from app.auth.models import User
 from app.auth.security import get_password_hash
 from app.settings import settings

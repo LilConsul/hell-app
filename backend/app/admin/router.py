@@ -4,11 +4,12 @@ from fastapi import APIRouter
 from fastapi.params import Depends
 
 from app.admin.dependencies import get_admin_service
+from app.admin.schemas import UserSchema
 from app.admin.service import AdminService
 from app.auth.dependencies import get_current_admin_id
 from app.auth.schemas import UserRole
 from app.core.schemas import BaseReturn
-from app.admin.schemas import UserSchema
+from app.i18n import _
 
 router = APIRouter(
     prefix="/admin", tags=["admin"], dependencies=[Depends(get_current_admin_id)]
@@ -28,7 +29,7 @@ async def get_users(
     Get all users
     """
     users = await admin_service.get_all_users(admin_id)
-    return BaseReturn(message="Users retrieved successfully", data=users)
+    return BaseReturn(message=_("Users retrieved successfully"), data=users)
 
 
 @router.post(
@@ -45,7 +46,7 @@ async def change_user_role(
     Change user role
     """
     user = await admin_service.change_user_role(user_id, role)
-    return BaseReturn(message="User role changed successfully", data=user)
+    return BaseReturn(message=_("User role changed successfully"), data=user)
 
 
 @router.delete(
@@ -61,7 +62,7 @@ async def delete_user(
     Delete user
     """
     user = await admin_service.delete_user(user_id)
-    return BaseReturn(message="User deleted successfully", data=user)
+    return BaseReturn(message=_("User deleted successfully"), data=user)
 
 
 @router.post(
@@ -77,4 +78,4 @@ async def change_verification(
     Verify user
     """
     user = await admin_service.change_verify(user_id)
-    return BaseReturn(message="User verified successfully", data=user)
+    return BaseReturn(message=_("User verified successfully"), data=user)

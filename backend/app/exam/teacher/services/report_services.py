@@ -3,24 +3,23 @@ from datetime import datetime, timezone
 from io import BytesIO
 from typing import Any, Dict, List, Optional, Tuple
 
-from app.core.exceptions import NotFoundError
-from app.exam.models import StudentAttempt
-from app.exam.repository import (
-    ExamInstanceRepository,
-    StudentAttemptRepository,
-    StudentExamRepository,
-)
-from app.exam.teacher.schemas import (
-    ExamReportFilter,
-    ExamReportResponse,
-    ExamStatistics,
-    HistogramDataPoint,
-    TimelineDataPoint,
-)
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet
-from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+from reportlab.platypus import (Paragraph, SimpleDocTemplate, Spacer, Table,
+                                TableStyle)
+
+from app.core.exceptions import NotFoundError
+from app.core.utils import (convert_to_user_timezone,
+                            convert_user_timezone_to_utc)
+from app.exam.models import StudentAttempt
+from app.exam.repository import (ExamInstanceRepository,
+                                 StudentAttemptRepository,
+                                 StudentExamRepository)
+from app.exam.teacher.schemas import (ExamReportFilter, ExamReportResponse,
+                                      ExamStatistics, HistogramDataPoint,
+                                      TimelineDataPoint)
+from app.i18n import _
 
 
 class ReportService:
@@ -38,6 +37,7 @@ class ReportService:
         self,
         exam_instance_id: str,
         filters: ExamReportFilter,
+        user_timezone=None,
     ) -> ExamReportResponse:
         """
         Get comprehensive report for an exam instance including all metrics.
@@ -53,7 +53,7 @@ class ReportService:
             exam_instance_id, fetch_links=True
         )
         if not exam_instance:
-            raise NotFoundError("Exam instance not found")
+            raise NotFoundError(_("Exam instance not found"))
 
         if filters.title and filters.title.lower() != exam_instance.title.lower():
             return ExamReportResponse(
@@ -63,14 +63,19 @@ class ReportService:
                 statistics=ExamStatistics(),
             )
 
+        # Convert filter dates from user timezone to UTC
         start_date = (
             filters.start_date if filters.start_date else exam_instance.start_date
         )
-        if start_date and start_date.tzinfo is None:
+        if start_date and user_timezone:
+            start_date = convert_user_timezone_to_utc(start_date, user_timezone)
+        elif start_date and start_date.tzinfo is None:
             start_date = start_date.replace(tzinfo=timezone.utc)
 
         end_date = filters.end_date if filters.end_date else datetime.now(timezone.utc)
-        if end_date and end_date.tzinfo is None:
+        if end_date and user_timezone:
+            end_date = convert_user_timezone_to_utc(end_date, user_timezone)
+        elif end_date and end_date.tzinfo is None:
             end_date = end_date.replace(tzinfo=timezone.utc)
 
         date_range = (start_date, end_date)
@@ -95,7 +100,17 @@ class ReportService:
 
         histogram_data = self._prepare_histogram_data(scores)
 
+        # Convert timeline timestamps to user timezone
         timeline_data = self._prepare_timeline_data(attempts)
+        if user_timezone and timeline_data:
+            for point in timeline_data:
+                # Convert the datetime object from ISO format string
+                date_obj = datetime.fromisoformat(point.date)
+                if date_obj.tzinfo is None:
+                    date_obj = date_obj.replace(tzinfo=timezone.utc)
+                # Convert to user timezone and update the date string
+                date_obj = convert_to_user_timezone(date_obj, user_timezone)
+                point.date = date_obj.date().isoformat()
 
         return ExamReportResponse(
             exam_title=exam_instance.title,
@@ -272,11 +287,14 @@ class ReportService:
         exam_instance_id: str,
         filters: ExamReportFilter,
         include_visualizations: bool = True,
+        user_timezone=None,
     ) -> bytes:
         """Generate a modern PDF report for an exam instance with shadcn inspired design."""
         # Get the report data
         report_data = await self.get_exam_report(
-            exam_instance_id=exam_instance_id, filters=filters
+            exam_instance_id=exam_instance_id,
+            filters=filters,
+            user_timezone=user_timezone,
         )
 
         # Get student-specific data
@@ -342,12 +360,15 @@ class ReportService:
         # Create story (content elements)
         story = []
 
+        generation_date = datetime.now(timezone.utc)
+        if user_timezone:
+            generation_date = convert_to_user_timezone(generation_date, user_timezone)
         # Create modern header
         header_data = [
             [
                 Paragraph("<b>EXAM REPORT</b>", title_style),
                 Paragraph(
-                    f"<i>Generated: {datetime.now(timezone.utc).strftime('%Y-%m-%d')}</i>",
+                    f"<i>Generated: {generation_date.strftime('%Y-%m-%d')}</i>",
                     normal_style,
                 ),
             ]

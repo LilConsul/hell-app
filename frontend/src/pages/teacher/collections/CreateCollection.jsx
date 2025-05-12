@@ -421,50 +421,74 @@ function CreateCollection() {
       return;
     }
     setIsSaving(true);
-
+  
     try {
       let collId = collectionId;
       if (isNewCollection) {
         const res = await CollectionAPI.createCollection(collectionData);
         toast.success("Collection created successfully.");
         collId = res.data.collection_id;
+        navigate(`/collections/${collId}`, { replace: true });
+        setIsNewCollection(false);
       } else {
-        await CollectionAPI.updateCollection(collectionId, collectionData);
+        await CollectionAPI.updateCollection(collId, collectionData);
+        toast.success("Collection updated successfully.");
       }
-
-      const valid = newQuestions.filter(validateQuestion);
-      const invalid = newQuestions.filter((q) => !validateQuestion(q));
-
-      const ids = await Promise.all(
-        valid.map((q) =>
-          CollectionAPI.addQuestion(collId, q).then((r) => r.data.id)
-        )
+  
+      const unsaved = allQuestions.filter(q => !q.saved);
+      const valid   = unsaved.filter(validateQuestion);
+      const invalid = unsaved.filter(q => !validateQuestion(q));
+  
+      const savePromises = valid.map(async q => {
+        if (q.server_id) {
+          await CollectionAPI.updateQuestion(collId, q.server_id, q);
+          return { ...q, saved: true };
+        } else {
+          const res = await CollectionAPI.addQuestion(collId, q);
+          return { ...q, server_id: res.data.id, saved: true };
+        }
+      });
+      const savedQuestions = await Promise.all(savePromises);
+  
+      // Merge savedQuestions back into state
+      setQuestions(prev =>
+        prev.map(q => {
+          const updated = savedQuestions.find(sq => sq.id === q.id);
+          return updated ? { ...q, ...updated } : q;
+        })
       );
-
-      setQuestions((prev) => [
+      // Append new ones
+      setQuestions(prev => [
         ...prev,
-        ...valid.map((q, i) => ({ ...q, server_id: ids[i], saved: true })),
+        ...savedQuestions.filter(sq => !questions.some(q => q.id === sq.id))
       ]);
-      setNewQuestions(invalid);
-
-      if (valid.length)
-        toast.success(`Saved ${valid.length} question${valid.length > 1 ? "s" : ""}`);
+      // Keep only the new invalids in newQuestions
+      setNewQuestions(invalid.filter(q => !q.server_id));
+      if (invalid.some(q => q.server_id)) {
+        setQuestions(prev =>
+          prev.map(q => {
+            const bad = invalid.find(iq => iq.id === q.id);
+            return bad ? { ...q, saved: false } : q;
+          })
+        );
+      }
+  
+      if (savedQuestions.length) {
+        toast.success(
+          `Saved ${savedQuestions.length} question${savedQuestions.length > 1 ? "s" : ""}.`
+        );
+      }
       if (invalid.length) {
         setError({
           isError: true,
-          message: `${invalid.length} question${invalid.length > 1 ? "s" : ""} invalid; please fix.`
+          message: `${invalid.length} question${invalid.length > 1 ? "s" : ""} invalid; please fix them.`
         });
-      } else {
-        toast.success("Collection saved successfully.");
-        if (isNewCollection && collId) {
-          navigate(`/collections/${collId}`, { replace: true });
-          setIsNewCollection(false);
-        }
       }
+  
     } catch {
       setError({
         isError: true,
-        message: "Failed to save collection. Please try again."
+        message: "Failed to save collection or questions. Please try again."
       });
     } finally {
       setIsSaving(false);

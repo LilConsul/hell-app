@@ -2,8 +2,9 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
-import { Plus, Trash2, Save, CheckCircle2, CircleDot } from "lucide-react"
+import { Plus, Trash2, Save, CheckCircle2, CircleDot, AlertCircle } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Textarea } from "@/components/ui/textarea"
@@ -90,8 +91,8 @@ export function QuestionCard({
   const markAllFieldsAsTouched = () => {
     const optionTouchedState = {};
     if (question.options) {
-      question.options.forEach((_, index) => {
-        optionTouchedState[index] = true;
+      question.options.forEach((_, idx) => {
+        optionTouchedState[idx] = true;
       });
     }
     
@@ -111,15 +112,27 @@ export function QuestionCard({
     onSave(question.id);
   };
 
-  // Show validation errors only if field has been touched or user attempted to save
+  // Show validation errors only if field has been touched
   const showQuestionTextError = touchedFields.questionText && !question.question_text.trim();
-  const showCorrectOptionError = touchedFields.correctOption && 
-    (question.type === "mcq" || question.type === "singlechoice") && 
-    !question.options.some(opt => opt.is_correct);
   const showShortAnswerError = touchedFields.correctAnswer && 
     question.type === "shortanswer" && 
     !question.correct_input_answer.trim();
   
+  const showCorrectOptionError = touchedFields.correctOption && 
+    (question.type === "mcq" || question.type === "singlechoice") && 
+    !question.options.some(opt => opt.is_correct);
+  
+  const showOptionsWithoutTextError = (question.type === "mcq" || question.type === "singlechoice") &&
+    Object.entries(touchedFields.options).some(([idx, touched]) => 
+      touched && !question.options[idx].text.trim()
+    );
+
+  const hasValidationErrors = 
+    showQuestionTextError || 
+    showShortAnswerError || 
+    showCorrectOptionError || 
+    showOptionsWithoutTextError;
+
   return (
     <Card className={!question.saved && !isNew ? "border-amber-300 dark:border-amber-600" : ""}>
       <CardHeader className="flex flex-row items-start justify-between space-y-0">
@@ -145,12 +158,15 @@ export function QuestionCard({
             variant={question.saved ? "ghost" : "outline"}
             size="sm"
             onClick={handleSaveClick}
-            disabled={question.saved || !canSave || disabled}
+            disabled={disabled}
+            className={hasValidationErrors ? "animate-pulse bg-red-50 dark:bg-red-900/30" : ""}
             title={
               disabled ? "Cannot save while collection is archived" :
+              hasValidationErrors ? "Please fill in all required fields" : 
               !canSave ? "Save collection first to enable individual question saves" : ""
             }
           >
+            {hasValidationErrors && <AlertCircle className="h-4 w-4 mr-1 text-red-500" />}
             <Save className="h-4 w-4 mr-1" />
             {question.saved ? "Saved" : (canSave ? "Save Question" : "Save Collection First")}
           </Button>
@@ -177,7 +193,10 @@ export function QuestionCard({
             disabled={disabled}
           />
           {showQuestionTextError && (
-            <p className="text-xs text-red-500 dark:text-red-400">Question text is required</p>
+            <p className="text-xs text-red-500 dark:text-red-400 flex items-center">
+              <AlertCircle className="h-4 w-4 mr-1" /> 
+              Question text is required
+            </p>
           )}
         </div>
         {(question.type === "mcq" || question.type === "singlechoice") && (
@@ -188,51 +207,68 @@ export function QuestionCard({
                 {question.type === "mcq" ? "Multiple answers can be correct" : "Only one answer can be correct"}
               </span>
             </div>
-            {question.options.map((option, optIndex) => (
-              <div key={optIndex} className="flex items-center space-x-2">
-                {question.type === "singlechoice" ? (
-                  <RadioGroup
-                    value={question.options.findIndex(o => o.is_correct) === optIndex ? optIndex.toString() : ""}
-                    onValueChange={() => onUpdateCorrectOption(question.id, optIndex)}
-                    className="flex items-center"
-                    disabled={disabled}
-                  >
-                    <RadioGroupItem value={optIndex.toString()} id={`q${question.id}-opt${optIndex}`} disabled={disabled} />
-                  </RadioGroup>
-                ) : (
-                  <div className="flex items-center h-10 px-2">
-                    <input
-                      type="checkbox"
-                      id={`q${question.id}-opt${optIndex}-checkbox`}
-                      checked={option.is_correct}
-                      onChange={() => onUpdateCorrectOption(question.id, optIndex)}
-                      className="h-4 w-4"
+            {question.options.map((option, optIndex) => {
+              const showOptionError = touchedFields.options[optIndex] && !option.text.trim();
+              return (
+                <div key={optIndex} className="flex items-center space-x-2">
+                  {question.type === "singlechoice" ? (
+                    <RadioGroup
+                      value={question.options.findIndex(o => o.is_correct) === optIndex ? optIndex.toString() : ""}
+                      onValueChange={() => {
+                        onUpdateCorrectOption(question.id, optIndex);
+                        markAsTouched('correctOption');
+                      }}
+                      className={`flex items-center ${showCorrectOptionError ? 'outline-red-300 outline outline-1 rounded-md p-1' : ''}`}
                       disabled={disabled}
+                    >
+                      <RadioGroupItem 
+                        value={optIndex.toString()} 
+                        id={`q${question.id}-opt${optIndex}`} 
+                        disabled={disabled} 
+                        className={showOptionError ? 'border-red-300 dark:border-red-700' : ''}
+                      />
+                    </RadioGroup>
+                  ) : (
+                    <Checkbox
+                      checked={option.is_correct}
+                      onCheckedChange={() => {
+                        onUpdateCorrectOption(question.id, optIndex);
+                        markAsTouched('correctOption');
+                      }}
+                      disabled={disabled}
+                      className={`mt-0 ${
+                        showOptionError 
+                          ? 'border-red-300 dark:border-red-700 outline-red-300 outline outline-1' 
+                          : ''
+                      }`}
                     />
-                  </div>
-                )}
-                <Input
-                  placeholder={`Option ${optIndex + 1}`}
-                  value={option.text}
-                  onChange={(e) => onUpdateOption(question.id, optIndex, e.target.value)}
-                  onBlur={() => markAsTouched('options', optIndex)}
-                  className={`flex-1 ${touchedFields.options[optIndex] && !option.text.trim() ? "border-red-300 dark:border-red-700" : ""}`}
-                  disabled={disabled}
-                />
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => onRemoveOption(question.id, optIndex)}
-                  disabled={question.options.length <= 2 || disabled}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            ))}
-            {showCorrectOptionError && (
-              <p className="text-xs text-red-500 dark:text-red-400">
-                {question.type === "singlechoice" ? "Please select a correct answer" : "Please select at least one correct answer"}
+                  )}
+                  <Input
+                    placeholder={`Option ${optIndex + 1}`}
+                    value={option.text}
+                    onChange={(e) => onUpdateOption(question.id, optIndex, e.target.value)}
+                    onBlur={() => markAsTouched('options', optIndex)}
+                    className={showOptionError ? "border-red-300 dark:border-red-700" : "flex-1"}
+                    disabled={disabled}
+                  />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() => onRemoveOption(question.id, optIndex)}
+                    disabled={question.options.length <= 2 || disabled}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              )
+            })}
+            {(showCorrectOptionError || showOptionsWithoutTextError) && (
+              <p className="text-xs text-red-500 dark:text-red-400 flex items-center">
+                <AlertCircle className="h-4 w-4 mr-1" /> 
+                {showCorrectOptionError 
+                  ? "Please select at least one correct option" 
+                  : "All options must have text"}
               </p>
             )}
             <Button 
@@ -253,14 +289,17 @@ export function QuestionCard({
             <Input
               id={`answer-${question.id}`}
               placeholder="Enter the correct answer"
-              value={question.correct_input_answer}
+              value={question.correct_input}
               onChange={(e) => onUpdateShortAnswer(question.id, e.target.value)}
               onBlur={() => markAsTouched('correctAnswer')}
               className={showShortAnswerError ? "border-red-300 dark:border-red-700" : ""}
               disabled={disabled}
             />
             {showShortAnswerError && (
-              <p className="text-xs text-red-500 dark:text-red-400">Correct answer is required</p>
+              <p className="text-xs text-red-500 dark:text-red-400 flex items-center">
+                <AlertCircle className="h-4 w-4 mr-1" /> 
+                Correct answer is required
+              </p>
             )}
           </div>
         )}

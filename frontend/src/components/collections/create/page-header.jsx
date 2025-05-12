@@ -174,7 +174,7 @@ export function PageHeader({
                 )}
                 
                 {canEdit ? (
-                  <Button onClick={onSave} disabled={canEdit || status === "archived"}>
+                  <Button onClick={onSave} disabled={status === "archived"}>
                     <Save className="mr-2 h-4 w-4" />
                     Save Collection
                   </Button>

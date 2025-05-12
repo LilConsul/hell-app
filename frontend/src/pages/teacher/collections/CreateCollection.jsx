@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Navbar } from "@/components/navbar";
+import { Footer } from "@/components/footer";
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -128,6 +129,7 @@ function CreateCollection() {
         <main className="flex-1 flex items-center justify-center p-8 pt-6">
           <p className="text-lg">Loading collection data...</p>
         </main>
+        <Footer />
       </div>
     );
 
@@ -146,6 +148,7 @@ function CreateCollection() {
             </Button>
           </div>
         </main>
+        <Footer />
       </div>
     );
 
@@ -589,6 +592,7 @@ function CreateCollection() {
           </Tabs>
         </div>
       </main>
+      <Footer />
 
       <DuplicateCollectionModal
         isOpen={isDuplicateModalOpen}

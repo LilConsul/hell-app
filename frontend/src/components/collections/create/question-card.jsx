@@ -289,7 +289,7 @@ export function QuestionCard({
             <Input
               id={`answer-${question.id}`}
               placeholder="Enter the correct answer"
-              value={question.correct_input}
+              value={question.correct_input_answer}
               onChange={(e) => onUpdateShortAnswer(question.id, e.target.value)}
               onBlur={() => markAsTouched('correctAnswer')}
               className={showShortAnswerError ? "border-red-300 dark:border-red-700" : ""}

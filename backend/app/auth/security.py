@@ -4,10 +4,9 @@ from typing import Any, Dict, Optional
 
 import bcrypt
 import jwt
-from itsdangerous import URLSafeTimedSerializer
-
 from app.database.redis import get_redis_client
 from app.settings import settings
+from itsdangerous import URLSafeTimedSerializer
 
 # Create serializer for URL-safe tokens (for email verification)
 serializer = URLSafeTimedSerializer(
@@ -66,7 +65,7 @@ def decode_token(token: str) -> Dict[str, Any]:
 
 
 async def create_verification_token(
-    user_id: str, token_type: TokenType, max_age=86400
+    user_id: str, token_type: TokenType, max_age=86400, use_redis=True
 ) -> str:
     """Create URL-safe token for email verification and store in Redis"""
     data = {
@@ -77,15 +76,16 @@ async def create_verification_token(
     token = serializer.dumps(data)
 
     # Store token in Redis with expiration
-    redis_client = await get_redis_client()
-    token_key = f"token:{token_type.value}:{token}"
-    await redis_client.setex(token_key, max_age, user_id)
+    if use_redis:
+        redis_client = await get_redis_client()
+        token_key = f"token:{token_type.value}:{token}"
+        await redis_client.setex(token_key, max_age, user_id)
 
     return token
 
 
 async def decode_verification_token(
-    token: str, max_age=86400
+    token: str, max_age=86400, use_redis=True
 ) -> Optional[Dict[str, Any]]:
     """Decode and validate verification token with expiry check and Redis validation"""
     try:
@@ -94,10 +94,11 @@ async def decode_verification_token(
         token_type = data.get("type")
 
         # Check if token exists in Redis
-        redis_client = await get_redis_client()
-        token_key = f"token:{token_type}:{token}"
-        if not await redis_client.exists(token_key):
-            return None
+        if use_redis:
+            redis_client = await get_redis_client()
+            token_key = f"token:{token_type}:{token}"
+            if not await redis_client.exists(token_key):
+                return None
 
         return data
     except Exception:

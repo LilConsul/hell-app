@@ -1,12 +1,11 @@
 import { useEffect, useState } from "react";
 import {
   BookOpen,
-  Calendar,
+  CalendarIcon,
   Award,
   Clock,
   ChevronLeft,
   ChevronRight,
-  X,
   ArrowRight,
 } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -21,13 +20,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogC
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Calendar } from "@/components/ui/calendar";
 
 const fetchStudentData = async () => {
   try {
     const studentExamsData = await apiRequest(
       "/api/v1/exam/student/exams",
-      { 
-        credentials: "include",
+      {
         headers: {
           "Accept": "application/json"
         }
@@ -37,11 +36,11 @@ const fetchStudentData = async () => {
     if (!studentExamsData || typeof studentExamsData !== 'object') {
       throw new Error("API returned invalid data format");
     }
-    
+
     const studentExams = (studentExamsData?.data || []).map(exam => {
       return {
-        _id: exam.id || exam._id,  
-        title: exam.exam_instance_id?.title || exam.title, 
+        _id: exam.id || exam._id,
+        title: exam.exam_instance_id?.title || exam.title,
         start_date: exam.exam_instance_id?.start_date || exam.start_date,
         end_date: exam.exam_instance_id?.end_date || exam.end_date,
         status: exam.exam_instance_id?.status || exam.status,
@@ -53,20 +52,20 @@ const fetchStudentData = async () => {
       };
     });
 
-    const completedExams = studentExams.filter(exam => 
+    const completedExams = studentExams.filter(exam =>
       exam.status === "completed" || exam.status === "graded"
     );
-    
+
     const now = new Date();
-    
+
     const upcomingExams = studentExams
       .filter(exam => new Date(exam.start_date) > now)
       .sort((a, b) => new Date(a.start_date) - new Date(b.start_date))
       .slice(0, 3);
 
     const activeExams = studentExams
-      .filter(exam => 
-        new Date(exam.start_date) <= now && 
+      .filter(exam =>
+        new Date(exam.start_date) <= now &&
         new Date(exam.end_date) >= now
       )
       .sort((a, b) => new Date(b.end_date) - new Date(a.end_date));
@@ -77,8 +76,8 @@ const fetchStudentData = async () => {
       .map(exam => ({
         _id: exam._id,
         title: exam.title,
-        score: exam.score || "N/A", 
-        passed: exam.passed !== undefined ? exam.passed : null, 
+        score: exam.score || "N/A",
+        passed: exam.passed !== undefined ? exam.passed : null,
         submitted_at: exam.submitted_at || exam.end_date
       }));
 
@@ -92,7 +91,7 @@ const fetchStudentData = async () => {
         (new Date(exam.end_date) < now ? "past" : "active")
       )
     }));
-    
+
     return {
       upcomingExams,
       activeExams,
@@ -114,8 +113,7 @@ const fetchStudentData = async () => {
 const fetchExamDetails = async (examId) => {
   try {
     const response = await apiRequest(
-      `/api/v1/exam/student/exams/${examId}`,
-      { credentials: 'include' }
+      `/api/v1/exam/student/exams/${examId}`
     );
 
     if (!response || typeof response !== 'object') {
@@ -126,7 +124,7 @@ const fetchExamDetails = async (examId) => {
 
     return {
       ...data.exam_instance_id,
-      _id: examId, 
+      _id: examId,
       question_count: data.question_count,
       attempts_allowed: data.attempts_allowed,
       start_date: data.exam_instance_id?.start_date,
@@ -134,6 +132,7 @@ const fetchExamDetails = async (examId) => {
       passing_score: data.exam_instance_id?.passing_score,
       title: data.exam_instance_id?.title,
       description: data.exam_instance_id?.description,
+      instructions: data.exam_instance_id?.instructions
     };
   } catch (error) {
     return null;
@@ -175,13 +174,14 @@ export function StudentDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentDate, setCurrentDate] = useState(new Date());
-  
+
   const [selectedExamId, setSelectedExamId] = useState(null);
   const [examDetails, setExamDetails] = useState(null);
   const [loadingDetails, setLoadingDetails] = useState(false);
-  
+
   const [multipleExamDetails, setMultipleExamDetails] = useState([]);
   const [isLoadingMultipleExams, setIsLoadingMultipleExams] = useState(false);
+  const [selectedDay, setSelectedDay] = useState(null);
 
   useEffect(() => {
     setLoading(true);
@@ -190,7 +190,7 @@ export function StudentDashboard() {
         setData(data);
         setError(null);
       })
-      .catch(err => {
+      .catch(() => {
         setError("Failed to load your dashboard data. Please try refreshing the page.");
       })
       .finally(() => {
@@ -201,43 +201,43 @@ export function StudentDashboard() {
   useEffect(() => {
     if (selectedExamId) {
       setLoadingDetails(true);
-      fetchExamDetails(selectedExamId, data.allExams)
+      fetchExamDetails(selectedExamId)
         .then(details => {
           setExamDetails(details);
         })
-        .catch(err => {
+        .catch(() => {
           setError("Failed to load exam details. Please try again.");
         })
         .finally(() => {
           setLoadingDetails(false);
         });
     }
-  }, [selectedExamId, data.allExams]);
+  }, [selectedExamId]);
 
   const handleExamSelect = (examId) => {
     setSelectedExamId(examId);
-    setMultipleExamDetails([]); 
+    setMultipleExamDetails([]);
   };
 
   const handleCloseDetails = () => {
     setSelectedExamId(null);
     setExamDetails(null);
   };
-  
+
   const handleDayExams = async (exams) => {
     if (exams.length === 1) {
       handleExamSelect(exams[0]._id);
     } else if (exams.length > 1) {
       setIsLoadingMultipleExams(true);
-      setMultipleExamDetails([]); 
-      setSelectedExamId(null); 
-      
+      setMultipleExamDetails([]);
+      setSelectedExamId(null);
+
       try {
         const examDetailsPromises = exams.map(exam => fetchExamDetails(exam._id));
         const allExamDetails = await Promise.all(examDetailsPromises);
-        
+
         const validExamDetails = allExamDetails.filter(detail => detail !== null);
-        
+
         setMultipleExamDetails(validExamDetails);
       } catch (error) {
         setError("Failed to load all exam details. Please try again.");
@@ -255,9 +255,8 @@ export function StudentDashboard() {
     try {
       await apiRequest(
         `/api/v1/exam/student/exam/${examId}/start`,
-        { 
-          method: 'POST',
-          credentials: 'include'
+        {
+          method: 'POST'
         }
       );
       window.location.href = `/exam/${examId}`;
@@ -272,49 +271,49 @@ export function StudentDashboard() {
     const daysInMonth = getDaysInMonth(year, month);
     const firstDayOfMonth = getFirstDayOfMonth(year, month);
     const today = new Date();
-    
+
     const days = [];
-    
+
     for (let i = 0; i < firstDayOfMonth; i++) {
       days.push(
         <div key={`empty-start-${i}`} className="h-6 p-0.5 text-center bg-gray-50 dark:bg-muted/10 rounded-md opacity-50">
         </div>
       );
     }
-    
+
     for (let day = 1; day <= daysInMonth; day++) {
       const date = new Date(year, month, day);
       const dateString = formatDate(date);
-      
+
       const examsOnThisDay = data.calendarEvents.filter(event => {
         const eventStartDate = formatDate(event.start_date);
         const eventEndDate = formatDate(event.end_date);
         return dateString >= eventStartDate && dateString <= eventEndDate;
       });
-      
+
       const now = new Date();
-      
-      const isToday = 
-        date.getDate() === today.getDate() && 
-        date.getMonth() === today.getMonth() && 
+
+      const isToday =
+        date.getDate() === today.getDate() &&
+        date.getMonth() === today.getMonth() &&
         date.getFullYear() === today.getFullYear();
-      
+
       let hasActiveExam = false;
       let hasUpcomingExam = false;
-      
+
       if (examsOnThisDay.length > 0) {
-        hasActiveExam = examsOnThisDay.some(exam => 
-          new Date(exam.start_date) <= now && 
+        hasActiveExam = examsOnThisDay.some(exam =>
+          new Date(exam.start_date) <= now &&
           new Date(exam.end_date) >= now
         );
-        
+
         hasUpcomingExam = examsOnThisDay.some(exam =>
           new Date(exam.start_date) > now
         );
       }
-      
+
       let cellClasses = "h-6 flex flex-col justify-between p-0.5 rounded-md transition-colors relative";
-      
+
       if (hasActiveExam) {
         cellClasses += " bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700";
       } else if (hasUpcomingExam) {
@@ -324,9 +323,9 @@ export function StudentDashboard() {
       } else {
         cellClasses += " bg-white dark:bg-muted/20 hover:bg-gray-50 dark:hover:bg-muted/30";
       }
-      
+
       let dayNumberClasses = "text-xs leading-tight";
-      
+
       if (isToday) {
         dayNumberClasses += " font-bold text-primary dark:text-primary-400";
       } else if (hasActiveExam) {
@@ -336,10 +335,10 @@ export function StudentDashboard() {
       } else {
         dayNumberClasses += " text-gray-700 dark:text-gray-300";
       }
-      
+
       days.push(
-        <div 
-          key={`day-${month}-${day}-${year}`} 
+        <div
+          key={`day-${month}-${day}-${year}`}
           className={`${cellClasses} ${examsOnThisDay.length > 0 ? 'cursor-pointer' : ''}`}
           onClick={examsOnThisDay.length > 0 ? () => handleDayExams(examsOnThisDay) : undefined}
         >
@@ -351,7 +350,7 @@ export function StudentDashboard() {
         </div>
       );
     }
-    
+
     const totalCells = Math.ceil((daysInMonth + firstDayOfMonth) / 7) * 7;
     for (let i = daysInMonth + firstDayOfMonth; i < totalCells; i++) {
       days.push(
@@ -359,7 +358,7 @@ export function StudentDashboard() {
         </div>
       );
     }
-    
+
     return days;
   };
 
@@ -386,11 +385,11 @@ export function StudentDashboard() {
 
         {/* Exam Details Modal */}
         <Dialog open={!!selectedExamId} onOpenChange={(open) => !open && handleCloseDetails()}>
-          <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto border-2 border-gray-200 dark:border-gray-700 rounded-lg">
-            <DialogHeader className="border-b border-gray-200 dark:border-gray-700 pb-4 mb-2">
+          <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto border-2 border-gray-200 dark:border-neutral-900 rounded-lg bg-white dark:bg-neutral-950">
+            <DialogHeader className="border-b border-gray-200 dark:border-neutral-900 pb-4 mb-2">
               <DialogTitle className="text-xl font-bold">Exam Details</DialogTitle>
             </DialogHeader>
-    
+
             {loadingDetails ? (
               <div className="p-6 space-y-4">
                <Skeleton className="h-6 w-3/4" />
@@ -403,9 +402,9 @@ export function StudentDashboard() {
              <div className="p-6 space-y-4">
                 <h3 className="text-xl font-semibold">{examDetails.title}</h3>
                 <p className="text-muted-foreground">{examDetails.description || "No description provided."}</p>
-        
+
                 <div className="grid grid-cols-2 gap-4 mt-4">
-                  <div className="p-3 bg-gray-50 dark:bg-neutral-800 rounded-lg shadow-sm">
+                  <div className="p-3 bg-gray-50 dark:bg-neutral-900 rounded-lg shadow-sm">
                     <p className="text-xs text-muted-foreground">Duration</p>
                     <p className="font-medium">
                        {(() => {
@@ -413,67 +412,67 @@ export function StudentDashboard() {
                         const endDate = new Date(examDetails.end_date);
                         const durationMs = endDate - startDate;
                         const durationMinutes = Math.round(durationMs / (1000 * 60));
-                
+
                         if (durationMinutes >= 1440) {
                          const hours = Math.floor(durationMinutes / 60);
                          const days = Math.floor(hours / 24);
                           const remainingHours = hours % 24;
-                  
+
                          if (remainingHours === 0) {
                             return `${days} day${days !== 1 ? 's' : ''}`;
                          } else {
                             return `${days} day${days !== 1 ? 's' : ''} ${remainingHours} hour${remainingHours !== 1 ? 's' : ''}`;
                           }
-                        }  
+                        }
                         else if (durationMinutes > 60) {
                          const hours = Math.floor(durationMinutes / 60);
                          const minutes = durationMinutes % 60;
-                                
+
                           if (minutes === 0) {
                             return `${hours} hour${hours !== 1 ? 's' : ''}`;
                           } else {
                            return `${hours} hour${hours !== 1 ? 's' : ''} ${minutes} minute${minutes !== 1 ? 's' : ''}`;
                          }
-                        } 
+                        }
                        else {
                          return `${durationMinutes} minute${durationMinutes !== 1 ? 's' : ''}`;
                        }
                       })()}
                     </p>
                   </div>
-                  <div className="p-3 bg-gray-50 dark:bg-neutral-800 rounded-lg shadow-sm">
+                  <div className="p-3 bg-gray-50 dark:bg-neutral-900 rounded-lg shadow-sm">
                     <p className="text-xs text-muted-foreground">Questions</p>
                     <p className="font-medium">{examDetails.question_count || '-'}</p>
                   </div>
-                  <div className="p-3 bg-gray-50 dark:bg-neutral-800 rounded-lg shadow-sm">
+                  <div className="p-3 bg-gray-50 dark:bg-neutral-900 rounded-lg shadow-sm">
                     <p className="text-xs text-muted-foreground">Start Date</p>
                    <p className="font-medium">{formatDateTimeWithoutSeconds(examDetails.start_date)}</p>
                  </div>
-                 <div className="p-3 bg-gray-50 dark:bg-neutral-800 rounded-lg shadow-sm">
+                 <div className="p-3 bg-gray-50 dark:bg-neutral-900 rounded-lg shadow-sm">
                     <p className="text-xs text-muted-foreground">End Date</p>
                     <p className="font-medium">{formatDateTimeWithoutSeconds(examDetails.end_date)}</p>
                   </div>
-                  <div className="p-3 bg-gray-50 dark:bg-neutral-800 rounded-lg shadow-sm">
+                  <div className="p-3 bg-gray-50 dark:bg-neutral-900 rounded-lg shadow-sm">
                     <p className="text-xs text-muted-foreground">Passing Score</p>
                     <p className="font-medium">{examDetails.passing_score || '-'}%</p>
                   </div>
-                  <div className="p-3 bg-gray-50 dark:bg-neutral-800 rounded-lg shadow-sm">
+                  <div className="p-3 bg-gray-50 dark:bg-neutral-900 rounded-lg shadow-sm">
                   <p className="text-xs text-muted-foreground">Attempts Allowed</p>
                     <p className="font-medium">{examDetails.attempts_allowed || examDetails.max_attempts || 1}</p>
                   </div>
               </div>
-        
+
                 {examDetails.instructions && (
                  <div className="mt-4">
                    <h4 className="font-medium mb-2">Instructions</h4>
-                   <div className="p-4 bg-gray-50 dark:bg-neutral-800 rounded-lg shadow-sm text-sm">
+                   <div className="p-4 bg-gray-50 dark:bg-neutral-900 rounded-lg shadow-sm text-sm">
                      {examDetails.instructions}
                     </div>
                   </div>
                 )}
-        
-               <DialogFooter className="pt-4 border-t border-gray-200 dark:border-gray-700 mt-4">
-                  {new Date() >= new Date(examDetails.start_date) && 
+
+               <DialogFooter className="pt-4 border-t border-gray-200 dark:border-neutral-900 mt-4">
+                  {new Date() >= new Date(examDetails.start_date) &&
                   new Date() <= new Date(examDetails.end_date) && (
                    <Button
                      onClick={() => handleStartExam(selectedExamId)}
@@ -506,11 +505,11 @@ export function StudentDashboard() {
 
         {/* Multiple Exams Details Modal */}
         <Dialog open={multipleExamDetails.length > 1} onOpenChange={(open) => !open && handleCloseMultipleExams()}>
-  <DialogContent className="sm:max-w-5xl max-h-[90vh] p-0 border-2 border-gray-200 dark:border-gray-700 rounded-lg">
-    <DialogHeader className="border-b border-gray-200 dark:border-gray-700 pb-4 mb-2 p-6">
+  <DialogContent className="sm:max-w-5xl max-h-[90vh] p-0 border-2 border-gray-200 dark:border-neutral-900 rounded-lg bg-white dark:bg-neutral-950">
+    <DialogHeader className="border-b border-gray-200 dark:border-neutral-900 pb-4 mb-2 p-6">
       <DialogTitle className="text-xl font-bold">Exams Details</DialogTitle>
     </DialogHeader>
-    
+
     <ScrollArea className="max-h-[calc(90vh-120px)]">
       <div className="p-6">
         {isLoadingMultipleExams ? (
@@ -531,13 +530,13 @@ export function StudentDashboard() {
         ) : (
           <div className="grid grid-cols-1 gap-6">
             {multipleExamDetails.map((examDetail, index) => (
-              <Card key={`exam-detail-${index}`} className="border dark:border-neutral-700 bg-gray-50 dark:bg-neutral-800/50 shadow-sm">
+              <Card key={`exam-detail-${index}`} className="border dark:border-neutral-900 bg-gray-50 dark:bg-neutral-950 shadow-sm">
                 <CardContent className="p-4">
                   <h3 className="text-xl font-semibold mb-2">{examDetail.title}</h3>
                   <p className="text-muted-foreground text-sm mb-4">{examDetail.description || "No description provided."}</p>
-                
+
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  <div className="p-2 bg-white dark:bg-neutral-700 rounded shadow-sm">
+                  <div className="p-2 bg-white dark:bg-neutral-900 rounded shadow-sm">
                     <p className="text-xs text-muted-foreground">Duration</p>
                     <p className="font-medium">
                       {(() => {
@@ -545,12 +544,12 @@ export function StudentDashboard() {
                         const endDate = new Date(examDetail.end_date);
                         const durationMs = endDate - startDate;
                         const durationMinutes = Math.round(durationMs / (1000 * 60));
-                        
+
                         if (durationMinutes >= 1440) {
                           const hours = Math.floor(durationMinutes / 60);
                           const days = Math.floor(hours / 24);
                           const remainingHours = hours % 24;
-                          
+
                           if (remainingHours === 0) {
                             return `${days} day${days !== 1 ? 's' : ''}`;
                           } else {
@@ -559,7 +558,7 @@ export function StudentDashboard() {
                         } else if (durationMinutes > 60) {
                           const hours = Math.floor(durationMinutes / 60);
                           const minutes = durationMinutes % 60;
-                          
+
                           if (minutes === 0) {
                             return `${hours} hour${hours !== 1 ? 's' : ''}`;
                           } else {
@@ -571,44 +570,44 @@ export function StudentDashboard() {
                       })()}
                     </p>
                   </div>
-                  
-                  <div className="p-2 bg-white dark:bg-neutral-700 rounded shadow-sm">
+
+                  <div className="p-2 bg-white dark:bg-neutral-900 rounded shadow-sm">
                     <p className="text-xs text-muted-foreground">Questions</p>
                     <p className="font-medium">{examDetail.question_count || '-'}</p>
                   </div>
-                  
-                  <div className="p-2 bg-white dark:bg-neutral-700 rounded shadow-sm">
+
+                  <div className="p-2 bg-white dark:bg-neutral-900 rounded shadow-sm">
                     <p className="text-xs text-muted-foreground">Passing Score</p>
                     <p className="font-medium">{examDetail.passing_score || '-'}%</p>
                   </div>
-                  
-                  <div className="p-2 bg-white dark:bg-neutral-700 rounded shadow-sm">
+
+                  <div className="p-2 bg-white dark:bg-neutral-900 rounded shadow-sm">
                     <p className="text-xs text-muted-foreground">Start Date</p>
                     <p className="font-medium">{formatDateTimeWithoutSeconds(examDetail.start_date)}</p>
                   </div>
-                  
-                  <div className="p-2 bg-white dark:bg-neutral-700 rounded shadow-sm">
+
+                  <div className="p-2 bg-white dark:bg-neutral-900 rounded shadow-sm">
                     <p className="text-xs text-muted-foreground">End Date</p>
                     <p className="font-medium">{formatDateTimeWithoutSeconds(examDetail.end_date)}</p>
                   </div>
-                  
-                  <div className="p-2 bg-white dark:bg-neutral-700 rounded shadow-sm">
+
+                  <div className="p-2 bg-white dark:bg-neutral-900 rounded shadow-sm">
                     <p className="text-xs text-muted-foreground">Attempts Allowed</p>
                     <p className="font-medium">{examDetail.attempts_allowed || examDetail.max_attempts || 1}</p>
                   </div>
                 </div>
-                
+
                 {examDetail.instructions && (
                   <div className="mt-3">
                     <h4 className="font-medium mb-1 text-sm">Instructions</h4>
-                    <div className="p-3 bg-white dark:bg-neutral-700 rounded shadow-sm text-sm">
+                    <div className="p-3 bg-white dark:bg-neutral-900 rounded shadow-sm text-sm">
                       {examDetail.instructions}
                     </div>
                   </div>
                 )}
-                
-                <div className="flex justify-end mt-4 pt-3 border-t border-gray-200 dark:border-gray-700">
-                  {new Date() >= new Date(examDetail.start_date) && 
+
+                <div className="flex justify-end mt-4 pt-3 border-t border-gray-200 dark:border-neutral-900">
+                  {new Date() >= new Date(examDetail.start_date) &&
                    new Date() <= new Date(examDetail.end_date) && (
                     <Button
                       onClick={() => handleStartExam(examDetail._id)}
@@ -638,72 +637,174 @@ export function StudentDashboard() {
     </ScrollArea>
   </DialogContent>
 </Dialog>
-        
+
         {/* Calendar */}
         <Card className="shadow">
-          <CardContent className="p-3">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-semibold dark:text-white">Exam Calendar</h3>
-              <div className="flex space-x-1 items-center">
-                <Button 
-                  variant="ghost"
-                  size="icon" 
-                  className="p-0.5 h-auto w-auto"
-                  onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1))}
-                >
-                  <ChevronLeft className="h-3 w-3" />
-                </Button>
-                <span className="text-xs font-medium dark:text-gray-300">
-                  {currentDate.toLocaleString('default', { month: 'long' })} {currentDate.getFullYear()}
-                </span>
-                <Button 
-                  variant="ghost"
-                  size="icon"
-                  className="p-0.5 h-auto w-auto"
-                  onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1))}
-                >
-                  <ChevronRight className="h-3 w-3" />
-                </Button>
-              </div>
-            </div>
+  <CardContent className="p-3">
+    <div className="flex items-center justify-between mb-2">
+      <h3 className="text-sm font-semibold dark:text-white">Exam Calendar</h3>
+    </div>
 
-            {loading ? (
-              <div className="grid grid-cols-7 gap-0.5">
-                {Array.from({ length: 35 }).map((_, i) => (
-                  <Skeleton key={`skeleton-${i}`} className="h-6 rounded" />
-                ))}
-              </div>
-            ) : (
-              <>
-                {/* Calendar Header - Days of week */}
-                <div className="grid grid-cols-7 gap-0.5 mb-0.5">
-                  {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, index) => (
-                    <div key={`weekday-${index}`} className="text-center text-xs font-medium text-gray-500 dark:text-gray-400 py-0.5">
-                      {day}
-                    </div>
-                  ))}
-                </div>
-                
-                {/* Calendar Body */}
-                <div className="grid grid-cols-7 gap-0.5">
-                  {renderCalendarDays()}
-                </div>
+    {loading ? (
+      <div className="grid grid-cols-7 gap-0.5">
+        {Array.from({ length: 35 }).map((_, i) => (
+          <Skeleton key={`skeleton-${i}`} className="h-6 rounded" />
+        ))}
+      </div>
+    ) : (
+      <div className="w-full">
+        <Calendar
+          mode="single"
+          selected={selectedDay}
+          onSelect={(date) => {
+            setSelectedDay(date);
+            if (date) {
+              const dateStr = formatDate(date);
+              const examsOnThisDay = data.calendarEvents.filter(event => {
+                const eventStartDate = formatDate(event.start_date);
+                const eventEndDate = formatDate(event.end_date);
+                return dateStr >= eventStartDate && dateStr <= eventEndDate;
+              });
 
-                {/* Legend */}
-                <div className="flex justify-end mt-2 pt-1 border-t dark:border-muted/20">
-                  <div className="flex items-center mr-3">
-                    <div className="h-3 w-3 rounded bg-blue-50 dark:bg-blue-900/30 border border-blue-300 dark:border-blue-700 mr-1"></div>
-                    <span className="text-xs text-gray-600 dark:text-gray-300">Upcoming</span>
+              if (examsOnThisDay.length > 0) {
+                handleDayExams(examsOnThisDay);
+              }
+            }
+          }}
+          month={currentDate}
+          onMonthChange={setCurrentDate}
+          classNames={{
+            day_today: "bg-white dark:bg-muted/40 font-bold text-primary dark:text-primary-400 shadow-sm ring-1 ring-primary/30 dark:ring-primary/50",
+            root: "w-full text-xs",
+            month: "w-full",
+            table: "w-full",
+            tbody: "w-full",
+            caption: "flex w-full justify-between items-center px-1 py-2",
+            caption_label: "font-medium dark:text-gray-200 flex-1 text-center"
+          }}
+          components={{
+            Caption: ({ displayMonth, currMonth, ...props }) => {
+              return (
+                <div className="flex items-center justify-between w-full px-1">
+                  <button
+                    type="button"
+                    className="p-1 rounded-md hover:bg-muted/20 dark:hover:bg-muted/30"
+                    onClick={() => props.onDecrease()}
+                    aria-label="Previous month"
+                  >
+                    <ChevronLeft className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+                  </button>
+                  <div className="flex-1 text-center">
+                    <span className="text-sm font-medium dark:text-gray-200">
+                      {displayMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}
+                    </span>
                   </div>
-                  <div className="flex items-center">
-                    <div className="h-3 w-3 rounded bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700 mr-1"></div>
-                    <span className="text-xs text-gray-600 dark:text-gray-300">Active</span>
-                  </div>
+                  <button
+                    type="button"
+                    className="p-1 rounded-md hover:bg-muted/20 dark:hover:bg-muted/30"
+                    onClick={() => props.onIncrease()}
+                    aria-label="Next month"
+                  >
+                    <ChevronRight className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+                  </button>
                 </div>
-              </>
-            )}
-          </CardContent>
-        </Card>
+              );
+            },
+          }}
+          modifiers={{
+            activeExam: (date) => {
+              if (!date) return false;
+              const dateStr = formatDate(date);
+              return data.calendarEvents.some(event => {
+                const eventStartDate = formatDate(event.start_date);
+                const eventEndDate = formatDate(event.end_date);
+                const now = new Date();
+                return (
+                  dateStr >= eventStartDate &&
+                  dateStr <= eventEndDate &&
+                  new Date(event.start_date) <= now &&
+                  new Date(event.end_date) >= now
+                );
+              });
+            },
+            upcomingExam: (date) => {
+              if (!date) return false;
+              const dateStr = formatDate(date);
+              return data.calendarEvents.some(event => {
+                const eventStartDate = formatDate(event.start_date);
+                const eventEndDate = formatDate(event.end_date);
+                const now = new Date();
+                return (
+                  dateStr >= eventStartDate &&
+                  dateStr <= eventEndDate &&
+                  new Date(event.start_date) > now &&
+                  !data.calendarEvents.some(e =>
+                    dateStr >= formatDate(e.start_date) &&
+                    dateStr <= formatDate(e.end_date) &&
+                    new Date(e.start_date) <= now &&
+                    new Date(e.end_date) >= now
+                  )
+                );
+              });
+            },
+            hasExams: (date) => {
+              if (!date) return false;
+              const dateStr = formatDate(date);
+              const exams = data.calendarEvents.filter(event => {
+                const eventStartDate = formatDate(event.start_date);
+                const eventEndDate = formatDate(event.end_date);
+                return dateStr >= eventStartDate && dateStr <= eventEndDate;
+              });
+              return exams.length > 0;
+            },
+          }}
+          modifiersStyles={{
+  activeExam: {
+    backgroundColor: "rgba(251, 191, 36, 0.15)",
+    color: "rgb(251 191 36)",
+    fontWeight: "500",
+    borderWidth: "1px",
+    borderColor: "rgba(251, 191, 36, 0.3)",
+    cursor: "pointer"
+  },
+  upcomingExam: {
+    backgroundColor: "rgba(96, 165, 250, 0.15)",
+    color: "rgb(96 165 250)",
+    fontWeight: "500",
+    borderWidth: "1px",
+    borderColor: "rgba(96, 165, 250, 0.3)",
+    cursor: "pointer"
+  },
+  hasExams: {
+    cursor: "pointer"
+  }
+}}
+
+          className="rounded-md w-full"
+          styles={{
+            head_cell: { width: "14.28%" },
+            caption: { width: "100%" },
+            cell: { height: "2.5rem", padding: "0.125rem", fontSize: "0.75rem", width: "14.28%" },
+            day: { height: "2.5rem", width: "100%", fontSize: "0.75rem", margin: 0 }
+          }}
+          showOutsideDays={true}
+        />
+
+        {/* Legend */}
+        <div className="flex justify-end mt-2 pt-1 border-t dark:border-muted/20">
+          <div className="flex items-center mr-3">
+            <div className="h-3 w-3 rounded bg-blue-50 dark:bg-blue-900/20 border border-blue-300 dark:border-blue-800/30 mr-1"></div>
+            <span className="text-xs text-gray-600 dark:text-gray-300">Upcoming</span>
+          </div>
+          <div className="flex items-center">
+            <div className="h-3 w-3 rounded bg-amber-100 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-800/30 mr-1"></div>
+            <span className="text-xs text-gray-600 dark:text-gray-300">Active</span>
+          </div>
+        </div>
+      </div>
+    )}
+  </CardContent>
+</Card>
 
         {/* Active Exam Box */}
         {loading ? (
@@ -718,7 +819,7 @@ export function StudentDashboard() {
             </CardContent>
           </Card>
         ) : data.activeExams && data.activeExams.length > 0 ? (
-          <Card 
+          <Card
             className="shadow-sm hover:bg-muted/20 transition-all duration-200 cursor-pointer"
             onClick={() => handleExamSelect(data.activeExams[0]._id)}
           >
@@ -727,7 +828,7 @@ export function StudentDashboard() {
                 <Clock className="h-5 w-5 text-gray-500 dark:text-amber-500" />
                 <h3 className="text-base font-medium text-gray-700 dark:text-white">Active Exam</h3>
               </div>
-              
+
               <div>
                 <div className="flex justify-between items-center">
                   <div>
@@ -756,7 +857,7 @@ export function StudentDashboard() {
               {/* Upcoming exams */}
               <div className="h-full flex flex-col">
                 <div className="flex items-center gap-2 mb-3">
-                  <Calendar className="h-4 w-4 text-primary" />
+                  <CalendarIcon className="h-4 w-4 text-primary" />
                   <h4 className="font-medium">Upcoming Exams</h4>
                 </div>
                 <div className="flex-1 flex flex-col">
@@ -778,10 +879,10 @@ export function StudentDashboard() {
                       {data.upcomingExams.map((exam) => (
                         <Card
                           key={`upcoming-${exam._id}`}
-                          className="flex flex-col border dark:border-muted/20 bg-muted/5 dark:bg-muted/20 flex-1 cursor-pointer hover:bg-muted/10 dark:hover:bg-muted/30 hover:shadow-md hover:scale-[1.01] transition-transform"
+                          className="flex flex-col border bg-white dark:bg-muted/20 flex-1 cursor-pointer hover:bg-gray-50 dark:hover:bg-muted/30 hover:shadow-md transition-shadow"
                           onClick={() => handleExamSelect(exam._id)}
-                        >    
-                          <CardContent className="p-2">    
+                        >
+                          <CardContent className="p-2">
                             <div className="flex items-center gap-2">
                               <span className="font-medium truncate">{exam.title}</span>
                             </div>
@@ -823,7 +924,7 @@ export function StudentDashboard() {
                       {data.recentResults.map((result) => (
                         <Card
                           key={`result-${result._id}`}
-                          className="flex flex-col border dark:border-muted/20 bg-muted/5 dark:bg-muted/20 flex-1 cursor-pointer hover:bg-muted/10 dark:hover:bg-muted/30 hover:shadow-md hover:scale-[1.01] transition-transform"
+                          className="flex flex-col border bg-white dark:bg-muted/20 flex-1 cursor-pointer hover:bg-gray-50 dark:hover:bg-muted/30 hover:shadow-md transition-shadow"
                           onClick={() => handleExamSelect(result._id)}
                         >
                           <CardContent className="p-2">
@@ -836,8 +937,8 @@ export function StudentDashboard() {
                               </span>
                               {result.passed !== null ? (
                                 <Badge className={`w-16 text-center text-[10px] shadow-sm ${
-                                  result.passed 
-                                    ? "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 hover:bg-green-50 hover:text-green-700" 
+                                  result.passed
+                                    ? "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 hover:bg-green-50 hover:text-green-700"
                                     : "bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 hover:bg-red-50 hover:text-red-700"
                                 }`}>
                                   {result.passed ? "Passed" : "Failed"}

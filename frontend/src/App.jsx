@@ -16,16 +16,15 @@ import EmailVerification from './pages/regular/EmailVerification';
 
 // Pages based on user role
 import Dashboard  from './pages/role-based/DashboardDecider';
+import Exams from './pages/role-based/ExamDecider';
 
 // Teacher pages
 import Collections from './pages/teacher/collections/Collections';
 import CreateCollection from './pages/teacher/collections/CreateCollection';
-import TeacherExams from './pages/teacher/exams/TeacherExams';
 import AllExams from './pages/teacher/exams/AllExams';
 import CreateExams from './pages/teacher/exams/CreateExams';
 
 // Placeholders
-import Exams from './pages/Exams';
 import Students from './pages/Students';
 import Reports from './pages/Reports';
 
@@ -61,7 +60,7 @@ export default function App() {
           {/* All authenticated users */}
           <Route element={<ProtectedLayout />}>
             <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/exams" element={<Exams />} />
+            <Route path="/exams" element={<Exams/>} />
             <Route path="/settings" element={<Settings />} />
           </Route>
 
@@ -71,12 +70,11 @@ export default function App() {
             <Route path="/reports" element={<Reports />} />
             <Route path="/collections" element={<Collections />} />
             <Route path="/collections/:collectionId" element={<CreateCollection />} />
-            <Route path="/teacher/exams" element={<TeacherExams />} />
             <Route path="/all-exams" element={<AllExams />} />
-            <Route path="/teacher/exams/create" element={<CreateExams />} />
+            <Route path="/create-exams" element={<CreateExams />} />
           </Route>
 
-          {/* Admin only */}
+        {/* Admin only */}
           <Route element={<ProtectedLayout allowedRoles={['admin']} />}>
             <Route
               path="/admin"

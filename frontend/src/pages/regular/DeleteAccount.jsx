@@ -41,12 +41,10 @@ export default function DeleteAccount() {
     try {
       await apiRequest("/api/v1/users/me", {
         method: "DELETE",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token }),
       })
       await apiRequest("/api/v1/auth/logout", {
-        method: "POST", credentials: "include",
+        method: "POST",
       })
       setStatus("success")
       setTimeout(() => window.location.href = "/", 2000)

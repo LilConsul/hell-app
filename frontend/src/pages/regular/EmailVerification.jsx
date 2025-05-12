@@ -4,7 +4,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { CheckCircle, AlertTriangle, Loader2, Mail, ArrowRight } from "lucide-react"
-import { Footer } from "@/components/footer";
+import { Footer } from "@/components/footer"
+import { apiRequest } from "@/lib/utils"
 
 const verificationCache = {};
 
@@ -45,44 +46,34 @@ function EmailVerification() {
     
     const verifyEmail = async () => {
       try {
-        const response = await fetch('/api/v1/auth/verify', {
+        const data = await apiRequest('/api/v1/auth/verify', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ token })
         });
-                
-        const data = await response.json();
         
-        let result = { state: "error", errorMessage: "" };
-        
-        if (response.ok) {
-          result.state = "success";
-          setVerificationState("success");
-        } else {
-          if (data.detail === "User is already verified") {
-            result.state = "already-verified";
-            setVerificationState("already-verified");
-          } else if (data.detail === "Invalid or expired verification token") {
-            result.errorMessage = "The verification link has expired or is invalid. Please request a new one.";
-            setVerificationState("error");
-            setErrorMessage(result.errorMessage);
-          } else {
-            result.errorMessage = data.detail || "Verification failed. Please try again later.";
-            setVerificationState("error");
-            setErrorMessage(result.errorMessage);
-          }
-        }
+        let result = { state: "success", errorMessage: "" };
+        setVerificationState("success");
         
         verificationCache[token] = result;
         
       } catch (error) {
-        const result = {
+        let result = {
           state: "error",
-          errorMessage: "An unexpected error occurred. Please try again later."
+          errorMessage: error.message
         };
-        setVerificationState(result.state);
-        setErrorMessage(result.errorMessage);
+
+        if (error.message.includes("User is already verified")) {
+          result.state = "already-verified";
+          setVerificationState("already-verified");
+        } else if (error.message.includes("Invalid or expired verification token")) {
+          result.errorMessage = "The verification link has expired or is invalid. Please request a new one.";
+          setVerificationState("error");
+        } else {
+          result.errorMessage = error.message || "Verification failed. Please try again later.";
+          setVerificationState("error");
+        }
         
+        setErrorMessage(result.errorMessage);
         verificationCache[token] = result;
       }
     };

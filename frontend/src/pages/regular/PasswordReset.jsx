@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -11,10 +11,10 @@ import { Footer } from "@/components/footer";
 import { PasswordInput } from "@/components/password/password-input";
 import { PasswordRequirements } from "@/components/password/password-requirements";
 import { usePasswordValidation } from "@/components/password/password-validation";
+import { apiRequest } from "@/lib/utils";
 
 function PasswordResetPage() {
   const { token } = useParams();
-  const navigate = useNavigate();
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -25,7 +25,6 @@ function PasswordResetPage() {
     passwordErrors, 
     showRequirements, 
     isPasswordValid,
-    passwordRegex
   } = usePasswordValidation(password);
 
   const handleSubmit = async (e) => {
@@ -44,26 +43,19 @@ function PasswordResetPage() {
     setIsLoading(true);
 
     try {
-      const response = await fetch("/api/v1/auth/reset-password", {
+      await apiRequest("/api/v1/auth/reset-password", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
         body: JSON.stringify({
           password,
           token,
         }),
       });
 
-      if (!response.ok) {
-        throw new Error("Failed to reset password");
-      }
-
       setIsSuccess(true);
       setIsLoading(false);
     } catch (error) {
       setIsLoading(false);
-      setError("An error occurred while resetting your password. Please try again.");
+      setError(error.message || "An error occurred while resetting your password. Please try again.");
     }
   };
 

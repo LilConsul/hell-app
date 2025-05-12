@@ -1,14 +1,23 @@
 import uuid
 from typing import List
 
-from app.core.exceptions import (BadRequestError, ForbiddenError,
-                                 NotFoundError, UnprocessableEntityError)
+from app.core.exceptions import (
+    BadRequestError,
+    ForbiddenError,
+    NotFoundError,
+    UnprocessableEntityError,
+)
 from app.exam.models import ExamStatus, QuestionType
 from app.exam.repository import CollectionRepository, QuestionRepository
-from app.exam.teacher.schemas import (CollectionQuestionCount,
-                                      CreateCollection, GetCollection,
-                                      QuestionOrderSchema, QuestionSchema,
-                                      UpdateCollection, UpdateQuestionSchema)
+from app.exam.teacher.schemas import (
+    CollectionQuestionCount,
+    CreateCollection,
+    GetCollection,
+    QuestionOrderSchema,
+    QuestionSchema,
+    UpdateCollection,
+    UpdateQuestionSchema,
+)
 from app.i18n import _
 
 
@@ -128,6 +137,56 @@ class CollectionService:
         self, collection_id: str, user_id: str, question_data: QuestionSchema
     ) -> str:
         """Add a question to a collection and return the question ID."""
+        collection = await self._get_collection_with_permission_check(
+            collection_id, user_id
+        )
+
+        # Set position if not provided
+        existing_positions = self._get_existing_positions(collection)
+        self._assign_position_if_needed(question_data, existing_positions)
+        self._validate_position_available(question_data.position, existing_positions)
+
+        # Create and add question
+        question_data_dict = self._prepare_question_data(question_data, user_id)
+        self._validate_question_by_type(question_data_dict)
+
+        question = await self.question_repository.create(question_data_dict)
+        collection.questions.append(question)
+        await self.collection_repository.save(collection)
+
+        return question.id
+
+    async def add_question_to_collection_bulk(
+        self, collection_id: str, user_id: str, question_list: List[QuestionSchema]
+    ) -> List[str]:
+        """Add multiple questions to a collection in a single operation."""
+        collection = await self._get_collection_with_permission_check(
+            collection_id, user_id
+        )
+        existing_positions = self._get_existing_positions(collection)
+
+        question_ids = []
+        for question_data in question_list:
+            self._assign_position_if_needed(question_data, existing_positions)
+            self._validate_position_available(
+                question_data.position, existing_positions
+            )
+            existing_positions.append(question_data.position)  # Update tracking list
+
+            question_data_dict = self._prepare_question_data(question_data, user_id)
+            self._validate_question_by_type(question_data_dict)
+
+            question = await self.question_repository.create(question_data_dict)
+            collection.questions.append(question)
+            question_ids.append(question.id)
+
+        await self.collection_repository.save(collection)
+        return question_ids
+
+    async def _get_collection_with_permission_check(
+        self, collection_id: str, user_id: str
+    ):
+        """Get collection and check permissions."""
         collection = await self.collection_repository.get_by_id(
             collection_id, fetch_links=True
         )
@@ -142,25 +201,35 @@ class CollectionService:
             raise ForbiddenError(
                 _("You don't have permission to add questions to this collection")
             )
+        return collection
 
-        # Check if the question position is already taken
-        existing_positions = [
-            q.position for q in collection.questions if hasattr(q, "position")
-        ]
+    @staticmethod
+    def _get_existing_positions(collection):
+        """Extract existing question positions from collection."""
+        return [q.position for q in collection.questions if hasattr(q, "position")]
+
+    @staticmethod
+    def _assign_position_if_needed(question_data, existing_positions):
+        """Assign a position to the question if not provided."""
         if not question_data.position:
             available_position = 0
             while available_position in existing_positions:
                 available_position += 1
             question_data.position = available_position
 
-        if question_data.position in existing_positions:
+    @staticmethod
+    def _validate_position_available(position, existing_positions):
+        """Check if the position is already taken."""
+        if position in existing_positions:
             raise UnprocessableEntityError(
                 _(
-                    "Question with position {question_data} already exists in the collection"
-                ).format(question_data=question_data.position)
+                    "Question with position {position} already exists in the collection"
+                ).format(position=position)
             )
 
-        # Prepare question data
+    @staticmethod
+    def _prepare_question_data(question_data, user_id):
+        """Prepare question data dictionary for creation."""
         question_data_dict = question_data.model_dump()
         question_data_dict["_id"] = str(uuid.uuid4())
         question_data_dict["created_by"] = user_id
@@ -175,14 +244,7 @@ class CollectionService:
                 for opt in question_data_dict["options"]
             ]
 
-        self._validate_question_by_type(question_data_dict)
-
-        # Create question
-        question = await self.question_repository.create(question_data_dict)
-        collection.questions.append(question)
-        await self.collection_repository.save(collection)
-
-        return question.id
+        return question_data_dict
 
     async def edit_question(
         self, question_id: str, user_id: str, question_data: UpdateQuestionSchema

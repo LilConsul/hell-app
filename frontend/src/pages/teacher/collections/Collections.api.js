@@ -136,6 +136,18 @@ async function addQuestion(collectionId, questionData) {
   }
 }
 
+async function addBulkQuestions(collectionId, questions) {
+  try {
+    return await apiRequest(`${COLLECTIONS_URL}/${collectionId}/questions/bulk`, {
+      method: 'POST',
+      body: JSON.stringify(questions),
+    });
+  } catch (err) {
+    console.error(`Error adding bulk questions to collection ${collectionId}:`, err);
+    throw err;
+  }
+}
+
 async function updateQuestion(collectionId, questionId, questionData) {
   try {
     return await apiRequest(`${COLLECTIONS_URL}/${collectionId}/questions/${questionId}`, {
@@ -168,6 +180,7 @@ export default {
   deleteCollection,
   duplicateCollection,
   addQuestion,
+  addBulkQuestions,
   updateQuestion,
   deleteQuestion,
 };

@@ -439,19 +439,43 @@ function CreateCollection() {
       }
   
       const unsaved = allQuestions.filter(q => !q.saved);
-      const valid   = unsaved.filter(validateQuestion);
+      const valid = unsaved.filter(validateQuestion);
       const invalid = unsaved.filter(q => !validateQuestion(q));
   
-      const savePromises = valid.map(async q => {
-        if (q.server_id) {
-          await CollectionAPI.updateQuestion(collId, q.server_id, q);
-          return { ...q, saved: true };
-        } else {
-          const res = await CollectionAPI.addQuestion(collId, q);
-          return { ...q, server_id: res.data.id, saved: true };
-        }
+      // Separate questions to update (with server_id) and new questions to add in bulk
+      const questionsToUpdate = valid.filter(q => q.server_id);
+      const newQuestionsToAdd = valid.filter(q => !q.server_id);
+      
+      // Handle updates for existing questions
+      const updatePromises = questionsToUpdate.map(async q => {
+        await CollectionAPI.updateQuestion(collId, q.server_id, q);
+        return { ...q, saved: true };
       });
-      const savedQuestions = await Promise.all(savePromises);
+      
+      // Handle bulk addition of new questions
+      let addedQuestions = [];
+      if (newQuestionsToAdd.length > 0) {
+        try {
+          const bulkResponse = await CollectionAPI.addBulkQuestions(collId, newQuestionsToAdd);
+          // API returns an array of question id's in data.question_ids
+          const questionIds = bulkResponse.data?.question_ids || [];
+          
+          // Match the returned IDs with our original questions
+          addedQuestions = newQuestionsToAdd.map((q, index) => {
+            const savedId = questionIds[index];
+            return savedId ? { ...q, server_id: savedId, saved: true } : q;
+          });
+        } catch (error) {
+          setError({
+            isError: true,
+            message: error || "Failed to add new questions. Please try again."
+          });
+          // If bulk add fails keep the new questions in state
+        }
+      }
+      
+      // Combine results from updates and additions
+      const savedQuestions = [...await Promise.all(updatePromises), ...addedQuestions];
   
       // Merge savedQuestions back into state
       setQuestions(prev =>
@@ -460,13 +484,18 @@ function CreateCollection() {
           return updated ? { ...q, ...updated } : q;
         })
       );
-      // Append new ones
+      
+      // Append new ones that were successfully saved
       setQuestions(prev => [
         ...prev,
-        ...savedQuestions.filter(sq => !questions.some(q => q.id === sq.id))
+        ...savedQuestions.filter(sq => 
+          sq.server_id && !prev.some(q => q.id === sq.id)
+        )
       ]);
-      // Keep only the new invalids in newQuestions
+      
+      // Keep only the new invalid ones in newQuestions
       setNewQuestions(invalid.filter(q => !q.server_id));
+      
       if (invalid.some(q => q.server_id)) {
         setQuestions(prev =>
           prev.map(q => {
@@ -476,11 +505,22 @@ function CreateCollection() {
         );
       }
   
-      if (savedQuestions.length) {
-        toast.success(
-          `Saved ${savedQuestions.length} question${savedQuestions.length > 1 ? "s" : ""}.`
-        );
+      // Show success toast
+      const updatedCount = questionsToUpdate.length;
+      const addedCount = addedQuestions.filter(q => q.server_id).length;
+      
+      if (updatedCount > 0 || addedCount > 0) {
+        let message = "";
+        if (updatedCount > 0) {
+          message += `Updated ${updatedCount} question${updatedCount > 1 ? "s" : ""}`;
+        }
+        if (addedCount > 0) {
+          message += message ? " and " : "";
+          message += `Added ${addedCount} new question${addedCount > 1 ? "s" : ""}`;
+        }
+        toast.success(message);
       }
+      
       if (invalid.length) {
         setError({
           isError: true,
@@ -488,7 +528,7 @@ function CreateCollection() {
         });
       }
   
-    } catch {
+    } catch (error) {
       setError({
         isError: true,
         message: "Failed to save collection or questions. Please try again."

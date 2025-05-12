@@ -72,6 +72,8 @@ export function AuthProvider({ children }) {
       await fetchUser();
       navigate("/dashboard");
       return true;
+    } catch (error) {
+      throw new Error(error || "Unexpected error occurred during login");
     } finally {
       setLoading(false);
     }

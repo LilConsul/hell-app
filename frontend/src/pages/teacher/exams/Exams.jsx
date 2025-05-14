@@ -122,11 +122,11 @@ export default function TeacherExams() {
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground">
       <Navbar />
-      <main className="flex-1 w-full px-6 md:px-60 py-8 space-y-8">
+      <main className="flex-1 w-full px-4 md:px-[10%] py-10 space-y-8">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold">Exam Management</h1>
-            <p className="mt-1 text-muted-foreground">
+            <h1 className="text-4xl font-bold">Exam Management</h1>
+            <p className="mt-1 text-muted-foreground text-lg">
               Create and manage your exams.
             </p>
           </div>
@@ -254,7 +254,7 @@ export default function TeacherExams() {
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Calendar Card spans 1 column */}
-            <Card className="lg:col-span-1 border shadow-sm">
+            <Card className="w-full h-fit min-h-[300px] lg:col-span-1 border shadow-sm">
               <CardHeader className="pb-0">
                 <CardTitle className="flex items-center text-lg px-5">
                   <div>Exam Calendar</div>

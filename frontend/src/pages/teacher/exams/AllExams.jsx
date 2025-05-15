@@ -279,15 +279,15 @@ export default function AllExams() {
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground">
       <Navbar />
-      <main className="flex-1 py-10 px-60 space-y-8">
-        <div className="flex justify-between items-center">
+      <main className="flex-1 container mx-auto px-6 sm:px-8 md:px-12 lg:px-20 xl:px-40 py-8 space-y-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-4xl font-bold">All Exams</h1>
-            <p className="mt-1 text-muted-foreground text-lg">
+            <h1 className="text-3xl md:text-4xl font-bold">All Exams</h1>
+            <p className="mt-1 text-muted-foreground text-base md:text-lg">
               Browse and manage all your exams in one place
             </p>
           </div>
-          <Button asChild size="lg" className="h-10">
+          <Button asChild size="lg" className="h-10 w-full sm:w-auto">
             <Link to="/create-exams">
               <PlusCircle className="mr-2 h-5 w-5" />
               Create New Exam
@@ -296,8 +296,8 @@ export default function AllExams() {
         </div>
 
         <Card className="border border-border">
-          <CardContent className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <CardContent className="p-4 sm:p-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
               {/* Search */}
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
@@ -390,7 +390,7 @@ export default function AllExams() {
                   Showing {Math.min(filteredExams.length, startIndex + 1)}-{Math.min(filteredExams.length, endIndex)} of {filteredExams.length} exams
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -473,8 +473,8 @@ export default function AllExams() {
                   </TableBody>
                 </Table>
               </CardContent>
-              <CardFooter className="flex justify-between items-center">
-                <div className="text-sm text-muted-foreground">
+              <CardFooter className="flex flex-col sm:flex-row justify-between items-center">
+                <div className="text-sm text-muted-foreground mb-4 sm:mb-0">
                   {filteredExams.length} {filteredExams.length === 1 ? 'exam' : 'exams'} found
                 </div>
                 

@@ -5,10 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Archive, Calendar, Copy, Edit, Eye, Globe, Library, Lock, MoreHorizontal } from "lucide-react";
+import { Archive, Calendar, Copy, NotebookPen, Eye, Globe, Library, Lock, MoreHorizontal } from "lucide-react";
 import { DeleteCollectionModal, DuplicateCollectionModal, ArchiveConfirmationModal} from "@/components/collections/confirm-operation-modals";
 
-export function CollectionCard({ collection, onStatusChange, onDelete, onDuplicate, canEdit }) {
+export function CollectionCard({ collection, onStatusChange, onDelete, onDuplicate, canEdit, onFilterByUser }) {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showDuplicateModal, setShowDuplicateModal] = useState(false);
   const [showArchiveModal, setShowArchiveModal] = useState(false);
@@ -77,6 +77,16 @@ export function CollectionCard({ collection, onStatusChange, onDelete, onDuplica
     }
   };
 
+  const handleCreatorClick = (e) => {
+    if (onFilterByUser && collection.created_by) {
+      e.preventDefault();
+      onFilterByUser(
+        collection.created_by.id, 
+        `${collection.created_by.first_name} ${collection.created_by.last_name}`
+      );
+    }
+  };
+
   return (
     <>
       <Card className={`overflow-hidden ${isArchived ? "opacity-75" : ""}`}>
@@ -87,7 +97,14 @@ export function CollectionCard({ collection, onStatusChange, onDelete, onDuplica
               <div>
                 <CardTitle className="text-xl">{collection.title}</CardTitle>
                 <CardDescription className="mt-1">
-                  Created by {collection.created_by.first_name} {collection.created_by.last_name} • Last updated{' '}
+                  Created by{" "}
+                  <button 
+                    className="hover:underline focus:outline-none" 
+                    onClick={handleCreatorClick}
+                  >
+                    {collection.created_by.first_name} {collection.created_by.last_name}
+                  </button>{" "}
+                  • Last updated{' '}
                   {formatDate(collection.updated_at)}
                 </CardDescription>
               </div>
@@ -121,67 +138,65 @@ export function CollectionCard({ collection, onStatusChange, onDelete, onDuplica
             </Link>
           </Button>
           <div className="flex space-x-2">
+            <Button variant="outline" size="sm" asChild>
+              <Link to={`/exams/new?collectionId=${collection.id}`}>
+                <NotebookPen className="mr-2 h-4 w-4" /> Create Exam
+              </Link>
+            </Button>
             {canEdit ? (
-              <>
-                <Button variant="outline" size="sm" asChild>
-                  <Link to={`/collections/${collection.id}/edit`}>
-                    <Edit className="mr-2 h-4 w-4" /> Edit
-                  </Link>
-                </Button>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    onClick={() => setShowDuplicateModal(true)}
+                    className="cursor-pointer"
+                  >
+                    <Copy className="mr-2 h-4 w-4" /> Duplicate
+                  </DropdownMenuItem>
+                  {collection.status === "draft" && (
                     <DropdownMenuItem
-                      onClick={() => setShowDuplicateModal(true)}
+                      onClick={() => handleStatusChange("published")}
                       className="cursor-pointer"
                     >
-                      <Copy className="mr-2 h-4 w-4" /> Duplicate
+                      <Globe className="mr-2 h-4 w-4" /> Make Public
                     </DropdownMenuItem>
-                    {collection.status === "draft" && (
-                      <DropdownMenuItem
-                        onClick={() => handleStatusChange("published")}
-                        className="cursor-pointer"
-                      >
-                        <Globe className="mr-2 h-4 w-4" /> Make Public
-                      </DropdownMenuItem>
-                    )}
-                    {collection.status === "published" && (
-                      <DropdownMenuItem
-                        onClick={() => handleStatusChange("draft")}
-                        className="cursor-pointer"
-                      >
-                        <Lock className="mr-2 h-4 w-4" /> Make Draft
-                      </DropdownMenuItem>
-                    )}
-                    {(collection.status === "draft" || collection.status === "published") && (
-                      <DropdownMenuItem
-                        onClick={() => setShowArchiveModal(true)}
-                        className="cursor-pointer"
-                      >
-                        <Archive className="mr-2 h-4 w-4" /> Archive
-                      </DropdownMenuItem>
-                    )}
-                    {collection.status === "archived" && (
-                      <DropdownMenuItem
-                        onClick={() => handleStatusChange("draft")}
-                        className="cursor-pointer"
-                      >
-                        <Lock className="mr-2 h-4 w-4" /> Restore to Draft
-                      </DropdownMenuItem>
-                    )}
+                  )}
+                  {collection.status === "published" && (
                     <DropdownMenuItem
-                      onClick={() => setShowDeleteModal(true)}
-                      className="cursor-pointer text-destructive"
+                      onClick={() => handleStatusChange("draft")}
+                      className="cursor-pointer"
                     >
-                      Delete
+                      <Lock className="mr-2 h-4 w-4" /> Make Draft
                     </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </>
+                  )}
+                  {(collection.status === "draft" || collection.status === "published") && (
+                    <DropdownMenuItem
+                      onClick={() => setShowArchiveModal(true)}
+                      className="cursor-pointer"
+                    >
+                      <Archive className="mr-2 h-4 w-4" /> Archive
+                    </DropdownMenuItem>
+                  )}
+                  {collection.status === "archived" && (
+                    <DropdownMenuItem
+                      onClick={() => handleStatusChange("draft")}
+                      className="cursor-pointer"
+                    >
+                      <Lock className="mr-2 h-4 w-4" /> Restore to Draft
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuItem
+                    onClick={() => setShowDeleteModal(true)}
+                    className="cursor-pointer text-destructive"
+                  >
+                    Delete
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             ) : (
               <Button variant="outline" size="sm" onClick={() => setShowDuplicateModal(true)}>
                 <Copy className="mr-2 h-4 w-4" /> Duplicate

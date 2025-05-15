@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { PlusCircle } from "lucide-react";
+import { PlusCircle, User } from "lucide-react";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { useAuth } from "@/contexts/auth-context";
@@ -30,10 +30,13 @@ function Collections() {
   const [allCollections, setAllCollections] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [sortOption, setSortOption] = useState("updated-newest");
   const [filters, setFilters] = useState({
     dateRange: "all",
-    questionCount: [0, 100],
-    createdBy: "all"
+    questionCount: [0, 100], // in fact 0 - 100+
+    createdBy: "all",
+    specificUsers: [],
+    lastUpdated: "all",
   });
   
   const {
@@ -51,10 +54,8 @@ function Collections() {
         const data = await CollectionAPI.fetchCollections();
         setAllCollections(data);
       } catch (err) {
-        setError("Failed to load collections. Please try again later.");
-        toast.error("Failed to load collections", {
-          description: "Please try again later.",
-        });
+        const errorMessage = err || "Failed to load collections. Please try again later.";
+        setError(errorMessage);
       } finally {
         setLoading(false);
       }
@@ -69,18 +70,80 @@ function Collections() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
+  // Update status filter when "others" is selected in created by filter
+  useEffect(() => {
+    if (filters.createdBy === "others" && activeFilter !== "published") {
+      setActiveFilter("published");
+    }
+  }, [filters.createdBy]);
+
+  // Reset created by filter when switching status tabs from "others" filter
+  useEffect(() => {
+    if (activeFilter !== "published" && filters.createdBy === "others") {
+      setFilters(prev => ({ ...prev, createdBy: "all" }));
+    }
+  }, [activeFilter]);
+
+  const sortCollections = useCallback((filteredCollections) => {
+    if (!filteredCollections.length) return [];
+    
+    const sortedCollections = [...filteredCollections];
+    
+    // First, sort by the selected sorting option
+    switch (sortOption) {
+      case "updated-newest":
+        sortedCollections.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
+        break;
+      case "updated-oldest":
+        sortedCollections.sort((a, b) => new Date(a.updated_at) - new Date(b.updated_at));
+        break;
+      case "created-newest":
+        sortedCollections.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        break;
+      case "created-oldest":
+        sortedCollections.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+        break;
+      case "questions-high":
+        sortedCollections.sort((a, b) => (b.question_count || 0) - (a.question_count || 0));
+        break;
+      case "questions-low":
+        sortedCollections.sort((a, b) => (a.question_count || 0) - (b.question_count || 0));
+        break;
+      case "user":
+        if (filters.specificUsers && filters.specificUsers.length > 0) {
+          // Sort by updated date
+          sortedCollections.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
+        }
+        break;
+    }
+    
+    // Ensure archived items are at the end
+    return sortedCollections.sort((a, b) => {
+      if (a.status === "archived" && b.status !== "archived") return 1;
+      if (a.status !== "archived" && b.status === "archived") return -1;
+      return 0;
+    });
+    
+  }, [sortOption, filters.specificUsers]);
+
   const applyAllFilters = useCallback(() => {
     if (!allCollections.length) return [];
     
     let filteredCollections = allCollections.filter(collection => {
-      // Status filter
       if (activeFilter !== "all" && activeFilter !== collection.status) return false;
+      
       // Filter by search query
       if (debouncedSearchQuery &&
           !collection.title.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) &&
           !collection.description.toLowerCase().includes(debouncedSearchQuery.toLowerCase())) return false;
       
-      // Filter by date range
+      // Filter by specific users - show if created by ANY of the selected users
+      if (filters.specificUsers && filters.specificUsers.length > 0) {
+        const userIds = filters.specificUsers.map(user => user.id);
+        if (!userIds.includes(collection.created_by?.id)) return false;
+      }
+      
+      // Filter by created date range
       if (filters.dateRange !== "all") {
         const collectionDate = new Date(collection.created_at);
         const now = new Date();
@@ -106,9 +169,37 @@ function Collections() {
         }
       }
       
+      // Filter by last updated date range
+      if (filters.lastUpdated !== "all") {
+        const updatedDate = new Date(collection.updated_at);
+        const now = new Date();
+        switch (filters.lastUpdated) {
+          case "today":
+            if (updatedDate.toDateString() !== now.toDateString()) return false;
+            break;
+          case "week":
+            const weekAgo = new Date();
+            weekAgo.setDate(now.getDate() - 7);
+            if (updatedDate < weekAgo) return false;
+            break;
+          case "month":
+            const monthAgo = new Date();
+            monthAgo.setMonth(now.getMonth() - 1);
+            if (updatedDate < monthAgo) return false;
+            break;
+          case "year":
+            const yearAgo = new Date();
+            yearAgo.setFullYear(now.getFullYear() - 1);
+            if (updatedDate < yearAgo) return false;
+            break;
+        }
+      }
+      
       // Filter by question count
       const questionCount = collection.question_count || 0;
-      if (questionCount < filters.questionCount[0] || questionCount > filters.questionCount[1]) return false;
+      if (questionCount < filters.questionCount[0]) return false;
+      // Only apply upper bound if it's not the maximum value (100)
+      if (filters.questionCount[1] < 100 && questionCount > filters.questionCount[1]) return false;
       
       // Filter by creator
       if (filters.createdBy !== "all" && user) {
@@ -120,24 +211,14 @@ function Collections() {
       return true;
     });
     
-    if (activeFilter === "all") {
-      filteredCollections.sort((a, b) => {
-        // First sort by archived status (non-archived first)
-        if (a.status === "archived" && b.status !== "archived") return 1;
-        if (a.status !== "archived" && b.status === "archived") return -1;
-        
-        // If both have same archived status sort by created date (newest first)
-        return new Date(b.created_at) - new Date(a.created_at);
-      });
-    }
-    
-    return filteredCollections;
-  }, [activeFilter, debouncedSearchQuery, filters, allCollections, user]);
+    // Apply sorting after filtering
+    return sortCollections(filteredCollections);
+  }, [activeFilter, debouncedSearchQuery, filters, allCollections, user, sortCollections]);
 
   useEffect(() => {
     const filtered = applyAllFilters();
     setCollections(filtered);
-  }, [debouncedSearchQuery, activeFilter, applyAllFilters]);
+  }, [debouncedSearchQuery, activeFilter, sortOption, applyAllFilters]);
 
   const handleStatusChange = async (collectionId, newStatus) => {
     try {
@@ -164,14 +245,11 @@ function Collections() {
       });
       
       // Refresh the collections list to ensure sorting is applied
-      if (activeFilter === "all") {
-        const filtered = applyAllFilters();
-        setCollections(filtered);
-      }
-    } catch {
-      toast.error("Failed to update status", {
-        description: "Please try again later.",
-      });
+      const filtered = applyAllFilters();
+      setCollections(filtered);
+    } catch (err) {
+      const errorMessage = err || "Failed to update status. Please try again later.";
+      setError(errorMessage);
     }
   };
 
@@ -183,10 +261,10 @@ function Collections() {
       toast.success(`Collection deleted`, {
         description: `"${collections.find(c => c.id === collectionId)?.title}" has been removed.`,
       });
-    } catch {
-      toast.error("Failed to delete collection", {
-        description: "Please try again later.",
-      });
+    } catch (err) {
+      const errorMessage = err || "Failed to delete collection. Please try again later.";
+      setError(errorMessage);
+
     }
   };
 
@@ -195,10 +273,9 @@ function Collections() {
       setLoading(true);
       const newId = await CollectionAPI.duplicateCollection(collectionId, title, description);
       navigate(`/collections/${newId}`);
-    } catch {
-      toast.error("Failed to duplicate collection", {
-        description: "Please try again later.",
-      });
+    } catch (err) {
+      const errorMessage = err || "Failed to duplicate collection. Please try again later.";
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -234,12 +311,31 @@ function Collections() {
             setActiveFilter={setActiveFilter}
             filters={filters}
             setFilters={setFilters}
-            applyFilters={applyAllFilters}
+            applyFilters={() => {
+              const filtered = applyAllFilters();
+              setCollections(filtered);
+            }}
+            sortOption={sortOption}
+            setSortOption={setSortOption}
+            allCollections={allCollections}
           />
           {loading ? (
             <LoadingCollections />
           ) : error ? (
-            <ErrorCollections error={error} retryAction={() => fetchCollectionsAPI()} />
+            <ErrorCollections error={error} retryAction={() => {
+              setLoading(true);
+              setError(null);
+              CollectionAPI.fetchCollections()
+                .then(data => {
+                  setAllCollections(data);
+                  setLoading(false);
+                })
+                .catch(error => {
+                  const errorMessage = error.message || "Failed to load collections. Please try again later.";
+                  setError(errorMessage);
+                  setLoading(false);
+                });
+            }} />
           ) : (
             <div className="space-y-4">
               {collections.length === 0 ? (

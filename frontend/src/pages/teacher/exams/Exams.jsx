@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Calendar as CalendarIcon, Edit, FileText, Clock, Users, AlertCircle, PlusCircle, Search, CalendarDays } from 'lucide-react';
+import { Calendar as CalendarIcon, Edit, FileText, Clock, Users, AlertCircle, PlusCircle, Search, CalendarDays, XCircle } from 'lucide-react';
 import { format } from "date-fns";
-
-// Shadcn components
 import {
   Card,
   CardHeader,
@@ -46,6 +44,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
 import { apiRequest } from '@/lib/utils';
 
@@ -60,14 +59,27 @@ export default function TeacherExams() {
   const [draftSearchQuery, setDraftSearchQuery] = useState('');
 
   useEffect(() => {
-    apiRequest('/api/v1/exam/teacher/exam-instances/')
-      .then((res) => {
-        const data = Array.isArray(res.data) ? res.data : [];
-        setExams(data);
-      })
-      .catch(() => setError('Failed to load exams'))
-      .finally(() => setLoading(false));
+    loadExams();
   }, []);
+
+  const loadExams = async () => {
+    try {
+      setLoading(true);
+      const res = await apiRequest('/api/v1/exam/teacher/exam-instances/');
+      const data = Array.isArray(res.data) ? res.data : [];
+      setExams(data);
+      setError(null);
+    } catch (err) {
+      console.error('Failed to load exams:', err);
+      setError('Failed to load exams. Please try again later.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const dismissError = () => {
+    setError(null);
+  };
 
   const now = new Date();
 
@@ -149,6 +161,30 @@ export default function TeacherExams() {
     <div className="flex flex-col min-h-screen bg-background text-foreground">
       <Navbar />
       <main className="flex-1 container mx-auto px-4 md:px-6 lg:px-8 py-8 space-y-6">
+        {/* Error Alert */}
+        {error && (
+          <Alert variant="destructive" className="mb-4">
+            <div className="flex justify-between items-start">
+              <div className="flex gap-2">
+                <AlertCircle className="h-5 w-5" />
+                <div>
+                  <AlertTitle>Error</AlertTitle>
+                  <AlertDescription>{error}</AlertDescription>
+                </div>
+              </div>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={dismissError} 
+                className="-mt-1 -mr-2"
+              >
+                <XCircle className="h-5 w-5" />
+                <span className="sr-only">Dismiss</span>
+              </Button>
+            </div>
+          </Alert>
+        )}
+
         {/* Page header with responsive layout */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
@@ -667,3 +703,4 @@ export default function TeacherExams() {
     </div>
   );
 }
+

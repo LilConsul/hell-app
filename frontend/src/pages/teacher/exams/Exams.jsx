@@ -1,9 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { Calendar as CalendarIcon, Edit, FileText, Clock, Users, AlertCircle, PlusCircle, Search, CalendarDays } from 'lucide-react';
+import { format } from "date-fns";
+
+// Shadcn components
 import {
   Card,
   CardHeader,
   CardTitle,
+  CardDescription,
   CardContent,
   CardFooter,
 } from '@/components/ui/card';
@@ -11,12 +16,16 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Navbar } from '@/components/navbar';
 import { Footer } from '@/components/footer';
-import { apiRequest } from '@/lib/utils';
-import { DayPicker } from 'react-day-picker';
-import 'react-day-picker/dist/style.css';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { Calendar } from "@/components/ui/calendar";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Dialog,
   DialogContent,
@@ -31,7 +40,14 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { Calendar, Edit, FileText, Clock, Users, AlertCircle, PlusCircle, Search } from 'lucide-react';
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
+
+import { apiRequest } from '@/lib/utils';
 
 export default function TeacherExams() {
   const [exams, setExams] = useState([]);
@@ -53,10 +69,6 @@ export default function TeacherExams() {
       .finally(() => setLoading(false));
   }, []);
 
-  const handleDateSelect = (date) => {
-    setSelectedDate(date || selectedDate);
-  };
-
   const now = new Date();
 
   const publishedExams = exams.filter((e) => e.status === 'published');
@@ -71,10 +83,6 @@ export default function TeacherExams() {
   const pastExams = publishedExams
     .filter((e) => new Date(e.end_date) < now)
     .sort((a, b) => new Date(b.end_date) - new Date(a.end_date));
-
-  const upcomingDates = upcomingExams.map((e) => new Date(e.start_date));
-  const ongoingDates = ongoingExams.map((e) => new Date(e.start_date));
-  const pastDates = pastExams.map((e) => new Date(e.end_date));
 
   const isSameDay = (date1, date2) => {
     return date1.getFullYear() === date2.getFullYear() &&
@@ -93,15 +101,12 @@ export default function TeacherExams() {
 
   const formatDate = (iso) => {
     const d = new Date(iso);
-    return d.toLocaleDateString('en-US', { dateStyle: 'medium' });
+    return format(d, "MMM d, yyyy");
   };
 
   const formatDateTime = (iso) => {
     const d = new Date(iso);
-    return d.toLocaleString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+    return format(d, "h:mm a");
   };
 
   const calculateDuration = (startDate, endDate) => {
@@ -119,10 +124,31 @@ export default function TeacherExams() {
     setDialogOpen(true);
   };
 
+  // Calendar highlight function for the shadcn Calendar component
+  const isDateHighlighted = (date) => {
+    return exams.some(exam => {
+      const examDate = new Date(exam.start_date);
+      return isSameDay(examDate, date);
+    });
+  };
+
+  // Generate badge variant based on exam status
+  const getStatusBadge = (exam) => {
+    if (exam.status === 'draft') {
+      return <Badge variant="outline">Draft</Badge>;
+    } else if (now > new Date(exam.end_date)) {
+      return <Badge variant="destructive">Ended</Badge>;
+    } else if (new Date(exam.start_date) <= now && new Date(exam.end_date) >= now) {
+      return <Badge className="bg-amber-500 hover:bg-amber-600">Ongoing</Badge>;
+    } else {
+      return <Badge>Upcoming</Badge>;
+    }
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground">
       <Navbar />
-      <main className="flex-1 container mx-auto px-20 sm:px-20 lg:px-40 py-8 space-y-6">
+      <main className="flex-1 container mx-auto px-4 md:px-6 lg:px-8 py-8 space-y-6">
         {/* Page header with responsive layout */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
@@ -140,379 +166,338 @@ export default function TeacherExams() {
         </div>
 
         {/* Summary cards with responsive grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-          <Card className="flex flex-col h-full">
-            <CardHeader className="pb-2">
-              <CardTitle className="flex items-center text-lg">
-                <Clock className="mr-2 h-5 w-5 text-muted-foreground" />
-                Next Exam
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="flex-1">
-              {upcomingExams.length > 0 ? (
-                <div className="flex flex-col h-full justify-between space-y-2">
-                  <div className="space-y-1">
-                    <p className="font-medium line-clamp-1">{upcomingExams[0].title}</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {loading ? (
+            // Skeleton loaders for cards while loading
+            <>
+              {[1, 2, 3].map((i) => (
+                <Card key={i} className="flex flex-col h-full">
+                  <CardHeader className="pb-2">
+                    <Skeleton className="h-5 w-40" />
+                  </CardHeader>
+                  <CardContent className="flex-1">
+                    <div className="space-y-2">
+                      <Skeleton className="h-4 w-full" />
+                      <Skeleton className="h-4 w-2/3" />
+                    </div>
+                  </CardContent>
+                  <CardFooter className="pt-0">
+                    <Skeleton className="h-9 w-full" />
+                  </CardFooter>
+                </Card>
+              ))}
+            </>
+          ) : (
+            <>
+              <Card className="flex flex-col h-full">
+                <CardHeader className="pb-2">
+                  <CardTitle className="flex items-center text-lg">
+                    <Clock className="mr-2 h-5 w-5 text-muted-foreground" />
+                    Next Exam
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="flex-1">
+                  {upcomingExams.length > 0 ? (
+                    <div className="flex flex-col h-full justify-between space-y-2">
+                      <div className="space-y-1">
+                        <p className="font-medium line-clamp-1">{upcomingExams[0].title}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {formatDate(upcomingExams[0].start_date)}, {formatDateTime(upcomingExams[0].start_date)}
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">No upcoming exams</p>
+                  )}
+                </CardContent>
+                <CardFooter className="pt-0">
+                  {upcomingExams.length > 0 ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                      onClick={() => handleExamClick(upcomingExams[0])}
+                    >
+                      View Details
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                      disabled
+                    >
+                      View Details
+                    </Button>
+                  )}
+                </CardFooter>
+              </Card>
+
+              <Card className="flex flex-col h-full">
+                <CardHeader className="pb-2">
+                  <CardTitle className="flex items-center text-lg">
+                    <Edit className="mr-2 h-5 w-5 text-muted-foreground" />
+                    Recent Draft
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="flex-1">
+                  {draftExams.length > 0 ? (
+                    <div className="space-y-1">
+                      <p className="font-medium line-clamp-1">{draftExams[0].title}</p>
+                      <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                        <Badge variant="outline" className="text-xs">
+                          {draftExams[0].questions ? draftExams[0].questions.length : 0} questions
+                        </Badge>
+                        <p className="text-l">
+                          Last edited: {new Date(draftExams[0].updated_at || draftExams[0].created_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">No draft exams</p>
+                  )}
+                </CardContent>
+                <CardFooter className="pt-0">
+                  {draftExams.length > 0 ? (
+                    <Link to={`/exam/${draftExams[0].id}/edit`} className="w-full">
+                      <Button size="sm" className="w-full">
+                        Continue Editing
+                      </Button>
+                    </Link>
+                  ) : (
+                    <Link to="/exam/create" className="w-full">
+                      <Button size="sm" variant="outline" className="w-full">
+                        Create New Exam
+                      </Button>
+                    </Link>
+                  )}
+                </CardFooter>
+              </Card>
+
+              <Card className="flex flex-col h-full">
+                <CardHeader className="pb-2">
+                  <CardTitle className="flex items-center text-lg">
+                    <FileText className="mr-2 h-5 w-5 text-muted-foreground" />
+                    Total Exams
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="flex-1">
+                  <div className="flex flex-col space-y-1">
+                    <p className="font-medium">Total: {exams.length} exams</p>
                     <p className="text-sm text-muted-foreground">
-                      {formatDate(upcomingExams[0].start_date)}, {formatDateTime(upcomingExams[0].start_date)}
+                      Last update: {format(new Date(), "MMM d, yyyy")}
                     </p>
                   </div>
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">No upcoming exams</p>
-              )}
-            </CardContent>
-            <CardFooter className="pt-0">
-              {upcomingExams.length > 0 ? (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full"
-                  onClick={() => handleExamClick(upcomingExams[0])}
-                >
-                  View Details
-                </Button>
-              ) : (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full"
-                  disabled
-                >
-                  View Details
-                </Button>
-              )}
-            </CardFooter>
-          </Card>
-
-          <Card className="flex flex-col h-full">
-            <CardHeader className="pb-2">
-              <CardTitle className="flex items-center text-lg">
-                <Edit className="mr-2 h-5 w-5 text-muted-foreground" />
-                Recent Draft
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="flex-1">
-              {draftExams.length > 0 ? (
-                <div className="space-y-1">
-                  <p className="font-medium line-clamp-1">{draftExams[0].title}</p>
-                  <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-                    <Badge variant="outline" className="text-xs">
-                      {draftExams[0].questions ? draftExams[0].questions.length : 0} questions
-                    </Badge>
-                    <p className="text-l">
-                      Last edited: {new Date(draftExams[0].updated_at || draftExams[0].created_at).toLocaleDateString()}
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">No draft exams</p>
-              )}
-            </CardContent>
-            <CardFooter className="pt-0">
-              {draftExams.length > 0 ? (
-                <Link to={`/exam/${draftExams[0].id}/edit`} className="w-full">
-                  <Button size="sm" className="w-full">
-                    Continue Editing
-                  </Button>
-                </Link>
-              ) : (
-                <Link to="/exam/create" className="w-full">
-                  <Button size="sm" variant="outline" className="w-full">
-                    Create New Exam
-                  </Button>
-                </Link>
-              )}
-            </CardFooter>
-          </Card>
-
-          <Card className="flex flex-col h-full">
-            <CardHeader className="pb-2">
-              <CardTitle className="flex items-center text-lg">
-                <FileText className="mr-2 h-5 w-5 text-muted-foreground" />
-                Total Exams
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="flex-1">
-              <div className="flex flex-col space-y-1">
-                <p className="font-medium">Total: {exams.length} exams</p>
-                <p className="text-sm text-muted-foreground">
-                  Last update: {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                </p>
-              </div>
-            </CardContent>
-            <CardFooter className="pt-0">
-              <Link to="/all-exams" className="w-full">
-                <Button variant="outline" size="sm" className="w-full">
-                  View All
-                </Button>
-              </Link>
-            </CardFooter>
-          </Card>
+                </CardContent>
+                <CardFooter className="pt-0">
+                  <Link to="/all-exams" className="w-full">
+                    <Button variant="outline" size="sm" className="w-full">
+                      View All
+                    </Button>
+                  </Link>
+                </CardFooter>
+              </Card>
+            </>
+          )}
         </div>
 
         {loading ? (
-          <div className="flex justify-center items-center p-8">
-            <p className="text-muted-foreground">Loading exams…</p>
-          </div>
+          <Card className="p-8">
+            <div className="flex flex-col items-center justify-center gap-4">
+              <Skeleton className="h-12 w-12 rounded-full" />
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-[250px]" />
+                <Skeleton className="h-4 w-[200px]" />
+              </div>
+            </div>
+          </Card>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      
-<Card className="col-span-full lg:col-span-1 border overflow-hidden">
-  <CardHeader className="pb-0">
-    <CardTitle className="text-lg text-center">Exam Calendar</CardTitle>
-    <div className="flex flex-wrap justify-center gap-2 mt-2">
-      <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-200 border-0">
-        <span className="mr-1 text-emerald-500">●</span> Upcoming
-      </Badge>
-      <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-200 border-0">
-        <span className="mr-1 text-amber-500">●</span> Today
-      </Badge>
-      <Badge className="bg-rose-100 text-rose-800 hover:bg-rose-200 border-0">
-        <span className="mr-1 text-rose-500">●</span> Past
-      </Badge>
-    </div>
-  </CardHeader>
-  <CardContent>
-    <style>
-      {`
-        /* Base calendar container styles */
-        .calendar-container {
-          max-width: 100%;
-          overflow-x: auto;
-        }
-
-        /* DayPicker responsive styles */
-        .rdp {
-          --rdp-cell-size: clamp(30px, 4vw, 40px);
-          --rdp-caption-font-size: 16px;
-          font-size: clamp(14px, 2vw, 16px);
-        }
-
-        .rdp-months {
-          justify-content: center;
-        }
-
-        .rdp-month {
-          max-width: 100%;
-        }
-
-        .rdp-table {
-          max-width: 100%;
-        }
-
-        .rdp-cell {
-          padding: 0;
-        }
-
-        .rdp-head_cell {
-          font-size: clamp(12px, 1.8vw, 14px);
-          padding: 0;
-        }
-
-        .rdp-day {
-          min-width: var(--rdp-cell-size);
-          max-width: var(--rdp-cell-size);
-          height: var(--rdp-cell-size);
-          margin: 0;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-
-        .rdp-day_selected:not(.rdp-day_disabled):not(.rdp-day_outside) {
-          background-color: hsl(var(--muted));
-          color: hsl(var(--muted-foreground));
-          font-weight: bold;
-        }
-        
-        .rdp-day_upcoming:not(.rdp-day_disabled):not(.rdp-day_outside) {
-          background-color: rgba(16, 185, 129, 0.15);
-          color: hsl(var(--foreground));
-          font-weight: 500;
-        }
-        
-        .rdp-day_ongoing:not(.rdp-day_disabled):not(.rdp-day_outside) {
-          background-color: rgba(245, 158, 11, 0.15);
-          color: hsl(var(--foreground));
-          font-weight: 500;
-        }
-        
-        .rdp-day_past:not(.rdp-day_disabled):not(.rdp-day_outside) {
-          background-color: rgba(239, 68, 68, 0.15);
-          color: hsl(var(--foreground));
-          font-weight: 500;
-        }
-        
-        /* Combined states for selected + upcoming/ongoing/past */
-        .rdp-day_selected.rdp-day_upcoming:not(.rdp-day_disabled):not(.rdp-day_outside) {
-          background-color: rgba(16, 185, 129, 0.3);
-          color: hsl(var(--foreground));
-          font-weight: bold;
-        }
-        
-        .rdp-day_selected.rdp-day_ongoing:not(.rdp-day_disabled):not(.rdp-day_outside) {
-          background-color: rgba(245, 158, 11, 0.3);
-          color: hsl(var(--foreground));
-          font-weight: bold;
-        }
-        
-        .rdp-day_selected.rdp-day_past:not(.rdp-day_disabled):not(.rdp-day_outside) {
-          background-color: rgba(239, 68, 68, 0.3);
-          color: hsl(var(--foreground));
-          font-weight: bold;
-        }
-        
-        @media (prefers-color-scheme: dark) {
-          .rdp-day_upcoming:not(.rdp-day_disabled):not(.rdp-day_outside) {
-            background-color: rgba(16, 185, 129, 0.2);
-            color: hsl(var(--foreground));
-          }
-          
-          .rdp-day_ongoing:not(.rdp-day_disabled):not(.rdp-day_outside) {
-            background-color: rgba(245, 158, 11, 0.2);
-            color: hsl(var(--foreground));
-          }
-          
-          .rdp-day_past:not(.rdp-day_disabled):not(.rdp-day_outside) {
-            background-color: rgba(239, 68, 68, 0.2);
-            color: hsl(var(--foreground));
-          }
-          
-          .rdp-day_selected:not(.rdp-day_disabled):not(.rdp-day_outside) {
-            background-color: hsl(var(--muted));
-            color: hsl(var(--muted-foreground));
-          }
-          
-          .rdp-day_selected.rdp-day_upcoming:not(.rdp-day_disabled):not(.rdp-day_outside) {
-            background-color: rgba(16, 185, 129, 0.35);
-            color: hsl(var(--foreground));
-          }
-          
-          .rdp-day_selected.rdp-day_ongoing:not(.rdp-day_disabled):not(.rdp-day_outside) {
-            background-color: rgba(245, 158, 11, 0.35);
-            color: hsl(var(--foreground));
-          }
-          
-          .rdp-day_selected.rdp-day_past:not(.rdp-day_disabled):not(.rdp-day_outside) {
-            background-color: rgba(239, 68, 68, 0.35);
-            color: hsl(var(--foreground));
-          }
-        }
-
-        /* Responsive adjustments */
-        @media (max-width: 640px) {
-          .rdp {
-            --rdp-cell-size: clamp(28px, 8vw, 36px);
-            margin: 0 auto;
-          }
-          
-          .rdp-head_cell {
-            font-size: 12px;
-          }
-        }
-      `}
-    </style>
-    <div className="calendar-container">
-      <DayPicker
-        mode="single"
-        selected={selectedDate}
-        onSelect={handleDateSelect}
-        modifiers={{
-          upcoming: upcomingDates,
-          ongoing: ongoingDates,
-          past: pastDates,
-        }}
-        modifiersClassNames={{
-          upcoming: 'rdp-day_upcoming',
-          ongoing: 'rdp-day_ongoing',
-          past: 'rdp-day_past',
-        }}
-      />
-    </div>
-  </CardContent>
-</Card>
-
-            {/* Exams for Selected Date */}
+            {/* Calendar using shadcn's Calendar component */}
             <Card className="col-span-full lg:col-span-1 border">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-lg">Exams on {formatDate(selectedDate)}</CardTitle>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg">Exam Calendar</CardTitle>
+                <CardDescription>
+                  Select a date to view scheduled exams
+                </CardDescription>
               </CardHeader>
               <CardContent>
-                <ScrollArea className="h-[300px] pr-4">
-                  <ul className="space-y-3">
-                    {listExams.map((e) => (
-                      <li key={e.id} className="p-3 bg-card hover:bg-muted rounded-lg border transition-colors">
-                        <button
-                          onClick={() => handleExamClick(e)}
-                          className="w-full text-left"
-                        >
-                          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
-                            <div>
-                              <p className="font-semibold">{e.title}</p>
-                              <p className="text-sm text-muted-foreground">{formatDateTime(e.start_date)}</p>
-                            </div>
-                            {e.status === 'draft' ? (
-                              <Badge variant="secondary">Draft</Badge>
-                            ) : now > new Date(e.end_date) ? (
-                              <Badge variant="destructive">Expired</Badge>
-                            ) : new Date(e.start_date) <= now && new Date(e.end_date) >= now ? (
-                              <Badge variant="default" className="bg-amber-500 hover:bg-amber-600">Ongoing</Badge>
-                            ) : (
-                              <Badge variant="default">Upcoming</Badge>
-                            )}
-                          </div>
-                        </button>
-                      </li>
-                    ))}
-                    {listExams.length === 0 &&
-                      <div className="flex items-center justify-center h-[200px] text-center">
-                        <p className="text-muted-foreground">No exams scheduled for this day.</p>
-                      </div>
-                    }
-                  </ul>
-                </ScrollArea>
+                <div className="flex flex-col items-center">
+                  <Calendar
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={(date) => setSelectedDate(date || selectedDate)}
+                    className="rounded-md border"
+                    modifiers={{
+                      highlighted: isDateHighlighted
+                    }}
+                    modifiersStyles={{
+                      highlighted: {
+                        backgroundColor: "hsl(var(--primary) / 0.15)",
+                        fontWeight: "bold"
+                      }
+                    }}
+                  />
+                  <div className="flex items-center justify-center gap-4 mt-4">
+                    <div className="flex items-center gap-1">
+                      <div className="h-3 w-3 rounded-full bg-primary/30"></div>
+                      <span className="text-xs text-muted-foreground">Has exams</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <div className="h-3 w-3 rounded-full bg-primary"></div>
+                      <span className="text-xs text-muted-foreground">Selected</span>
+                    </div>
+                  </div>
+                </div>
               </CardContent>
             </Card>
 
-            {/* Recently Ended Exams */}
+            {/* Exams for Selected Date */}
             <Card className="col-span-full lg:col-span-1 border">
               <CardHeader className="pb-2">
-                <CardTitle className="text-lg">Recently Ended Exams</CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg flex items-center">
+                    <CalendarDays className="mr-2 h-4 w-4" />
+                    {format(selectedDate, "MMMM d, yyyy")}
+                  </CardTitle>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" size="sm" className="h-8 w-8 p-0">
+                        <Search className="h-4 w-4" />
+                        <span className="sr-only">Search exams</span>
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-80">
+                      <div className="space-y-2">
+                        <h4 className="font-medium">Search Exams</h4>
+                        <Input
+                          placeholder="Enter exam title..."
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                        />
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+                <CardDescription>
+                  {listExams.length === 1
+                    ? "1 exam scheduled"
+                    : `${listExams.length} exams scheduled`}
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <ScrollArea className="h-[300px] pr-4">
-                  <ul className="space-y-3">
-                    {pastExams
-                      .filter(e => {
-                        const endDate = new Date(e.end_date);
-                        const oneYearAgo = new Date();
-                        oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
-                        return endDate >= oneYearAgo;
-                      })
-                      .map((e) => (
-                        <li key={e.id} className="p-3 bg-card hover:bg-muted rounded-lg border transition-colors">
+                  {listExams.length > 0 ? (
+                    <ul className="space-y-3">
+                      {listExams.map((exam) => (
+                        <li key={exam.id} className="relative">
                           <button
-                            onClick={() => handleExamClick(e)}
-                            className="w-full text-left"
+                            onClick={() => handleExamClick(exam)}
+                            className="w-full text-left p-3 rounded-lg border bg-card hover:bg-muted transition-colors flex flex-col"
                           >
-                            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
-                              <div>
-                                <p className="font-semibold">{e.title}</p>
-                                <p className="text-sm text-muted-foreground">Ended: {formatDate(e.end_date)}</p>
-                              </div>
-                              <Badge variant="destructive">Ended</Badge>
+                            <div className="flex items-start justify-between">
+                              <h3 className="font-medium truncate">{exam.title}</h3>
+                              {getStatusBadge(exam)}
+                            </div>
+                            <div className="mt-2 flex items-center text-sm text-muted-foreground">
+                              <Clock className="mr-1 h-3.5 w-3.5" />
+                              <span>{formatDateTime(exam.start_date)}</span>
+                              <span className="mx-1">-</span>
+                              <span>{formatDateTime(exam.end_date)}</span>
                             </div>
                           </button>
                         </li>
                       ))}
-                    {pastExams.length === 0 &&
-                      <div className="flex items-center justify-center h-[200px] text-center">
-                        <p className="text-muted-foreground">No ended exams yet.</p>
-                      </div>
-                    }
-                  </ul>
+                    </ul>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center h-[200px] text-center p-4">
+                      <CalendarIcon className="h-8 w-8 text-muted-foreground mb-2" />
+                      <p className="text-muted-foreground">No exams scheduled for this day.</p>
+                    </div>
+                  )}
                 </ScrollArea>
+              </CardContent>
+            </Card>
+
+            {/* Recent Exams using Tabs */}
+            <Card className="col-span-full lg:col-span-1 border">
+              <CardHeader className="pb-0">
+                <CardTitle className="text-lg">Recent Exams</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-2">
+                <Tabs defaultValue="ended" className="w-full">
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="ended">Ended</TabsTrigger>
+                    <TabsTrigger value="ongoing">Ongoing</TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="ended" className="mt-2">
+                    <ScrollArea className="h-[260px] pr-4">
+                      {pastExams.length > 0 ? (
+                        <ul className="space-y-3">
+                          {pastExams
+                            .filter(e => {
+                              const endDate = new Date(e.end_date);
+                              const oneYearAgo = new Date();
+                              oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+                              return endDate >= oneYearAgo;
+                            })
+                            .slice(0, 6)
+                            .map((exam) => (
+                              <li key={exam.id} className="relative">
+                                <button
+                                  onClick={() => handleExamClick(exam)}
+                                  className="w-full text-left p-3 rounded-lg border bg-card hover:bg-muted transition-colors"
+                                >
+                                  <div className="flex items-start justify-between">
+                                    <h3 className="font-medium truncate">{exam.title}</h3>
+                                    <Badge variant="destructive">Ended</Badge>
+                                  </div>
+                                  <p className="text-sm text-muted-foreground mt-1">
+                                    Ended: {formatDate(exam.end_date)}
+                                  </p>
+                                </button>
+                              </li>
+                            ))}
+                        </ul>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center h-[200px] text-center p-4">
+                          <FileText className="h-8 w-8 text-muted-foreground mb-2" />
+                          <p className="text-muted-foreground">No ended exams yet.</p>
+                        </div>
+                      )}
+                    </ScrollArea>
+                  </TabsContent>
+                  <TabsContent value="ongoing" className="mt-2">
+                    <ScrollArea className="h-[260px] pr-4">
+                      {ongoingExams.length > 0 ? (
+                        <ul className="space-y-3">
+                          {ongoingExams.map((exam) => (
+                            <li key={exam.id} className="relative">
+                              <button
+                                onClick={() => handleExamClick(exam)}
+                                className="w-full text-left p-3 rounded-lg border bg-card hover:bg-muted transition-colors"
+                              >
+                                <div className="flex items-start justify-between">
+                                  <h3 className="font-medium truncate">{exam.title}</h3>
+                                  <Badge className="bg-amber-500">Ongoing</Badge>
+                                </div>
+                                <div className="mt-1 flex items-center text-sm text-muted-foreground">
+                                  <Clock className="mr-1 h-3.5 w-3.5" />
+                                  <span>Ends: {formatDateTime(exam.end_date)}</span>
+                                </div>
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center h-[200px] text-center p-4">
+                          <Clock className="h-8 w-8 text-muted-foreground mb-2" />
+                          <p className="text-muted-foreground">No exams currently in progress.</p>
+                        </div>
+                      )}
+                    </ScrollArea>
+                  </TabsContent>
+                </Tabs>
               </CardContent>
             </Card>
           </div>
@@ -521,55 +506,60 @@ export default function TeacherExams() {
         {/* Draft Exams Section */}
         {!loading && draftExams.length > 0 && (
           <Card className="border">
-            <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-2">
-              <CardTitle>Draft Exams</CardTitle>
-              <div className="relative w-full sm:w-auto">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search drafts..."
-                  value={draftSearchQuery}
-                  onChange={(e) => setDraftSearchQuery(e.target.value)}
-                  className="pl-8 h-9 w-full sm:w-[220px]"
-                />
+            <CardHeader className="pb-2">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <CardTitle>Draft Exams</CardTitle>
+                <div className="relative w-full sm:w-auto">
+                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search drafts..."
+                    value={draftSearchQuery}
+                    onChange={(e) => setDraftSearchQuery(e.target.value)}
+                    className="pl-8 h-9 w-full sm:w-[220px]"
+                  />
+                </div>
               </div>
+              <CardDescription>Continue working on your unpublished exams</CardDescription>
             </CardHeader>
             <CardContent>
-              <ul className="space-y-3">
-                {draftExams
-                  .filter(e => e.title.toLowerCase().includes(draftSearchQuery.toLowerCase().trim()))
-                  .sort((a, b) => new Date(b.start_date) - new Date(a.start_date)) // Most recent first
-                  .map((e) => (
-                    <li key={e.id} className="p-3 hover:bg-muted rounded border transition-colors">
-                      <button
-                        onClick={() => handleExamClick(e)}
-                        className="w-full h-full"
-                      >
-                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                          <div className="text-left">
-                            <span className="font-medium block hover:text-primary">
-                              {e.title}
-                            </span>
+              <ScrollArea className="h-[250px] pr-4">
+                <ul className="space-y-3">
+                  {draftExams
+                    .filter(e => e.title.toLowerCase().includes(draftSearchQuery.toLowerCase().trim()))
+                    .sort((a, b) => new Date(b.start_date) - new Date(a.start_date)) // Most recent first
+                    .map((exam) => (
+                      <li key={exam.id} className="relative">
+                        <div className="p-3 rounded-lg border bg-card hover:bg-muted transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                          <button
+                            onClick={() => handleExamClick(exam)}
+                            className="text-left flex-1"
+                          >
+                            <h3 className="font-medium">{exam.title}</h3>
                             <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground mt-1">
-                              <span>{formatDate(e.start_date)}</span>
-                              <span>{formatDateTime(e.start_date)}</span>
+                              <span>{formatDate(exam.start_date)}</span>
+                              <span>•</span>
+                              <span>{exam.questions ? exam.questions.length : 0} questions</span>
                             </div>
-                          </div>
-                          <div className="flex items-center gap-3 mt-2 sm:mt-0">
-                            <span className="text-sm bg-background text-foreground px-2 py-1 rounded border">
-                              {e.questions ? e.questions.length : 0} questions
-                            </span>
+                          </button>
+                          <div className="flex items-center gap-2 mt-2 sm:mt-0">
                             <Badge variant="outline">Draft</Badge>
+                            <Link to={`/exam/${exam.id}/edit`}>
+                              <Button variant="secondary" size="sm">
+                                <Edit className="h-4 w-4" />
+                                <span className="sr-only">Edit</span>
+                              </Button>
+                            </Link>
                           </div>
                         </div>
-                      </button>
-                    </li>
-                  ))}
-                {draftExams.length === 0 &&
+                      </li>
+                    ))}
+                </ul>
+                {draftExams.filter(e => e.title.toLowerCase().includes(draftSearchQuery.toLowerCase().trim())).length === 0 && (
                   <div className="flex items-center justify-center h-[100px] text-center">
-                    <p className="text-muted-foreground">No draft exams available.</p>
+                    <p className="text-muted-foreground">No matching draft exams found.</p>
                   </div>
-                }
-              </ul>
+                )}
+              </ScrollArea>
             </CardContent>
           </Card>
         )}
@@ -591,7 +581,7 @@ export default function TeacherExams() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-1">
                         <div className="flex items-center text-sm text-muted-foreground">
-                          <Calendar className="mr-2 h-4 w-4" />
+                          <CalendarIcon className="mr-2 h-4 w-4" />
                           <h3 className="font-medium">Start Date</h3>
                         </div>
                         <p>{formatDate(selectedExam.start_date)}</p>
@@ -618,17 +608,7 @@ export default function TeacherExams() {
                           <AlertCircle className="mr-2 h-4 w-4" />
                           <h3 className="font-medium">Status</h3>
                         </div>
-                        <p>
-                          {selectedExam.status === 'draft' ? (
-                            <Badge variant="secondary">Draft</Badge>
-                          ) : now > new Date(selectedExam.end_date) ? (
-                            <Badge variant="destructive">Expired</Badge>
-                          ) : new Date(selectedExam.start_date) <= now && new Date(selectedExam.end_date) >= now ? (
-                            <Badge variant="default" className="bg-amber-500 hover:bg-amber-600">Ongoing</Badge>
-                          ) : (
-                            <Badge variant="default">Upcoming</Badge>
-                          )}
-                        </p>
+                        <p>{getStatusBadge(selectedExam)}</p>
                       </div>
                     </div>
 

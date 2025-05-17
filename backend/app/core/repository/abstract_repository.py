@@ -13,18 +13,35 @@ class AbstractRepository(ABC, Generic[T]):
         pass
 
     @abstractmethod
-    async def get_by_id(self, entity_id: str, fetch_links: bool = False) -> Optional[T]:
+    async def get_by_id(
+        self,
+        entity_id: str,
+        fetch_links: bool = False,
+        fetch_fields: Optional[dict[str:int]] = None,
+        default_fetch_depth: int = 0,
+    ) -> Optional[T]:
         """Get an entity by its ID"""
         pass
 
     @abstractmethod
-    async def get_by_field(self, field_name: str, field_value: Any) -> Optional[T]:
+    async def get_by_field(
+        self,
+        field_name: str,
+        field_value: Any,
+        fetch_links: bool = False,
+        fetch_fields: Optional[dict[str:int]] = None,
+        default_fetch_depth: int = 0,
+    ) -> Optional[T]:
         """Get an entity by a specific field"""
         pass
 
     @abstractmethod
     async def get_all(
-        self, filter_criteria: Optional[Dict[str, Any]] = None
+        self,
+        filter_criteria: Optional[Dict[str, Any]] = None,
+        fetch_links: bool = False,
+        fetch_fields: Optional[dict[str:int]] = None,
+        default_fetch_depth: int = 0,
     ) -> List[T]:
         """Get all entities, optionally filtered"""
         pass

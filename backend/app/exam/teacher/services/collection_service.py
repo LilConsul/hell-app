@@ -7,7 +7,7 @@ from app.core.exceptions import (
     NotFoundError,
     UnprocessableEntityError,
 )
-from app.exam.models import ExamStatus, QuestionType
+from app.exam.models import ExamStatus, QuestionType, Question
 from app.exam.repository import CollectionRepository, QuestionRepository
 from app.exam.teacher.schemas import (
     CollectionQuestionCount,
@@ -19,6 +19,20 @@ from app.exam.teacher.schemas import (
     UpdateQuestionSchema,
 )
 from app.i18n import _
+from beanie import Link, DeleteRules
+
+
+def time_it(func):
+    import time
+
+    def wrapper(*args, **kwargs):
+        start_time = time.time()
+        result = func(*args, **kwargs)
+        end_time = time.time()
+        print(f"Execution time: {end_time - start_time} seconds")
+        return result
+
+    return wrapper
 
 
 class CollectionService:
@@ -43,7 +57,7 @@ class CollectionService:
     async def get_collection(self, user_id: str, collection_id: str) -> GetCollection:
         """Get a collection by its ID."""
         collection = await self.collection_repository.get_by_id(
-            collection_id, fetch_links=True
+            collection_id, fetch_fields={"questions": 1, "created_by": 1}
         )
         if not collection:
             raise NotFoundError(_("Collection not found"))
@@ -84,7 +98,8 @@ class CollectionService:
 
         await self.collection_repository.delete(collection_id)
 
-    def _validate_question_by_type(self, question_data: dict) -> None:
+    @staticmethod
+    def _validate_question_by_type(question_data: dict) -> None:
         """
         Validate question data based on its type.
 
@@ -104,7 +119,7 @@ class CollectionService:
             if not options:
                 raise UnprocessableEntityError(
                     _("{question_type} question must have options").format(
-                        question_type=question_type
+                        question_type=question_type.value.upper()
                     )
                 )
 
@@ -114,14 +129,14 @@ class CollectionService:
                 raise UnprocessableEntityError(
                     _(
                         "{question_type} question must have at least one correct answer"
-                    ).format(question_type=question_type)
+                    ).format(question_type=question_type.value.upper())
                 )
 
             if question_type == QuestionType.SINGLECHOICE and correct_count > 1:
                 raise UnprocessableEntityError(
                     _(
                         "{QuestionType} question must have exactly one correct answer"
-                    ).format(QuestionType=QuestionType.SINGLECHOICE)
+                    ).format(QuestionType=QuestionType.SINGLECHOICE.value.upper())
                 )
 
         # For SHORTANSWER: validate correct_input_answer
@@ -130,65 +145,15 @@ class CollectionService:
                 raise UnprocessableEntityError(
                     _(
                         "{QuestionType} question must have a correct_input_answer"
-                    ).format(QuestionType=QuestionType.SHORTANSWER)
+                    ).format(QuestionType=QuestionType.SHORTANSWER.value.upper())
                 )
 
     async def add_question_to_collection(
         self, collection_id: str, user_id: str, question_data: QuestionSchema
     ) -> str:
         """Add a question to a collection and return the question ID."""
-        collection = await self._get_collection_with_permission_check(
-            collection_id, user_id
-        )
-
-        # Set position if not provided
-        existing_positions = self._get_existing_positions(collection)
-        self._assign_position_if_needed(question_data, existing_positions)
-        self._validate_position_available(question_data.position, existing_positions)
-
-        # Create and add question
-        question_data_dict = self._prepare_question_data(question_data, user_id)
-        self._validate_question_by_type(question_data_dict)
-
-        question = await self.question_repository.create(question_data_dict)
-        collection.questions.append(question)
-        await self.collection_repository.save(collection)
-
-        return question.id
-
-    async def add_question_to_collection_bulk(
-        self, collection_id: str, user_id: str, question_list: List[QuestionSchema]
-    ) -> List[str]:
-        """Add multiple questions to a collection in a single operation."""
-        collection = await self._get_collection_with_permission_check(
-            collection_id, user_id
-        )
-        existing_positions = self._get_existing_positions(collection)
-
-        question_ids = []
-        for question_data in question_list:
-            self._assign_position_if_needed(question_data, existing_positions)
-            self._validate_position_available(
-                question_data.position, existing_positions
-            )
-            existing_positions.append(question_data.position)  # Update tracking list
-
-            question_data_dict = self._prepare_question_data(question_data, user_id)
-            self._validate_question_by_type(question_data_dict)
-
-            question = await self.question_repository.create(question_data_dict)
-            collection.questions.append(question)
-            question_ids.append(question.id)
-
-        await self.collection_repository.save(collection)
-        return question_ids
-
-    async def _get_collection_with_permission_check(
-        self, collection_id: str, user_id: str
-    ):
-        """Get collection and check permissions."""
         collection = await self.collection_repository.get_by_id(
-            collection_id, fetch_links=True
+            collection_id, fetch_fields={"questions": 1}
         )
         if not collection:
             raise NotFoundError(
@@ -197,39 +162,27 @@ class CollectionService:
                 )
             )
 
-        if collection.created_by.id != user_id:
+        if collection.created_by.ref.id != user_id:
             raise ForbiddenError(
                 _("You don't have permission to add questions to this collection")
             )
-        return collection
 
-    @staticmethod
-    def _get_existing_positions(collection):
-        """Extract existing question positions from collection."""
-        return [q.position for q in collection.questions if hasattr(q, "position")]
-
-    @staticmethod
-    def _assign_position_if_needed(question_data, existing_positions):
-        """Assign a position to the question if not provided."""
+        # Check if the question position is already taken
+        existing_positions = [q.position for q in collection.questions]
         if not question_data.position:
             available_position = 0
             while available_position in existing_positions:
                 available_position += 1
             question_data.position = available_position
 
-    @staticmethod
-    def _validate_position_available(position, existing_positions):
-        """Check if the position is already taken."""
-        if position in existing_positions:
+        if question_data.position in existing_positions:
             raise UnprocessableEntityError(
                 _(
-                    "Question with position {position} already exists in the collection"
-                ).format(position=position)
+                    "Question with position {question_data} already exists in the collection"
+                ).format(question_data=question_data.position)
             )
 
-    @staticmethod
-    def _prepare_question_data(question_data, user_id):
-        """Prepare question data dictionary for creation."""
+        # Prepare question data
         question_data_dict = question_data.model_dump()
         question_data_dict["_id"] = str(uuid.uuid4())
         question_data_dict["created_by"] = user_id
@@ -244,20 +197,26 @@ class CollectionService:
                 for opt in question_data_dict["options"]
             ]
 
-        return question_data_dict
+        self._validate_question_by_type(question_data_dict)
+
+        # Create question
+        question = await self.question_repository.create(question_data_dict)
+        collection.questions.append(question)
+        await self.collection_repository.save(collection)
+
+        return question.id
 
     async def edit_question(
         self, question_id: str, user_id: str, question_data: UpdateQuestionSchema
     ) -> None:
         """Edit an existing question by its ID."""
         question = await self.question_repository.get_by_id(
-            question_id, fetch_links=True
+            question_id, fetch_fields={"collection": 1}
         )
         if not question:
             raise NotFoundError(_("Question not found"))
 
-        # Check if user owns the question
-        if question.created_by.id != user_id:
+        if question.created_by.ref.id != user_id:
             raise ForbiddenError(_("You do not own this question"))
 
         # Check if the question position is already taken
@@ -265,16 +224,17 @@ class CollectionService:
             hasattr(question_data, "position")
             and question_data.position != question.position
         ):
-            existing_positions = [
+            existing_positions = {
                 q.position
                 for q in question.collection.questions
-                if hasattr(q, "position")
-            ]
+                if hasattr(q, "position") and q.id != question.id
+            }
+
             if question_data.position in existing_positions:
                 raise UnprocessableEntityError(
                     _(
-                        "Question with position {question_data} already exists in the collection"
-                    ).format(question_data.position)
+                        "Question with position {position} already exists in the collection"
+                    ).format(position=question_data.position)
                 )
 
         update_data = question_data.model_dump(exclude_unset=True)
@@ -361,43 +321,40 @@ class CollectionService:
         self, user_id: str
     ) -> List[CollectionQuestionCount] | []:
         """Get all collections created by a specific teacher."""
-        collections = await self.collection_repository.get_by_creator(user_id)
+        collections = await self.collection_repository.get_all(
+            {"created_by._id": user_id}, fetch_fields={"created_by": 1}
+        )
+
         return await self._process_collections(collections)
 
     async def get_public_collections(self) -> List[CollectionQuestionCount] | []:
         """Get all published collections that are publicly available."""
-        collections = await self.collection_repository.get_published()
+        collections = await self.collection_repository.get_all(
+            {"status": ExamStatus.PUBLISHED},
+            fetch_fields={"created_by": 1},
+        )
         return await self._process_collections(collections)
 
     @staticmethod
     async def _process_collections(collections) -> List[CollectionQuestionCount] | []:
         """Process collection data and add question count."""
-        result = []
-        for collection in collections:
-            collection_dict = collection.model_dump()
-            collection_dict["question_count"] = (
-                len(collection.questions)
-                if hasattr(collection, "questions") and collection.questions
-                else 0
+        return [
+            CollectionQuestionCount.model_validate(
+                {
+                    **collection.model_dump(),
+                    "question_count": len(getattr(collection, "questions", []) or []),
+                }
             )
-            result.append(CollectionQuestionCount.model_validate(collection_dict))
-        return result
+            for collection in collections
+        ]
 
     async def delete_question(self, question_id: str, user_id: str) -> None:
         """Delete an existing question by its ID."""
-        question = await self.question_repository.get_by_id(
-            question_id, fetch_links=True
-        )
+        question = await self.question_repository.get_by_id(question_id)
         if not question:
             raise NotFoundError(_("Question not found"))
 
-        if question.created_by.id != user_id:
+        if question.created_by.ref.id != user_id:
             raise ForbiddenError(_("You do not own this question"))
 
-        collections = await self.collection_repository.get_all()
-        for collection in collections:
-            if question in collection.questions:
-                collection.questions.remove(question)
-                await self.collection_repository.save(collection)
-
-        await self.question_repository.delete(question_id)
+        await self.question_repository.delete(question_id, link_rule = DeleteRules.DELETE_LINKS)

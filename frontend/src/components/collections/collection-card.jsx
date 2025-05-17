@@ -95,7 +95,11 @@ export function CollectionCard({ collection, onStatusChange, onDelete, onDuplica
             <div className="flex items-center">
               {renderStatusIcon()}
               <div>
-                <CardTitle className="text-xl">{collection.title}</CardTitle>
+                <CardTitle className="text-xl">
+                  <Link to={`/collections/${collection.id}`}>
+                    {collection.title}
+                  </Link>
+                  </CardTitle>
                 <CardDescription className="mt-1">
                   Created by{" "}
                   <button 

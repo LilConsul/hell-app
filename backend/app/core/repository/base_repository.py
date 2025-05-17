@@ -88,6 +88,10 @@ class BaseRepository(AbstractRepository[T], Generic[T]):
         """Get all entities, optionally filtered"""
         if fetch_fields:
             fetch_links = True
+
+        if filter_criteria is None:
+            filter_criteria = {}
+
         entity = await self.model_class.find(
             filter_criteria,
             fetch_links=fetch_links,

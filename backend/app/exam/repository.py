@@ -2,29 +2,26 @@ from datetime import datetime, timezone
 from typing import Dict, List
 
 from app.core.repository.base_repository import BaseRepository
-from app.exam.models import (Collection, ExamInstance, ExamStatus, Question,
-                             StudentAttempt, StudentExam, StudentExamStatus,
-                             StudentResponse)
+from app.exam.models import (
+    Collection,
+    ExamInstance,
+    ExamStatus,
+    Question,
+    StudentAttempt,
+    StudentExam,
+    StudentExamStatus,
+    StudentResponse,
+)
 
 
 class CollectionRepository(BaseRepository[Collection]):
     """Repository for Collection model operations"""
 
-    async def get_by_creator(self, user_id: str) -> List[Collection]:
-        """Get all collections created by a specific user ID"""
-        collections = await self.model_class.find(
-            {"created_by._id": user_id},
-            fetch_links=True,
-        ).to_list()
-
-        return collections
-
     async def get_published(self) -> List[Collection]:
         """Get all published collections"""
         # Fetch collections with linked objects (created_by user)
         collections = await self.model_class.find(
-            {"status": ExamStatus.PUBLISHED},
-            fetch_links=True,
+            {"status": ExamStatus.PUBLISHED}
         ).to_list()
 
         for collection in collections:
@@ -70,43 +67,6 @@ class StudentResponseRepository(BaseRepository[StudentResponse]):
         for question in questions:
             option_order = option_orders.get(question.id, {})
             await self.create_response(attempt, question, option_order)
-
-    async def find_by_attempt_and_question(
-        self, attempt_id: str, question_id: str
-    ) -> StudentResponse | None:
-        """
-        Find a student response for a specific question in a specific attempt.
-
-        Args:
-            attempt_id: ID of the student attempt
-            question_id: ID of the question
-
-        Returns:
-            The student response or None if not found
-        """
-        response = await self.model_class.find_one(
-            {"attempt_id._id": attempt_id, "question_id._id": question_id},
-            fetch_links=True,
-        )
-        return response
-
-    async def find_by_attempt_id(
-        self, attempt_id: str, fetch_links: bool = True
-    ) -> List[StudentResponse] | None:
-        """
-        Find all student responses for a specific attempt.
-
-        Args:
-            attempt_id: ID of the student attempt
-
-        Returns:
-            List of student responses or None if not found
-        """
-        responses = await self.model_class.find(
-            {"attempt_id._id": attempt_id},
-            fetch_links=fetch_links,
-        ).to_list()
-        return responses
 
 
 class StudentAttemptRepository(BaseRepository[StudentAttempt]):

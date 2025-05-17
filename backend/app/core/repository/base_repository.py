@@ -25,14 +25,14 @@ class BaseRepository(AbstractRepository[T], Generic[T]):
         entity_id: str,
         *,
         fetch_links: bool = False,
-        fetch_fields: Optional[dict[str:int]] = None,
+        fetch_fields: Optional[Dict[str, int]] = None,
         default_fetch_depth: int = 0,
     ) -> Optional[T]:
         """Get an entity by its ID"""
         if fetch_fields:
             fetch_links = True
         entity = await self.model_class.find_one(
-            {self.model_class.id: entity_id},
+            {"_id": entity_id},
             fetch_links=fetch_links,
             nesting_depth=default_fetch_depth,
             nesting_depths_per_field=fetch_fields,
@@ -46,7 +46,7 @@ class BaseRepository(AbstractRepository[T], Generic[T]):
         field_value: Any,
         *,
         fetch_links: bool = False,
-        fetch_fields: Optional[dict[str:int]] = None,
+        fetch_fields: Optional[Dict[str, int]] = None,
         default_fetch_depth: int = 0,
     ) -> Optional[T]:
         """Get an entity by field value"""
@@ -65,7 +65,7 @@ class BaseRepository(AbstractRepository[T], Generic[T]):
         filter_criteria: Optional[Dict[str, Any]] = None,
         *,
         fetch_links: bool = False,
-        fetch_fields: Optional[dict[str:int]] = None,
+        fetch_fields: Optional[Dict[str, int]] = None,
         default_fetch_depth: int = 0,
     ) -> Optional[T]:
         """Get entity filtered by criteria"""
@@ -82,7 +82,7 @@ class BaseRepository(AbstractRepository[T], Generic[T]):
         filter_criteria: Optional[Dict[str, Any]] = None,
         *,
         fetch_links: bool = False,
-        fetch_fields: Optional[dict[str:int]] = None,
+        fetch_fields: Optional[Dict[str, int]] = None,
         default_fetch_depth: int = 0,
     ) -> List[T]:
         """Get all entities, optionally filtered"""

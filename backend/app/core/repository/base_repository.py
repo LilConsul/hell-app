@@ -20,30 +20,62 @@ class BaseRepository(AbstractRepository[T], Generic[T]):
         await entity.create()
         return entity
 
-    async def get_by_id(self, entity_id: str, fetch_links: bool = False) -> Optional[T]:
+    async def get_by_id(
+        self,
+        entity_id: str,
+        fetch_links: bool = False,
+        fetch_fields: Optional[dict[str:int]] = None,
+        default_fetch_depth: int = 0,
+    ) -> Optional[T]:
         """Get an entity by its ID"""
-        return await self.model_class.find_one(
-            {self.model_class.id: entity_id}, fetch_links=fetch_links
+        if fetch_fields and not fetch_links:
+            raise ValueError("fetch_links must be True if fetch_fields is provided")
+        entity = await self.model_class.find_one(
+            {self.model_class.id: entity_id},
+            fetch_links=fetch_links,
+            nesting_depth=default_fetch_depth,
+            nesting_depths_per_field=fetch_fields,
         )
 
+        return entity
+
     async def get_by_field(
-        self, field_name: str, field_value: Any, fetch_links=False
+        self,
+        field_name: str,
+        field_value: Any,
+        fetch_links: bool = False,
+        fetch_fields: Optional[dict[str:int]] = None,
+        default_fetch_depth: int = 0,
     ) -> Optional[T]:
-        return await self.model_class.find_one(
-            {field_name: field_value}, fetch_links=fetch_links
+        """Get an entity by field value"""
+        if fetch_fields and not fetch_links:
+            raise ValueError("fetch_links must be True if fetch_fields is provided")
+        entity = await self.model_class.find_one(
+            {field_name: field_value},
+            fetch_links=fetch_links,
+            nesting_depth=default_fetch_depth,
+            nesting_depths_per_field=fetch_fields,
         )
+        return entity
 
     async def get_all(
         self,
         filter_criteria: Optional[Dict[str, Any]] = None,
         fetch_links: bool = False,
+        fetch_fields: Optional[dict[str:int]] = None,
+        default_fetch_depth: int = 0,
     ) -> List[T]:
         """Get all entities, optionally filtered"""
-        if filter_criteria:
-            return await self.model_class.find(
-                filter_criteria, fetch_links=fetch_links
-            ).to_list()
-        return await self.model_class.find_all(fetch_links=fetch_links).to_list()
+        if fetch_fields and not fetch_links:
+            raise ValueError("fetch_links must be True if fetch_fields is provided")
+        entity = await self.model_class.find(
+            filter_criteria,
+            fetch_links=fetch_links,
+            nesting_depth=default_fetch_depth,
+            nesting_depths_per_field=fetch_fields,
+        ).to_list()
+
+        return entity
 
     async def update(self, entity_id: str, data: Dict[str, Any]) -> Optional[T]:
         """Update an entity"""

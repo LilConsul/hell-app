@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from typing import Any, Dict, Generic, List, Optional, Type, TypeVar
 
-from beanie import Document
+from beanie import Document, DeleteRules
 
 from app.core.repository.abstract_repository import AbstractRepository
 
@@ -70,7 +70,10 @@ class BaseRepository(AbstractRepository[T], Generic[T]):
     ) -> Optional[T]:
         """Get entity filtered by criteria"""
         instance = await self.get_all(
-            filter_criteria, fetch_links, fetch_fields, default_fetch_depth
+            filter_criteria,
+            fetch_links=fetch_links,
+            fetch_fields=fetch_fields,
+            default_fetch_depth=default_fetch_depth,
         )
         return instance[0] if instance else None
 
@@ -85,6 +88,10 @@ class BaseRepository(AbstractRepository[T], Generic[T]):
         """Get all entities, optionally filtered"""
         if fetch_fields:
             fetch_links = True
+
+        if filter_criteria is None:
+            filter_criteria = {}
+
         entity = await self.model_class.find(
             filter_criteria,
             fetch_links=fetch_links,
@@ -107,13 +114,15 @@ class BaseRepository(AbstractRepository[T], Generic[T]):
         await entity.update({"$set": data})
         return await self.get_by_id(entity_id)  # Refresh after update
 
-    async def delete(self, entity_id: str) -> bool:
+    async def delete(
+        self, entity_id: str, *, link_rule: DeleteRules | None = None
+    ) -> bool:
         """Delete an entity"""
         entity = await self.get_by_id(entity_id)
         if not entity:
             return False
 
-        await entity.delete()
+        await entity.delete(link_rule=link_rule)
         return True
 
     async def save(self, entity: T) -> T:

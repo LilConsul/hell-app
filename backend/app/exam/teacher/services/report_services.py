@@ -6,19 +6,23 @@ from typing import Any, Dict, List, Optional, Tuple
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet
-from reportlab.platypus import (Paragraph, SimpleDocTemplate, Spacer, Table,
-                                TableStyle)
+from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
 from app.core.exceptions import NotFoundError
-from app.core.utils import (convert_to_user_timezone,
-                            convert_user_timezone_to_utc)
+from app.core.utils import convert_to_user_timezone, convert_user_timezone_to_utc
 from app.exam.models import StudentAttempt
-from app.exam.repository import (ExamInstanceRepository,
-                                 StudentAttemptRepository,
-                                 StudentExamRepository)
-from app.exam.teacher.schemas import (ExamReportFilter, ExamReportResponse,
-                                      ExamStatistics, HistogramDataPoint,
-                                      TimelineDataPoint)
+from app.exam.repository import (
+    ExamInstanceRepository,
+    StudentAttemptRepository,
+    StudentExamRepository,
+)
+from app.exam.teacher.schemas import (
+    ExamReportFilter,
+    ExamReportResponse,
+    ExamStatistics,
+    HistogramDataPoint,
+    TimelineDataPoint,
+)
 from app.i18n import _
 
 
@@ -49,9 +53,7 @@ class ReportService:
         Returns:
             Dictionary containing all report metrics
         """
-        exam_instance = await self.exam_instance_repository.get_by_id(
-            exam_instance_id, fetch_links=True
-        )
+        exam_instance = await self.exam_instance_repository.get_by_id(exam_instance_id)
         if not exam_instance:
             raise NotFoundError(_("Exam instance not found"))
 
@@ -147,19 +149,16 @@ class ReportService:
             Filtered list of student attempts
         """
         student_exams = await self.student_exam_repository.get_all(
-            {"exam_instance_id._id": exam_instance_id}, fetch_links=True
+            {"exam_instance_id.$id": exam_instance_id},
+            fetch_fields={"attempts": 2},
         )
-
         if student_ids:
             student_exams = [
                 exam for exam in student_exams if str(exam.student_id.id) in student_ids
             ]
-
         all_attempts = []
         for student_exam in student_exams:
-            student_attempts = await self.student_attempt_repository.get_all(
-                {"student_exam_id._id": student_exam.id}, fetch_links=True
-            )
+            student_attempts = student_exam.attempts
 
             if date_range:
                 start_date, end_date = date_range

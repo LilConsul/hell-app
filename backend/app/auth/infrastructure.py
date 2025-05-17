@@ -5,6 +5,8 @@ from fastapi.openapi.models import OAuthFlows as OAuthFlowsModel
 from fastapi.security import OAuth2
 from fastapi.security.utils import get_authorization_scheme_param
 
+from app.i18n import _
+
 
 class CookieTokenAuth(OAuth2):
     """
@@ -47,7 +49,7 @@ class CookieTokenAuth(OAuth2):
         if not token and self.auto_error:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Not authenticated",
+                detail=_("Not authenticated"),
                 headers={"WWW-Authenticate": "Bearer"},
             )
 

@@ -4,7 +4,7 @@ from typing import List, Union
 
 from app.celery.tasks.email_tasks.tasks import exam_finish_confirmation
 from app.core.exceptions import ForbiddenError
-from app.core.utils import make_username, convert_to_user_timezone
+from app.core.utils import convert_to_user_timezone, make_username
 from app.exam.models import PassFailStatus, QuestionType, StudentExamStatus
 from app.exam.repository import (
     StudentAttemptRepository,
@@ -20,6 +20,7 @@ from app.exam.student.schemas import (
     StudentExamBase,
     StudentExamDetail,
 )
+from app.i18n import _
 
 
 class StudentExamService:
@@ -40,7 +41,8 @@ class StudentExamService:
         Get all exams for a student.
         """
         exams = await self.student_exam_repository.get_all(
-            {"student_id._id": student_id}, fetch_links=True
+            {"student_id.$id": student_id},
+            fetch_fields={"exam_instance_id": 2},
         )
         if not exams:
             return []
@@ -63,13 +65,15 @@ class StudentExamService:
         Get a specific exam for a student.
         """
         exam = await self.student_exam_repository.get_by_id(
-            student_exam_id, fetch_links=True
+            student_exam_id,
+            fetch_links=True,
+            fetch_fields={"exam_instance_id": 2, "attempts": 1, "student_id": 1},
         )
         if not exam:
-            raise ForbiddenError("Exam not found")
+            raise ForbiddenError(_("Exam not found"))
 
         if exam.student_id.id != student_id:
-            raise ForbiddenError("You do not have permission to access this exam")
+            raise ForbiddenError(_("You do not have permission to access this exam"))
 
         if (
             exam.latest_attempt_id
@@ -111,17 +115,17 @@ class StudentExamService:
         Otherwise returns StudentAttemptBasic with basic information.
         """
         attempt = await self.student_attempt_repository.get_by_id(
-            attempt_id, fetch_links=True
+            attempt_id, fetch_fields={"student_exam_id": 2, "responses":2 }
         )
         if not attempt:
-            raise ForbiddenError("Attempt not found")
+            raise ForbiddenError(_("Attempt not found"))
 
         if attempt.student_exam_id.student_id.id != student_id:
-            raise ForbiddenError("You do not have permission to access this attempt")
+            raise ForbiddenError(_("You do not have permission to access this attempt"))
 
         # For in-progress attempts, raise an error as they can't be reviewed
         if attempt.status == StudentExamStatus.IN_PROGRESS:
-            raise ForbiddenError("Attempt is still in progress")
+            raise ForbiddenError(_("Attempt is still in progress"))
 
         # Get exam security settings to check if review is allowed
         exam_instance = attempt.student_exam_id.exam_instance_id
@@ -146,34 +150,33 @@ class StudentExamService:
     @staticmethod
     def _validate_exam_time(start_date, end_date):
         """Validate if the current time is within the exam time range."""
-        # TODO: Validata timezones
         current_time = datetime.now(timezone.utc)
         start_date_aware = start_date.replace(tzinfo=timezone.utc)
         end_date_aware = end_date.replace(tzinfo=timezone.utc)
         if current_time < start_date_aware:
-            raise ForbiddenError("Exam is not available yet")
+            raise ForbiddenError(_("Exam is not available yet"))
         if current_time > end_date_aware:
-            raise ForbiddenError("Exam has already ended")
+            raise ForbiddenError(_("Exam has already ended"))
 
     async def start_exam(
         self, student_id: str, student_exam_id: str
     ) -> List[QuestionWithOptions]:
         """Start an exam for a student."""
         student_exam = await self.student_exam_repository.get_by_id(
-            student_exam_id, fetch_links=True
+            student_exam_id, fetch_fields={"exam_instance_id": 3, "student_id": 1}
         )
         if not student_exam:
-            raise ForbiddenError("Exam not found")
+            raise ForbiddenError(_("Exam not found"))
 
         if student_exam.student_id.id != student_id:
-            raise ForbiddenError("You do not have permission to access this exam")
+            raise ForbiddenError(_("You do not have permission to access this exam"))
 
         if student_exam.current_status == StudentExamStatus.IN_PROGRESS:
-            raise ForbiddenError("Exam already started")
+            raise ForbiddenError(_("Exam already started"))
 
         exam_instance = student_exam.exam_instance_id
         if student_exam.attempts_count >= exam_instance.max_attempts:
-            raise ForbiddenError("Max attempts reached")
+            raise ForbiddenError(_("Max attempts reached"))
 
         self._validate_exam_time(exam_instance.start_date, exam_instance.end_date)
 
@@ -243,30 +246,30 @@ class StudentExamService:
         Common validation logic for methods that require an in-progress exam.
         """
         student_exam = await self.student_exam_repository.get_by_id(
-            student_exam_id, fetch_links=True
+            student_exam_id, fetch_fields={"exam_instance_id": 3, "student_id": 1}
         )
         if not student_exam:
-            raise ForbiddenError("Exam not found")
+            raise ForbiddenError(_("Exam not found"))
 
         if student_exam.student_id.id != student_id:
-            raise ForbiddenError("You do not have permission to access this exam")
+            raise ForbiddenError(_("You do not have permission to access this exam"))
 
         if student_exam.current_status != StudentExamStatus.IN_PROGRESS:
-            raise ForbiddenError("Exam not in progress")
+            raise ForbiddenError(_("Exam not in progress"))
 
         exam_instance = student_exam.exam_instance_id
         if check_time:
             self._validate_exam_time(exam_instance.start_date, exam_instance.end_date)
 
         if not student_exam.latest_attempt_id:
-            raise ForbiddenError("No active attempt found")
+            raise ForbiddenError(_("No active attempt found"))
 
         attempt = await student_exam.latest_attempt_id.fetch()
         if not attempt:
-            raise ForbiddenError("No active attempt found")
+            raise ForbiddenError(_("No active attempt found"))
 
         if attempt.status != StudentExamStatus.IN_PROGRESS:
-            raise ForbiddenError("Attempt is not in progress")
+            raise ForbiddenError(_("Attempt is not in progress"))
         return student_exam, attempt
 
     async def save_answer(
@@ -277,32 +280,33 @@ class StudentExamService:
             student_id, student_exam_id
         )
 
-        response = await self.student_response_repository.find_by_attempt_and_question(
-            attempt.id, question.question_id
+        response = await self.student_response_repository.get_one_by_criteria(
+            {"attempt_id._id": attempt.id, "question_id._id": question.question_id},
+            fetch_fields={"question_id": 1, "attempt_id": 1},
         )
 
         if not response:
-            raise ForbiddenError("Question not found in this attempt")
+            raise ForbiddenError(_("Question not found in this attempt"))
 
         question_type = response.question_id.type
         update_data = {}
         if question_type == QuestionType.MCQ:
             if question.option_ids is None:
                 raise ForbiddenError(
-                    "Multiple choice question requires option selections"
+                    _("Multiple choice question requires option selections")
                 )
             update_data["selected_option_ids"] = question.option_ids
 
         elif question_type == QuestionType.SINGLECHOICE:
             if question.option_ids is None or len(question.option_ids) != 1:
                 raise ForbiddenError(
-                    "Single choice question requires exactly one option"
+                    _("Single choice question requires exactly one option")
                 )
             update_data["selected_option_ids"] = question.option_ids
 
         elif question_type == QuestionType.SHORTANSWER:
             if question.answer is None:
-                raise ForbiddenError("Short answer question requires text input")
+                raise ForbiddenError(_("Short answer question requires text input"))
             update_data["text_response"] = question.answer
 
         await self.student_response_repository.update(response.id, update_data)
@@ -319,12 +323,13 @@ class StudentExamService:
             student_id, student_exam_id
         )
 
-        response = await self.student_response_repository.find_by_attempt_and_question(
-            attempt.id, question_id
+        response = await self.student_response_repository.get_one_by_criteria(
+            {"attempt_id._id": attempt.id, "question_id._id": question_id},
+            fetch_fields={"question_id": 1, "attempt_id": 1},
         )
 
         if not response:
-            raise ForbiddenError("Question not found in this attempt")
+            raise ForbiddenError(_("Question not found in this attempt"))
 
         await self.student_response_repository.update(
             response.id,
@@ -343,13 +348,13 @@ class StudentExamService:
         )
 
         if not attempt:
-            raise ForbiddenError("No active attempt found")
+            raise ForbiddenError(_("No active attempt found"))
 
-        responses = await self.student_response_repository.find_by_attempt_id(
-            attempt.id
+        responses = await self.student_response_repository.get_all(
+            {"attempt_id.$id": attempt.id}, fetch_fields={"question_id": 1}
         )
         if not responses:
-            raise ForbiddenError("No responses found for this attempt")
+            raise ForbiddenError(_("No responses found for this attempt"))
 
         total_weight = 0
         weighted_score = 0
@@ -447,16 +452,16 @@ class StudentExamService:
         student_exam, attempt = await self._get_active_attempt(
             student_id, student_exam_id
         )
-
         exam_instance = student_exam.exam_instance_id
         collection = exam_instance.collection_id
         all_questions = {q.id: q for q in collection.questions}
 
         question_order = attempt.question_order
 
-        responses = await self.student_response_repository.find_by_attempt_id(
-            attempt.id
+        responses = await self.student_response_repository.get_all(
+            {"attempt_id.$id": attempt.id}, fetch_fields={"question_id": 1}
         )
+
         response_map = {resp.question_id.id: resp for resp in responses}
 
         # Get questions in the correct order with user responses
@@ -497,6 +502,6 @@ class StudentExamService:
                 questions_with_responses.append(question_with_user_response)
 
         if not questions_with_responses:
-            raise ForbiddenError("No questions found for this attempt")
+            raise ForbiddenError(_("No questions found for this attempt"))
 
         return questions_with_responses

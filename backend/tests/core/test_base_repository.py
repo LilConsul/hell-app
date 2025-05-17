@@ -1,4 +1,5 @@
 import pytest
+
 from app.auth.models import User
 from app.auth.security import get_password_hash
 from app.core.repository.base_repository import BaseRepository

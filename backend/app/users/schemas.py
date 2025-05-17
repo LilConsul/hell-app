@@ -1,5 +1,6 @@
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
 from typing import Optional
+
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 
 class UserUpdatePassword(BaseModel):

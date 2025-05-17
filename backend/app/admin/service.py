@@ -1,9 +1,10 @@
 from typing import List
 
+from app.admin.schemas import UserSchema
 from app.auth.repository import UserRepository
 from app.auth.schemas import UserRole
-from app.admin.schemas import UserSchema
 from app.core.exceptions import NotFoundError
+from app.i18n import _
 
 
 class AdminService:
@@ -19,7 +20,7 @@ class AdminService:
     async def change_user_role(self, user_id: str, role: UserRole) -> UserSchema:
         user = await self.user_repository.get_by_id(user_id)
         if not user:
-            raise NotFoundError("User not found")
+            raise NotFoundError(_("User not found"))
         user.role = role
         await self.user_repository.save(user)
         return UserSchema.model_validate(user)
@@ -27,14 +28,14 @@ class AdminService:
     async def delete_user(self, user_id: str) -> UserSchema:
         user = await self.user_repository.get_by_id(user_id)
         if not user:
-            raise NotFoundError("User not found")
+            raise NotFoundError(_("User not found"))
         await self.user_repository.delete(user_id)
         return UserSchema.model_validate(user)
 
     async def change_verify(self, user_id: str) -> UserSchema:
         user = await self.user_repository.get_by_id(user_id)
         if not user:
-            raise NotFoundError("User not found")
+            raise NotFoundError(_("User not found"))
         user.is_verified = True
         await self.user_repository.update(user_id, dict(user))
         return UserSchema.model_validate(user)

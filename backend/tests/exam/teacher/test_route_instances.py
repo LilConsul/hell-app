@@ -4,16 +4,12 @@ from unittest.mock import patch
 
 import jwt
 import pytest
+
 from app.auth.models import User
 from app.auth.schemas import UserRole
 from app.auth.security import get_password_hash
-from app.exam.models import (
-    Collection,
-    ExamInstance,
-    ExamStatus,
-    NotificationSettings,
-    SecuritySettings,
-)
+from app.exam.models import (Collection, ExamInstance, ExamStatus,
+                             NotificationSettings, SecuritySettings)
 from app.settings import settings
 
 

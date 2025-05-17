@@ -18,6 +18,7 @@ from app.celery.tasks.email_tasks.tasks import (
 )
 from app.core.exceptions import AuthenticationError, BadRequestError, NotFoundError
 from app.core.utils import make_username
+from app.i18n import _
 from app.settings import settings
 from fastapi import Response
 
@@ -29,7 +30,11 @@ class AuthService:
     async def register(self, user_data: UserCreate) -> None:
         existing_user = await self.user_repository.get_by_email(user_data.email)
         if existing_user:
-            raise BadRequestError(f"User with email {user_data.email} already exists")
+            raise BadRequestError(
+                _("User with email {email} already exists").format(
+                    email=user_data.email
+                )
+            )
 
         hashed_password = get_password_hash(user_data.password)
         user_dict = {
@@ -42,7 +47,7 @@ class AuthService:
         user = await self.user_repository.create(user_dict)
 
         verification_token = await create_verification_token(
-            user_id=user.id, token_type=TokenType.VERIFICATION
+            user_id=user.id, token_type=TokenType.VERIFICATION, use_redis=False
         )
         link = f"{settings.VERIFY_MAIL_URL}/{verification_token}"
         user_verify_mail_event.delay(user_data.email, link, make_username(user))
@@ -50,14 +55,14 @@ class AuthService:
     async def login(self, login_data: UserLogin, response: Response) -> UserResponse:
         user = await self.user_repository.get_by_email(login_data.email)
         if not user:
-            raise AuthenticationError("Invalid username or password")
+            raise AuthenticationError(_("Invalid username or password"))
 
         if not verify_password(login_data.password, user.hashed_password):
-            raise AuthenticationError("Invalid username or password")
+            raise AuthenticationError(_("Invalid username or password"))
 
         if not user.is_verified:
             raise AuthenticationError(
-                "Email not verified. Please verify your email first."
+                _("Email not verified. Please verify your email first.")
             )
 
         access_token_expires = timedelta(seconds=settings.ACCESS_TOKEN_EXPIRE_SECONDS)
@@ -86,22 +91,22 @@ class AuthService:
         )
 
     async def verify_token(self, token: str) -> None:
-        token_data = await decode_verification_token(token)
+        token_data = await decode_verification_token(token, use_redis=False)
         if not token_data:
-            raise AuthenticationError("Invalid or expired verification token")
+            raise AuthenticationError(_("Invalid or expired verification token"))
 
         user_id = token_data.get("user_id")
         token_type = token_data.get("type")
 
         if token_type != TokenType.VERIFICATION.value:
-            raise AuthenticationError("Invalid token type")
+            raise AuthenticationError(_("Invalid token type"))
 
         user = await self.user_repository.get_by_id(user_id)
         if not user:
-            raise NotFoundError("User not found")
+            raise NotFoundError(_("User not found"))
 
         if user.is_verified:
-            raise AuthenticationError("User is already verified")
+            raise AuthenticationError(_("User is already verified"))
 
         # Mark user as verified
         user.is_verified = True
@@ -110,12 +115,12 @@ class AuthService:
         date_registered = user.created_at.strftime("%Y-%m-%d %H:%M:%S")
         user_welcome_mail_event.delay(user.email, date_registered, make_username(user))
 
-        await delete_verification_token(token)
-
     async def send_password_reset_token(self, email: str) -> None:
         user = await self.user_repository.get_by_email(email)
         if not user:
-            raise BadRequestError(f"No user found with email {email}")
+            raise BadRequestError(
+                _("No user found with email {email}").format(email=email)
+            )
 
         password_reset_token = await create_verification_token(
             user_id=user.id, token_type=TokenType.PASSWORD_RESET
@@ -132,17 +137,17 @@ class AuthService:
     async def reset_password(self, token: str, new_password: str) -> None:
         token_data = await decode_verification_token(token)
         if not token_data:
-            raise AuthenticationError("Invalid or expired password reset token")
+            raise AuthenticationError(_("Invalid or expired password reset token"))
 
         user_id = token_data.get("user_id")
         token_type = token_data.get("type")
 
         if token_type != TokenType.PASSWORD_RESET.value:
-            raise AuthenticationError("Invalid token type")
+            raise AuthenticationError(_("Invalid token type"))
 
         user = await self.user_repository.get_by_id(user_id)
         if not user:
-            raise NotFoundError("User not found")
+            raise NotFoundError(_("User not found"))
 
         # Update user's password
         hashed_password = get_password_hash(new_password)

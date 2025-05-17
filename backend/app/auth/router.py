@@ -1,18 +1,10 @@
-from app.auth.dependencies import (
-    get_auth_service,
-    get_oauth_service,
-)
-from app.auth.schemas import (
-    AuthReturn,
-    EmailRequest,
-    OAuthRequest,
-    Token,
-    UserCreate,
-    UserLogin,
-    UserResetPassword,
-)
-from app.auth.service import AuthService
 from fastapi import APIRouter, Depends, Response
+
+from app.auth.dependencies import get_auth_service, get_oauth_service
+from app.auth.schemas import (AuthReturn, EmailRequest, OAuthRequest, Token,
+                              UserCreate, UserLogin, UserResetPassword)
+from app.auth.service import AuthService
+from app.i18n import _
 
 router = APIRouter(tags=["auth"], prefix="/auth")
 
@@ -25,7 +17,7 @@ async def register(
 ):
     """Register a new user and send verification email"""
     await auth_service.register(user_data)
-    return {"message": "User registered successfully. Please verify your email."}
+    return {"message": _("User registered successfully. Please verify your email.")}
 
 
 @router.post("/login", response_model=AuthReturn, response_model_exclude_none=True)
@@ -36,7 +28,7 @@ async def login(
 ):
     """Login and get access token"""
     user = await auth_service.login(login_data, response)
-    return {"message": "Login successful", "data": user}
+    return {"message": _("Login successful"), "data": user}
 
 
 @router.post("/logout", response_model=AuthReturn, response_model_exclude_none=True)
@@ -46,7 +38,7 @@ async def logout(
 ):
     """Logout and clear cookies"""
     await auth_service.logout(response)
-    return {"message": "Logout successful"}
+    return {"message": _("Logout successful")}
 
 
 @router.post("/verify", response_model=AuthReturn, response_model_exclude_none=True)
@@ -58,7 +50,7 @@ async def verify_token(
     Verify a user's email with token
     """
     await auth_service.verify_token(token.token)
-    return {"message": "Email verified successfully"}
+    return {"message": _("Email verified successfully")}
 
 
 @router.post(
@@ -72,7 +64,7 @@ async def send_password_reset_token(
     Send password reset token to user email
     """
     await auth_service.send_password_reset_token(email_request.email)
-    return {"message": "Password reset email sent. Please check your inbox."}
+    return {"message": _("Password reset email sent. Please check your inbox.")}
 
 
 @router.post(
@@ -88,7 +80,7 @@ async def reset_password(
     This endpoint would be accessed via a link in the password reset email
     """
     await auth_service.reset_password(data.token, data.password)
-    return {"message": "Password reset successfully"}
+    return {"message": _("Password reset successfully")}
 
 
 # OAuth endpoints
@@ -105,4 +97,4 @@ async def google_login(
     after the user authenticates with Google.
     """
     data = await oauth_service.google_login(oauth_data, response)
-    return {"message": "Google login successful", "data": data}
+    return {"message": _("Google login successful"), "data": data}

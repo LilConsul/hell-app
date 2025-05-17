@@ -1,8 +1,11 @@
-from app.auth.dependencies import get_current_teacher_id
-from app.exam.teacher.router.collections_router import router as collections_router
-from app.exam.teacher.router.exam_instance_router import router as exam_instance_router
-from app.exam.teacher.router.report_router import router as report_router
 from fastapi import APIRouter, Depends
+
+from app.auth.dependencies import get_current_teacher_id
+from app.exam.teacher.router.collections_router import \
+    router as collections_router
+from app.exam.teacher.router.exam_instance_router import \
+    router as exam_instance_router
+from app.exam.teacher.router.report_router import router as report_router
 
 router = APIRouter(
     prefix="/teacher",

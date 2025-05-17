@@ -1,7 +1,8 @@
 from typing import Any, Dict, List
 
-from app.settings import settings
 from fastapi_mail import ConnectionConfig, FastMail, MessageSchema, MessageType
+
+from app.settings import settings
 
 mail_config = ConnectionConfig(
     MAIL_USERNAME=settings.SMTP_USER,

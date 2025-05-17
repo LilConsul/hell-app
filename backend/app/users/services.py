@@ -2,20 +2,15 @@ from typing import List
 
 from app.auth.repository import UserRepository
 from app.auth.schemas import UserResponse, UserRole
-from app.auth.security import (
-    TokenType,
-    create_verification_token,
-    decode_verification_token,
-    delete_verification_token,
-    get_password_hash,
-    verify_password,
-)
-from app.celery.tasks.email_tasks.tasks import (
-    user_deleted_notification,
-    user_deletion_confirmation,
-)
+from app.auth.security import (TokenType, create_verification_token,
+                               decode_verification_token,
+                               delete_verification_token, get_password_hash,
+                               verify_password)
+from app.celery.tasks.email_tasks.tasks import (user_deleted_notification,
+                                                user_deletion_confirmation)
 from app.core.exceptions import AuthenticationError, NotFoundError
 from app.core.utils import make_username
+from app.i18n import _
 from app.settings import settings
 from app.users.schemas import StudentData, UserUpdate
 
@@ -35,7 +30,7 @@ class UserService:
         user = await self.user_repository.get_by_id(user_id)
 
         if not user:
-            raise NotFoundError("User not found")
+            raise NotFoundError(_("User not found"))
 
         return UserResponse.model_validate(user)
 
@@ -44,7 +39,7 @@ class UserService:
     ) -> UserResponse:
         user = await self.user_repository.get_by_id(user_id)
         if not user:
-            raise NotFoundError("User not found")
+            raise NotFoundError(_("User not found"))
 
         update_data = {}
         if user_data.first_name is not None:
@@ -58,7 +53,7 @@ class UserService:
     async def request_delete_user_info(self, user_id: str) -> None:
         user = await self.user_repository.get_by_id(user_id)
         if not user:
-            raise NotFoundError("User not found")
+            raise NotFoundError(_("User not found"))
 
         user_deletion_token = await create_verification_token(
             user_id=user_id, token_type=TokenType.USER_DELETION
@@ -78,17 +73,17 @@ class UserService:
     async def delete_user_info(self, user_id: str, token: str) -> None:
         delete_data = await decode_verification_token(token)
         if not delete_data or not delete_data.get("type"):
-            raise AuthenticationError("Invalid or expired token")
+            raise AuthenticationError(_("Invalid or expired token"))
 
         if delete_data.get("type") != TokenType.USER_DELETION.value:
-            raise AuthenticationError("Invalid token type")
+            raise AuthenticationError(_("Invalid token type"))
 
         if delete_data.get("user_id") != user_id:
-            raise AuthenticationError("Token does not match current user")
+            raise AuthenticationError(_("Token does not match current user"))
 
         user = await self.user_repository.get_by_id(user_id)
         if not user:
-            raise NotFoundError("User not found")
+            raise NotFoundError(_("User not found"))
 
         await self.user_repository.delete(user_id)
         user_deleted_notification.delay(
@@ -103,9 +98,9 @@ class UserService:
     ) -> None:
         user = await self.user_repository.get_by_id(user_id)
         if not user:
-            raise NotFoundError("User not found")
+            raise NotFoundError(_("User not found"))
         if not verify_password(old_password, user.hashed_password):
-            raise AuthenticationError("Invalid password")
+            raise AuthenticationError(_("Invalid password"))
 
         await self.user_repository.update(
             user_id, {"hashed_password": get_password_hash(new_password)}

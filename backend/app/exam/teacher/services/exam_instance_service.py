@@ -4,22 +4,15 @@ from typing import List
 from app.auth.repository import UserRepository
 from app.celery.tasks.email_tasks.tasks import exam_reminder_notification
 from app.core.exceptions import ForbiddenError, NotFoundError
-from app.core.utils import (
-    make_username,
-    convert_to_user_timezone,
-    convert_user_timezone_to_utc,
-)
+from app.core.utils import (convert_to_user_timezone,
+                            convert_user_timezone_to_utc, make_username)
 from app.exam.models import ExamStatus, NotificationSettings
-from app.exam.repository import (
-    CollectionRepository,
-    ExamInstanceRepository,
-    StudentExamRepository,
-)
-from app.exam.teacher.schemas import (
-    CreateExamInstanceSchema,
-    GetExamInstance,
-    UpdateExamInstanceSchema,
-)
+from app.exam.repository import (CollectionRepository, ExamInstanceRepository,
+                                 StudentExamRepository)
+from app.exam.teacher.schemas import (CreateExamInstanceSchema,
+                                      GetExamInstance,
+                                      UpdateExamInstanceSchema)
+from app.i18n import _
 from app.settings import settings
 
 
@@ -58,10 +51,10 @@ class ExamInstanceService:
         )
 
         if not instance:
-            raise NotFoundError("Exam instance not found")
+            raise NotFoundError(_("Exam instance not found"))
 
         if not (user_id and instance.created_by.id == user_id):
-            raise ForbiddenError("You don't have access to this exam instance")
+            raise ForbiddenError(_("You don't have access to this exam instance"))
 
         return await self._process_instance(instance, user_timezone)
 
@@ -152,6 +145,8 @@ class ExamInstanceService:
             # Send notification immediately
             exam_reminder_notification.apply_async(kwargs=data)
 
+            data["exam_instance_id"] = exam_instance_id
+
             exam_id_str = str(exam_instance_id)
             if exam_id_str not in user.notifications_tasks_id:
                 user.notifications_tasks_id[exam_id_str] = []
@@ -239,9 +234,9 @@ class ExamInstanceService:
             end_date = end_date.replace(tzinfo=timezone.utc)
 
         if start_date < datetime.now(timezone.utc):
-            raise ForbiddenError("Start date must be in the future")
+            raise ForbiddenError(_("Start date must be in the future"))
         if end_date < start_date:
-            raise ForbiddenError("End date must be after start date")
+            raise ForbiddenError(_("End date must be after start date"))
 
     async def _validate_students_exist(self, students: List[dict]) -> None:
         """Check if all students exist in the user repository."""
@@ -250,7 +245,9 @@ class ExamInstanceService:
             if student_id:
                 user = await self.user_repository.get_by_id(student_id)
                 if not user:
-                    raise NotFoundError(f"Student with ID {student_id} not found")
+                    raise NotFoundError(
+                        _("Student with ID {} not found").format(student_id)
+                    )
 
     async def create_exam_instance(
         self,
@@ -263,17 +260,19 @@ class ExamInstanceService:
             instance_data.collection_id, fetch_links=True
         )
         if not collection:
-            raise NotFoundError("Collection not found")
+            raise NotFoundError(_("Collection not found"))
 
         is_owner = user_id and collection.created_by.id == user_id
         is_public = collection.status == ExamStatus.PUBLISHED
 
         if not (is_owner or is_public):
-            raise ForbiddenError("You do not have access to this collection")
+            raise ForbiddenError(_("You do not have access to this collection"))
 
         if not collection.questions:
             raise NotFoundError(
-                "Collection does not contain any questions. Please add questions to the collection before creating an exam instance."
+                _(
+                    "Collection does not contain any questions. Please add questions to the collection before creating an exam instance."
+                )
             )
 
         instance_data = instance_data.model_dump()
@@ -321,10 +320,10 @@ class ExamInstanceService:
             instance_id, fetch_links=True
         )
         if not instance:
-            raise NotFoundError("Exam instance not found")
+            raise NotFoundError(_("Exam instance not found"))
 
         if instance.created_by.id != user_id:
-            raise ForbiddenError("You do not own this exam instance")
+            raise ForbiddenError(_("You do not own this exam instance"))
         update_data = instance_data.model_dump(exclude_unset=True)
 
         if user_timezone:
@@ -391,7 +390,16 @@ class ExamInstanceService:
         """Delete an existing exam instance."""
         instance = await self.exam_instance_repository.get_by_id(instance_id)
         if not instance:
-            raise NotFoundError("Exam instance not found")
+            raise NotFoundError(_("Exam instance not found"))
 
         if instance.created_by.ref.id != user_id:
-            raise ForbiddenError("You do not own this exam instance")
+            raise ForbiddenError(_("You do not own this exam instance"))
+
+        processed_students = []
+        for student in instance.assigned_students:
+            student_id = await self._extract_student_id(student.student_id)
+            processed_students.append({"student_id": student_id})
+
+        await self._remove_students_from_exam(processed_students, instance_id)
+
+        await self.exam_instance_repository.delete(instance_id)

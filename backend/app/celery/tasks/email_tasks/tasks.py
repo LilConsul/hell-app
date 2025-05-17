@@ -1,9 +1,11 @@
 from datetime import datetime
 
-from app.celery.worker import celery
 from asgiref.sync import async_to_sync
+from celery import signals
 
+from app.celery.worker import celery
 from app.settings import settings
+
 from .manager import create_message, mail
 
 
@@ -62,14 +64,16 @@ def user_welcome_mail_event(
     async_to_sync(mail.send_message)(message, "welcome.html")
 
 
-@celery.task
+@celery.task(bind=True)
 def exam_reminder_notification(
+    self,
     recipient: str,
     username: str,
     exam_title: str,
     start_time: datetime,
     end_time: datetime,
     link: str,
+    exam_instance_id: str = None,
 ):
     duration = int((end_time - start_time).total_seconds() / 60)
     subject = (
@@ -94,6 +98,49 @@ def exam_reminder_notification(
         },
     )
     async_to_sync(mail.send_message)(message, "exam_reminder.html")
+
+
+@signals.task_postrun.connect(sender=exam_reminder_notification)
+def exam_reminder_notification_post(sender, **kwargs):
+    task_id = kwargs.get("task_id")
+    exam_instance_id = kwargs.get("kwargs", {}).get("exam_instance_id")
+    recipient = kwargs.get("kwargs", {}).get("recipient")
+
+    if not (task_id and exam_instance_id and recipient):
+        return
+
+    import logging
+
+    from pymongo import MongoClient
+
+    from app.settings import settings
+
+    try:
+        client = MongoClient(settings.MONGODB_URL)
+        db = client[settings.MONGO_DATABASE]
+        users_collection = db["users"]
+
+        user = users_collection.find_one({"email": recipient})
+        if not user:
+            return
+
+        exam_id_str = str(exam_instance_id)
+        notifications = user.get("notifications_tasks_id", {})
+        if exam_id_str in notifications and task_id in notifications[exam_id_str]:
+            notifications[exam_id_str].remove(task_id)
+
+            if not notifications[exam_id_str]:
+                del notifications[exam_id_str]
+
+            users_collection.update_one(
+                {"email": recipient},
+                {"$set": {"notifications_tasks_id": notifications}},
+            )
+    except Exception as e:
+        logging.error(f"Error in exam_reminder_notification_post: {e}")
+    finally:
+        if "client" in locals():
+            client.close()
 
 
 @celery.task

@@ -1,15 +1,11 @@
 from datetime import datetime
-from typing import List, Any
+from typing import Any, Dict, List
+
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.auth.schemas import UserResponse
-from app.exam.models import (
-    ExamInstance,
-    ExamStatus,
-    NotificationSettings,
-    QuestionType,
-    SecuritySettings,
-)
-from pydantic import BaseModel, ConfigDict, Field
+from app.exam.models import (ExamInstance, ExamStatus, NotificationSettings,
+                             QuestionType, SecuritySettings)
 
 
 class TimeStamp(BaseModel):
@@ -33,6 +29,23 @@ class QuestionBase(BaseModel):
     correct_input_answer: str | None = None
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
+
+
+class QuestionOrderSchema(BaseModel):
+    question_orders: Dict[str, int]
+
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,
+        json_schema_extra={
+            "example": {
+                "question_orders": {
+                    "question_id_0": 0,
+                    "question_id_1": 1,
+                    "question_id_2": 2,
+                }
+            }
+        },
+    )
 
 
 class QuestionSchema(QuestionBase):

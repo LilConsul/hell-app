@@ -1,21 +1,18 @@
 from typing import List, Union
 
+from fastapi import APIRouter, Depends, Request
+
 from app.auth.dependencies import get_current_student_id
 from app.core.schemas import BaseReturn
 from app.core.utils import get_timezone
 from app.exam.student.dependencies import get_student_exam_service
-from app.exam.student.schemas import (
-    AnswerSubmission,
-    QuestionIdentifier,
-    QuestionWithOptions,
-    QuestionWithUserResponse,
-    ReviewAttempt,
-    StudentAttemptBasic,
-    StudentExamBase,
-    StudentExamDetail,
-)
+from app.exam.student.schemas import (AnswerSubmission, QuestionIdentifier,
+                                      QuestionWithOptions,
+                                      QuestionWithUserResponse, ReviewAttempt,
+                                      StudentAttemptBasic, StudentExamBase,
+                                      StudentExamDetail)
 from app.exam.student.services import StudentExamService
-from fastapi import APIRouter, Depends, Request
+from app.i18n import _
 
 router = APIRouter(
     prefix="/student",
@@ -36,7 +33,7 @@ async def get_student_exams(
     user_timezone = get_timezone(request)
     data = await student_exam_service.get_student_exams(student_id, user_timezone)
     return {
-        "message": "Exams retrieved successfully",
+        "message": _("Exams retrieved successfully"),
         "data": data,
     }
 
@@ -56,7 +53,7 @@ async def get_student_exam(
         student_id, student_exam_id, user_timezone
     )
     return {
-        "message": "Exam retrieved successfully",
+        "message": _("Exam retrieved successfully"),
         "data": data,
     }
 
@@ -81,7 +78,7 @@ async def get_student_attempt(
         student_id, attempt_id, user_timezone
     )
     return {
-        "message": "Attempt retrieved successfully",
+        "message": _("Attempt retrieved successfully"),
         "data": data,
     }
 
@@ -97,7 +94,7 @@ async def start_exam(
 ):
     data = await student_exam_service.start_exam(student_id, student_exam_id)
     return {
-        "message": "Exam started successfully",
+        "message": _("Exam started successfully"),
         "data": data,
     }
 
@@ -111,7 +108,7 @@ async def save_answer(
 ):
     await student_exam_service.save_answer(student_id, student_exam_id, question)
     return {
-        "message": "Answer saved successfully",
+        "message": _("Answer saved successfully"),
     }
 
 
@@ -128,7 +125,7 @@ async def toggle_flag_question(
         student_id, student_exam_id, question.question_id
     )
     return {
-        "message": "Question flagged successfully",
+        "message": _("Question flagged successfully"),
     }
 
 
@@ -143,7 +140,7 @@ async def reload_exam(
 ):
     data = await student_exam_service.reload_exam(student_id, student_exam_id)
     return {
-        "message": "Exam reloaded successfully",
+        "message": _("Exam reloaded successfully"),
         "data": data,
     }
 
@@ -158,6 +155,6 @@ async def submit_exam(
 ):
     data = await student_exam_service.submit_exam(student_id, student_exam_id)
     return {
-        "message": "Exam submitted successfully",
+        "message": _("Exam submitted successfully"),
         "data": data,
     }

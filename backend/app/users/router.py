@@ -1,14 +1,13 @@
 from typing import List
 
-from app.auth.dependencies import (
-    get_current_teacher_id,
-    get_current_user_id,
-)
+from fastapi import APIRouter, Depends
+
+from app.auth.dependencies import get_current_teacher_id, get_current_user_id
 from app.auth.schemas import Token, UserResponse
 from app.core.schemas import BaseReturn
+from app.i18n import _
 from app.users.dependencies import get_user_service
 from app.users.schemas import StudentData, UserUpdate, UserUpdatePassword
-from fastapi import APIRouter, Depends
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -23,7 +22,7 @@ async def get_user_info(
     Get information about the currently logged-in user
     """
     data = await user_service.get_user_info(user_id)
-    return BaseReturn(message="User info retrieved successfully", data=data)
+    return BaseReturn(message=_("User info retrieved successfully"), data=data)
 
 
 @router.put(
@@ -39,7 +38,7 @@ async def update_user_info(
     """
     data = await user_service.update_user_info(user_id, user_data)
     return BaseReturn(
-        message="User info updated successfully",
+        message=_("User info updated successfully"),
         data=data,
     )
 
@@ -56,7 +55,7 @@ async def request_delete_user_info(
     """
     await user_service.request_delete_user_info(user_id)
     return BaseReturn(
-        message="User deletion requested successfully",
+        message=_("User deletion requested successfully"),
     )
 
 
@@ -71,7 +70,7 @@ async def delete_user_info(
     """
     await user_service.delete_user_info(user_id, token.token)
     return BaseReturn(
-        message="User deleted successfully",
+        message=_("User deleted successfully"),
     )
 
 
@@ -92,7 +91,7 @@ async def change_password(
         user_id, password_data.password, password_data.new_password
     )
     return BaseReturn(
-        message="Password changed successfully",
+        message=_("Password changed successfully"),
     )
 
 
@@ -110,6 +109,6 @@ async def get_student_mails(
     """
     students = await user_service.get_all_students()
     return BaseReturn(
-        message="Students retrieved successfully",
+        message=_("Students retrieved successfully"),
         data=students,
     )

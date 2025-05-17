@@ -1,0 +1,462 @@
+# Polish translations for PROJECT.
+# Copyright (C) 2025 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2025-05-11 21:14+0200\n"
+"PO-Revision-Date: 2025-05-11 21:14+0200\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: pl\n"
+"Language-Team: pl <LL@li.org>\n"
+"Plural-Forms: nplurals=3; plural=(n==1 ? 0 : n%10>=2 && n%10<=4 && "
+"(n%100<10 || n%100>=20) ? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: app/main.py:49
+msgid "Hello World"
+msgstr "Witaj Świecie"
+
+#: app/admin/router.py:32
+msgid "Users retrieved successfully"
+msgstr "Użytkownicy pobrani pomyślnie"
+
+#: app/admin/router.py:49
+msgid "User role changed successfully"
+msgstr "Rola użytkownika zmieniona pomyślnie"
+
+#: app/admin/router.py:65 app/users/router.py:73
+msgid "User deleted successfully"
+msgstr "Użytkownik usunięty pomyślnie"
+
+#: app/admin/router.py:81
+msgid "User verified successfully"
+msgstr "Użytkownik zweryfikowany pomyślnie"
+
+#: app/admin/service.py:23 app/admin/service.py:31 app/admin/service.py:38
+#: app/auth/service.py:102 app/auth/service.py:148 app/users/services.py:33
+#: app/users/services.py:42 app/users/services.py:56 app/users/services.py:86
+#: app/users/services.py:101
+msgid "User not found"
+msgstr "Nie znaleziono użytkownika"
+
+#: app/auth/dependencies.py:44 app/auth/infrastructure.py:52
+msgid "Not authenticated"
+msgstr "Nie uwierzytelniono"
+
+#: app/auth/dependencies.py:52 app/auth/dependencies.py:61
+#: app/auth/dependencies.py:69 app/auth/dependencies.py:82
+#: app/auth/dependencies.py:95
+msgid "Invalid token"
+msgstr "Nieprawidłowy token"
+
+#: app/auth/dependencies.py:74
+msgid "Only students can access this resource"
+msgstr "Tylko studenci mają dostęp do tego zasobu"
+
+#: app/auth/dependencies.py:87
+msgid "Only teachers can access this resource"
+msgstr "Tylko nauczyciele mają dostęp do tego zasobu"
+
+#: app/auth/dependencies.py:97
+msgid "Only admins can access this resource"
+msgstr "Tylko administratorzy mają dostęp do tego zasobu"
+
+#: app/auth/router.py:20
+msgid "User registered successfully. Please verify your email."
+msgstr "Użytkownik zarejestrowany pomyślnie. Proszę zweryfikować adres email."
+
+#: app/auth/router.py:31
+msgid "Login successful"
+msgstr "Logowanie pomyślne"
+
+#: app/auth/router.py:41
+msgid "Logout successful"
+msgstr "Wylogowanie pomyślne"
+
+#: app/auth/router.py:53
+msgid "Email verified successfully"
+msgstr "Adres email zweryfikowany pomyślnie"
+
+#: app/auth/router.py:67
+msgid "Password reset email sent. Please check your inbox."
+msgstr "Email z resetowaniem hasła wysłany. Sprawdź swoją skrzynkę odbiorczą."
+
+#: app/auth/router.py:83
+msgid "Password reset successfully"
+msgstr "Hasło zresetowane pomyślnie"
+
+#: app/auth/router.py:100
+msgid "Google login successful"
+msgstr "Logowanie przez Google pomyślne"
+
+#: app/auth/service.py:30
+#, python-brace-format
+msgid "User with email {email} already exists"
+msgstr "Użytkownik z adresem email {email} już istnieje"
+
+#: app/auth/service.py:54 app/auth/service.py:57
+msgid "Invalid username or password"
+msgstr "Nieprawidłowa nazwa użytkownika lub hasło"
+
+#: app/auth/service.py:61
+msgid "Email not verified. Please verify your email first."
+msgstr "Email nie zweryfikowany. Proszę najpierw zweryfikować swój adres email."
+
+#: app/auth/service.py:92
+msgid "Invalid or expired verification token"
+msgstr "Nieprawidłowy lub wygasły token weryfikacyjny"
+
+#: app/auth/service.py:98 app/auth/service.py:144 app/users/services.py:79
+msgid "Invalid token type"
+msgstr "Nieprawidłowy typ tokenu"
+
+#: app/auth/service.py:105
+msgid "User is already verified"
+msgstr "Użytkownik jest już zweryfikowany"
+
+#: app/auth/service.py:120
+#, python-brace-format
+msgid "No user found with email {email}"
+msgstr "Nie znaleziono użytkownika z adresem email {email}"
+
+#: app/auth/service.py:138
+msgid "Invalid or expired password reset token"
+msgstr "Nieprawidłowy lub wygasły token resetowania hasła"
+
+#: app/exam/student/router.py:36
+msgid "Exams retrieved successfully"
+msgstr "Egzaminy pobrane pomyślnie"
+
+#: app/exam/student/router.py:56
+msgid "Exam retrieved successfully"
+msgstr "Egzamin pobrany pomyślnie"
+
+#: app/exam/student/router.py:81
+msgid "Attempt retrieved successfully"
+msgstr "Próba pobrana pomyślnie"
+
+#: app/exam/student/router.py:97
+msgid "Exam started successfully"
+msgstr "Egzamin rozpoczęty pomyślnie"
+
+#: app/exam/student/router.py:111
+msgid "Answer saved successfully"
+msgstr "Odpowiedź zapisana pomyślnie"
+
+#: app/exam/student/router.py:128
+msgid "Question flagged successfully"
+msgstr "Pytanie oznaczone flagą pomyślnie"
+
+#: app/exam/student/router.py:143
+msgid "Exam reloaded successfully"
+msgstr "Egzamin przeładowany pomyślnie"
+
+#: app/exam/student/router.py:158
+msgid "Exam submitted successfully"
+msgstr "Egzamin przesłany pomyślnie"
+
+#: app/exam/student/services.py:63 app/exam/student/services.py:159
+#: app/exam/student/services.py:242
+msgid "Exam not found"
+msgstr "Nie znaleziono egzaminu"
+
+#: app/exam/student/services.py:66 app/exam/student/services.py:162
+#: app/exam/student/services.py:245
+msgid "You do not have permission to access this exam"
+msgstr "Nie masz uprawnień do dostępu do tego egzaminu"
+
+#: app/exam/student/services.py:111
+msgid "Attempt not found"
+msgstr "Nie znaleziono próby"
+
+#: app/exam/student/services.py:114
+msgid "You do not have permission to access this attempt"
+msgstr "Nie masz uprawnień do dostępu do tej próby"
+
+#: app/exam/student/services.py:118
+msgid "Attempt is still in progress"
+msgstr "Próba jest wciąż w toku"
+
+#: app/exam/student/services.py:147
+msgid "Exam is not available yet"
+msgstr "Egzamin nie jest jeszcze dostępny"
+
+#: app/exam/student/services.py:149
+msgid "Exam has already ended"
+msgstr "Egzamin już się zakończył"
+
+#: app/exam/student/services.py:165
+msgid "Exam already started"
+msgstr "Egzamin już się rozpoczął"
+
+#: app/exam/student/services.py:169
+msgid "Max attempts reached"
+msgstr "Osiągnięto maksymalną liczbę prób"
+
+#: app/exam/student/services.py:248
+msgid "Exam not in progress"
+msgstr "Egzamin nie jest w toku"
+
+#: app/exam/student/services.py:255 app/exam/student/services.py:259
+#: app/exam/student/services.py:339
+msgid "No active attempt found"
+msgstr "Nie znaleziono aktywnej próby"
+
+#: app/exam/student/services.py:262
+msgid "Attempt is not in progress"
+msgstr "Próba nie jest w toku"
+
+#: app/exam/student/services.py:278 app/exam/student/services.py:320
+msgid "Question not found in this attempt"
+msgstr "Nie znaleziono pytania w tej próbie"
+
+#: app/exam/student/services.py:285
+msgid "Multiple choice question requires option selections"
+msgstr "Pytanie wielokrotnego wyboru wymaga zaznaczenia opcji"
+
+#: app/exam/student/services.py:292
+msgid "Single choice question requires exactly one option"
+msgstr "Pytanie jednokrotnego wyboru wymaga dokładnie jednej opcji"
+
+#: app/exam/student/services.py:298
+msgid "Short answer question requires text input"
+msgstr "Pytanie z krótką odpowiedzią wymaga wprowadzenia tekstu"
+
+#: app/exam/student/services.py:345
+msgid "No responses found for this attempt"
+msgstr "Nie znaleziono odpowiedzi dla tej próby"
+
+#: app/exam/student/services.py:493
+msgid "No questions found for this attempt"
+msgstr "Nie znaleziono pytań dla tej próby"
+
+#: app/exam/teacher/router/collections_router.py:32
+msgid "Collection created successfully"
+msgstr "Kolekcja utworzona pomyślnie"
+
+#: app/exam/teacher/router/collections_router.py:45
+msgid "Collections retrieved successfully"
+msgstr "Kolekcje pobrane pomyślnie"
+
+#: app/exam/teacher/router/collections_router.py:57
+msgid "Public collections retrieved successfully"
+msgstr "Publiczne kolekcje pobrane pomyślnie"
+
+#: app/exam/teacher/router/collections_router.py:71
+msgid "Collection retrieved successfully"
+msgstr "Kolekcja pobrana pomyślnie"
+
+#: app/exam/teacher/router/collections_router.py:88
+msgid "Collection updated successfully"
+msgstr "Kolekcja zaktualizowana pomyślnie"
+
+#: app/exam/teacher/router/collections_router.py:101
+msgid "Collection deleted successfully"
+msgstr "Kolekcja usunięta pomyślnie"
+
+#: app/exam/teacher/router/collections_router.py:117
+msgid "Question added successfully"
+msgstr "Pytanie dodane pomyślnie"
+
+#: app/exam/teacher/router/collections_router.py:132
+msgid "Questions reordered successfully"
+msgstr "Pytania przearanżowane pomyślnie"
+
+#: app/exam/teacher/router/collections_router.py:148
+msgid "Question updated successfully"
+msgstr "Pytanie zaktualizowane pomyślnie"
+
+#: app/exam/teacher/router/collections_router.py:163
+msgid "Question deleted successfully"
+msgstr "Pytanie usunięte pomyślnie"
+
+#: app/exam/teacher/router/exam_instance_router.py:30
+msgid "Exam instances retrieved successfully"
+msgstr "Instancje egzaminu pobrane pomyślnie"
+
+#: app/exam/teacher/router/exam_instance_router.py:45
+msgid "Exam instance created successfully"
+msgstr "Instancja egzaminu utworzona pomyślnie"
+
+#: app/exam/teacher/router/exam_instance_router.py:57
+msgid "Exam instance retrieved successfully"
+msgstr "Instancja egzaminu pobrana pomyślnie"
+
+#: app/exam/teacher/router/exam_instance_router.py:72
+msgid "Exam instance updated successfully"
+msgstr "Instancja egzaminu zaktualizowana pomyślnie"
+
+#: app/exam/teacher/router/exam_instance_router.py:82
+msgid "Exam instance deleted successfully"
+msgstr "Instancja egzaminu usunięta pomyślnie"
+
+#: app/exam/teacher/router/report_router.py:58
+msgid "Exam report retrieved successfully"
+msgstr "Raport egzaminu pobrany pomyślnie"
+
+#: app/exam/teacher/services/collection_service.py:40
+#: app/exam/teacher/services/collection_service.py:61
+#: app/exam/teacher/services/collection_service.py:72
+#: app/exam/teacher/services/collection_service.py:247
+#: app/exam/teacher/services/exam_instance_service.py:263
+msgid "Collection not found"
+msgstr "Nie znaleziono kolekcji"
+
+#: app/exam/teacher/services/collection_service.py:46
+msgid "You don't have access to this collection"
+msgstr "Nie masz dostępu do tej kolekcji"
+
+#: app/exam/teacher/services/collection_service.py:63
+#: app/exam/teacher/services/collection_service.py:74
+#: app/exam/teacher/services/collection_service.py:249
+msgid "You do not own this collection"
+msgstr "Nie jesteś właścicielem tej kolekcji"
+
+#: app/exam/teacher/services/collection_service.py:90
+msgid "Question type is required"
+msgstr "Typ pytania jest wymagany"
+
+#: app/exam/teacher/services/collection_service.py:97
+#, python-brace-format
+msgid "{question_type} question must have options"
+msgstr "Pytanie typu {question_type} musi mieć opcje"
+
+#: app/exam/teacher/services/collection_service.py:107
+#, python-brace-format
+msgid "{question_type} question must have at least one correct answer"
+msgstr "Pytanie typu {question_type} musi mieć co najmniej jedną poprawną odpowiedź"
+
+#: app/exam/teacher/services/collection_service.py:114
+#, python-brace-format
+msgid "{QuestionType} question must have exactly one correct answer"
+msgstr "Pytanie typu {QuestionType} musi mieć dokładnie jedną poprawną odpowiedź"
+
+#: app/exam/teacher/services/collection_service.py:123
+#, python-brace-format
+msgid "{QuestionType} question must have a correct_input_answer"
+msgstr "Pytanie typu {QuestionType} musi mieć correct_input_answer"
+
+#: app/exam/teacher/services/collection_service.py:136
+#, python-brace-format
+msgid "Collection with ID {collection_id} not found"
+msgstr "Nie znaleziono kolekcji o ID {collection_id}"
+
+#: app/exam/teacher/services/collection_service.py:143
+msgid "You don't have permission to add questions to this collection"
+msgstr "Nie masz uprawnień do dodawania pytań do tej kolekcji"
+
+#: app/exam/teacher/services/collection_service.py:159
+#: app/exam/teacher/services/collection_service.py:214
+#, python-brace-format
+msgid "Question with position {question_data} already exists in the collection"
+msgstr "Pytanie na pozycji {question_data} już istnieje w kolekcji"
+
+#: app/exam/teacher/services/collection_service.py:195
+#: app/exam/teacher/services/collection_service.py:330
+msgid "Question not found"
+msgstr "Nie znaleziono pytania"
+
+#: app/exam/teacher/services/collection_service.py:199
+#: app/exam/teacher/services/collection_service.py:333
+msgid "You do not own this question"
+msgstr "Nie jesteś właścicielem tego pytania"
+
+#: app/exam/teacher/services/collection_service.py:256
+#, python-brace-format
+msgid "Question ID {question_id} does not exist in the collection"
+msgstr "Identyfikator pytania {question_id} nie istnieje w kolekcji"
+
+#: app/exam/teacher/services/collection_service.py:270
+#, python-brace-format
+msgid "Position cannot be negative for question {question_id}"
+msgstr "Pozycja nie może być ujemna dla pytania {question_id}"
+
+#: app/exam/teacher/services/collection_service.py:277
+#, python-brace-format
+msgid "Duplicate position {position} found. Positions must be unique"
+msgstr "Znaleziono duplikat pozycji {position}. Pozycje muszą być unikalne"
+
+#: app/exam/teacher/services/collection_service.py:282
+#, python-brace-format
+msgid "Position {position} is already used by another question"
+msgstr "Pozycja {position} jest już używana przez inne pytanie"
+
+#: app/exam/teacher/services/exam_instance_service.py:54
+#: app/exam/teacher/services/exam_instance_service.py:323
+#: app/exam/teacher/services/exam_instance_service.py:393
+#: app/exam/teacher/services/report_services.py:56
+msgid "Exam instance not found"
+msgstr "Nie znaleziono instancji egzaminu"
+
+#: app/exam/teacher/services/exam_instance_service.py:57
+msgid "You don't have access to this exam instance"
+msgstr "Nie masz dostępu do tej instancji egzaminu"
+
+#: app/exam/teacher/services/exam_instance_service.py:237
+msgid "Start date must be in the future"
+msgstr "Data rozpoczęcia musi być w przyszłości"
+
+#: app/exam/teacher/services/exam_instance_service.py:239
+msgid "End date must be after start date"
+msgstr "Data zakończenia musi być po dacie rozpoczęcia"
+
+#: app/exam/teacher/services/exam_instance_service.py:249
+#, python-brace-format
+msgid "Student with ID {} not found"
+msgstr "Nie znaleziono studenta o ID {}"
+
+#: app/exam/teacher/services/exam_instance_service.py:269
+msgid "You do not have access to this collection"
+msgstr "Nie masz dostępu do tej kolekcji"
+
+#: app/exam/teacher/services/exam_instance_service.py:274
+msgid ""
+"Collection does not contain any questions. Please add questions to the "
+"collection before creating an exam instance."
+msgstr ""
+"Kolekcja nie zawiera żadnych pytań. Dodaj pytania do "
+"kolekcji przed utworzeniem instancji egzaminu."
+
+#: app/exam/teacher/services/exam_instance_service.py:326
+#: app/exam/teacher/services/exam_instance_service.py:396
+msgid "You do not own this exam instance"
+msgstr "Nie jesteś właścicielem tej instancji egzaminu"
+
+#: app/users/router.py:25
+msgid "User info retrieved successfully"
+msgstr "Informacje o użytkowniku pobrane pomyślnie"
+
+#: app/users/router.py:41
+msgid "User info updated successfully"
+msgstr "Informacje o użytkowniku zaktualizowane pomyślnie"
+
+#: app/users/router.py:58
+msgid "User deletion requested successfully"
+msgstr "Żądanie usunięcia użytkownika wysłane pomyślnie"
+
+#: app/users/router.py:94
+msgid "Password changed successfully"
+msgstr "Hasło zmienione pomyślnie"
+
+#: app/users/router.py:112
+msgid "Students retrieved successfully"
+msgstr "Studenci pobrani pomyślnie"
+
+#: app/users/services.py:76
+msgid "Invalid or expired token"
+msgstr "Nieprawidłowy lub wygasły token"
+
+#: app/users/services.py:82
+msgid "Token does not match current user"
+msgstr "Token nie pasuje do bieżącego użytkownika"
+
+#: app/users/services.py:103
+msgid "Invalid password"
+msgstr "Nieprawidłowe hasło"

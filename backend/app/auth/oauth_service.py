@@ -1,11 +1,12 @@
 from typing import Any, Dict
 
+from fastapi import Response
+
 from app.auth.repository import UserRepository
 from app.auth.schemas import OAuthRequest, SocialAccount
 from app.auth.security import create_access_token
 from app.core.exceptions import AuthenticationError
 from app.settings import settings
-from fastapi import Response
 
 
 # TODO: Implement Google OAuth login flow

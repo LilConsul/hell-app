@@ -1,6 +1,7 @@
 import pytz
-from app.auth.models import User
 from fastapi import Request
+
+from app.auth.models import User
 
 
 def make_username(user: User) -> str:

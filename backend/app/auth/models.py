@@ -1,10 +1,11 @@
 import uuid
 from typing import Dict, List, Optional
 
-from app.auth.schemas import UserRole
-from app.database.mixins import TimestampMixin
 from beanie import Delete, Document, Indexed, Link, before_event
 from pydantic import ConfigDict, EmailStr, Field
+
+from app.auth.schemas import UserRole
+from app.database.mixins import TimestampMixin
 
 
 class User(Document, TimestampMixin):

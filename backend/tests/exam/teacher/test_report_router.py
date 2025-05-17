@@ -4,15 +4,12 @@ from unittest.mock import patch
 
 import jwt
 import pytest
+
 from app.auth.models import User
 from app.auth.schemas import UserRole
 from app.auth.security import get_password_hash
-from app.exam.teacher.schemas import (
-    ExamReportResponse,
-    ExamStatistics,
-    HistogramDataPoint,
-    TimelineDataPoint,
-)
+from app.exam.teacher.schemas import (ExamReportResponse, ExamStatistics,
+                                      HistogramDataPoint, TimelineDataPoint)
 from app.settings import settings
 
 

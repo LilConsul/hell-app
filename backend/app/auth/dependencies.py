@@ -1,3 +1,5 @@
+from fastapi import Depends
+
 from app.auth.infrastructure import CookieTokenAuth
 from app.auth.models import User, UserRole
 from app.auth.oauth_service import OAuthService
@@ -5,7 +7,7 @@ from app.auth.repository import UserRepository
 from app.auth.security import decode_token
 from app.auth.service import AuthService
 from app.core.exceptions import AuthenticationError, ForbiddenError
-from fastapi import Depends
+from app.i18n import _
 
 
 # Repositories
@@ -39,7 +41,7 @@ async def get_auth_token(
 ) -> str:
     """Get the authentication token from the request"""
     if not token:
-        raise AuthenticationError("Not authenticated")
+        raise AuthenticationError(_("Not authenticated"))
     return token
 
 
@@ -47,7 +49,7 @@ async def get_decode_token(token: str = Depends(get_auth_token)) -> dict:
     """Decode the authentication token"""
     token_data = decode_token(token)
     if not token_data:
-        raise AuthenticationError("Invalid token")
+        raise AuthenticationError(_("Invalid token"))
     return token_data
 
 
@@ -56,7 +58,7 @@ async def get_current_user_id(
     token_data: dict = Depends(get_decode_token),
 ) -> str:
     if not token_data.get("sub"):
-        raise AuthenticationError("Invalid token")
+        raise AuthenticationError(_("Invalid token"))
     return token_data.get("sub")
 
 
@@ -64,12 +66,12 @@ async def get_current_student_id(
     token_data: dict = Depends(get_decode_token),
 ) -> str:
     if not token_data.get("sub"):
-        raise AuthenticationError("Invalid token")
+        raise AuthenticationError(_("Invalid token"))
     if (
         token_data.get("role") != UserRole.STUDENT
         and token_data.get("role") != UserRole.ADMIN
     ):
-        raise ForbiddenError("Only students can access this resource")
+        raise ForbiddenError(_("Only students can access this resource"))
     return token_data.get("sub")
 
 
@@ -77,12 +79,12 @@ async def get_current_teacher_id(
     token_data: dict = Depends(get_decode_token),
 ) -> str:
     if not token_data.get("sub"):
-        raise AuthenticationError("Invalid token")
+        raise AuthenticationError(_("Invalid token"))
     if (
         token_data.get("role") != UserRole.TEACHER
         and token_data.get("role") != UserRole.ADMIN
     ):
-        raise ForbiddenError("Only teachers can access this resource")
+        raise ForbiddenError(_("Only teachers can access this resource"))
     return token_data.get("sub")
 
 
@@ -90,7 +92,7 @@ async def get_current_admin_id(
     token_data: dict = Depends(get_decode_token),
 ) -> str:
     if not token_data.get("sub"):
-        raise AuthenticationError("Invalid token")
+        raise AuthenticationError(_("Invalid token"))
     if not token_data.get("role") == UserRole.ADMIN:
-        raise ForbiddenError("Only admins can access this resource")
+        raise ForbiddenError(_("Only admins can access this resource"))
     return token_data.get("sub")

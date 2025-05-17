@@ -23,6 +23,7 @@ class BaseRepository(AbstractRepository[T], Generic[T]):
     async def get_by_id(
         self,
         entity_id: str,
+        *,
         fetch_links: bool = False,
         fetch_fields: Optional[dict[str:int]] = None,
         default_fetch_depth: int = 0,
@@ -43,6 +44,7 @@ class BaseRepository(AbstractRepository[T], Generic[T]):
         self,
         field_name: str,
         field_value: Any,
+        *,
         fetch_links: bool = False,
         fetch_fields: Optional[dict[str:int]] = None,
         default_fetch_depth: int = 0,
@@ -61,6 +63,7 @@ class BaseRepository(AbstractRepository[T], Generic[T]):
     async def get_one_by_criteria(
         self,
         filter_criteria: Optional[Dict[str, Any]] = None,
+        *,
         fetch_links: bool = False,
         fetch_fields: Optional[dict[str:int]] = None,
         default_fetch_depth: int = 0,
@@ -74,6 +77,7 @@ class BaseRepository(AbstractRepository[T], Generic[T]):
     async def get_all(
         self,
         filter_criteria: Optional[Dict[str, Any]] = None,
+        *,
         fetch_links: bool = False,
         fetch_fields: Optional[dict[str:int]] = None,
         default_fetch_depth: int = 0,

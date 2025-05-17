@@ -58,12 +58,6 @@ function CreateCollection() {
     goToPage,
   } = usePagination(allQuestions, questionsPerPage);
 
-  const statusDisplayMap = {
-    draft: "Draft",
-    published: "Public",
-    archived: "Archived",
-  };
-
   useEffect(() => {
     const isNew = location.pathname.includes("/new") || !collectionId;
     setIsNewCollection(isNew);
@@ -157,9 +151,9 @@ function CreateCollection() {
   };
 
   const transitionToToast = {
-    "draft:published": () => toast.success("Collection is now public."),
+    "draft:published": () => toast.info("Collection is now public."),
     "published:draft": () => toast.info("Collection is now draft."),
-    "archived:draft": () => toast.success("Collection restored to draft status. You can now make changes."),
+    "archived:draft": () => toast.info("Collection restored to draft status. You can now make changes."),
     "draft:archived": () => toast.info("Collection archived. Restore to draft status to make changes."),
   };
   
@@ -206,7 +200,7 @@ function CreateCollection() {
     } catch (err) {
       setError({
         isError: true,
-        message: "Failed to remove question. Please try again."
+        message: "Failed to duplicate collection. Please try again."
       });
       setIsDuplicateModalOpen(false);
     }
@@ -259,99 +253,6 @@ function CreateCollection() {
     }
   };
 
-  const updateList = (list, setList, id, updater) => {
-    // Prevent updates if collection is archived or user can't edit
-    if (isArchived || !canEdit) return;
-    
-    const idx = list.findIndex((q) => q.id === id);
-    if (idx < 0) return;
-    const updated = [...list];
-    updated[idx] = { ...updater(updated[idx]), saved: false };
-    setList(updated);
-  };
-
-  const updateQuestionText = (id, text) => {    
-    updateList(newQuestions, setNewQuestions, id, (q) => ({
-      ...q,
-      question_text: text,
-    }));
-    updateList(questions, setQuestions, id, (q) => ({
-      ...q,
-      question_text: text,
-    }));
-  };
-
-  const updateOptionText = (id, idx, text) => {
-    if (isArchived || !canEdit) return;
-    
-    updateList(newQuestions, setNewQuestions, id, (q) => {
-      if (!q.options) return q;
-      const opts = [...q.options];
-      opts[idx] = { ...opts[idx], text };
-      return { ...q, options: opts };
-    });
-    updateList(questions, setQuestions, id, (q) => {
-      if (!q.options) return q;
-      const opts = [...q.options];
-      opts[idx] = { ...opts[idx], text };
-      return { ...q, options: opts };
-    });
-  };
-
-  const toggleCorrectOption = (id, idx) => {
-    const toggle = (q) => {
-      if (!q.options) return q;
-      const opts =
-        q.type === "singlechoice"
-          ? q.options.map((o, i) => ({ ...o, is_correct: i === idx }))
-          : q.options.map((o, i) =>
-              i === idx ? { ...o, is_correct: !o.is_correct } : o
-            );
-      return { ...q, options: opts };
-    };
-    updateList(newQuestions, setNewQuestions, id, toggle);
-    updateList(questions, setQuestions, id, toggle);
-  };
-
-  const updateShortAnswer = (id, ans) => {
-    updateList(newQuestions, setNewQuestions, id, (q) => ({
-      ...q,
-      correct_input_answer: ans,
-    }));
-    updateList(questions, setQuestions, id, (q) => ({
-      ...q,
-      correct_input_answer: ans,
-    }));
-  };
-
-  const updateWeight = (id, weight) => {
-    const w = parseInt(weight, 10);
-    updateList(newQuestions, setNewQuestions, id, (q) => ({ ...q, weight: w }));
-    updateList(questions, setQuestions, id, (q) => ({ ...q, weight: w }));
-  };
-
-  const addOption = (id) => {
-    updateList(newQuestions, setNewQuestions, id, (q) => ({
-      ...q,
-      options: [...(q.options || []), { text: "", is_correct: false }],
-    }));
-    updateList(questions, setQuestions, id, (q) => ({
-      ...q,
-      options: [...(q.options || []), { text: "", is_correct: false }],
-    }));
-  };
-
-  const removeOption = (id, idx) => {
-    updateList(newQuestions, setNewQuestions, id, (q) => ({
-      ...q,
-      options: (q.options || []).filter((_, i) => i !== idx),
-    }));
-    updateList(questions, setQuestions, id, (q) => ({
-      ...q,
-      options: (q.options || []).filter((_, i) => i !== idx),
-    }));
-  };
-
   const validateQuestion = (q) => {
     if (!q.question_text.trim()) return false;
     if (["mcq", "singlechoice"].includes(q.type)) {
@@ -362,12 +263,18 @@ function CreateCollection() {
     return true;
   };
 
-  const handleSaveSingleQuestion = async (questionId) => {
+  const handleSaveSingleQuestion = async (questionId, updatedData = null) => {
     setError({ isError: false, message: "" });
     const isNew = newQuestions.some((q) => q.id === questionId);
-    const q = isNew
+    let q = isNew
       ? newQuestions.find((q) => q.id === questionId)
       : questions.find((q) => q.id === questionId);
+      
+    // If updatedData is provided from the QuestionCard, use that data
+    if (updatedData) {
+      q = updatedData;
+    }
+    
     if (!q) return;
 
     if (!validateQuestion(q)) {
@@ -377,6 +284,7 @@ function CreateCollection() {
       });
       return;
     }
+    
     if (isNew && collectionId === 'new') {
       setError({
         isError: true,
@@ -538,6 +446,14 @@ function CreateCollection() {
     }
   };
 
+  const handleQuestionLocalChange = (questionId, updatedData) => {
+    if (newQuestions.some(q => q.id === questionId)) {
+      setNewQuestions(qs => qs.map(q => q.id === questionId ? updatedData : q));
+    } else {
+      setQuestions(qs => qs.map(q => q.id === questionId ? updatedData : q));
+    }
+  };
+
   return (
     <div className="flex min-h-screen flex-col">
       <Navbar />
@@ -601,14 +517,8 @@ function CreateCollection() {
                         index={i + (currentPage - 1) * questionsPerPage}
                         isNew={isNewQ}
                         onSave={handleSaveSingleQuestion}
+                        onChange={handleQuestionLocalChange}
                         onRemove={removeQuestion}
-                        onUpdateText={updateQuestionText}
-                        onUpdateOption={updateOptionText}
-                        onUpdateCorrectOption={toggleCorrectOption}
-                        onAddOption={addOption}
-                        onRemoveOption={removeOption}
-                        onUpdateWeight={updateWeight}
-                        onUpdateShortAnswer={updateShortAnswer}
                         canSave={!isNewCollection && canEdit}
                         disabled={isArchived || !canEdit}
                       />
@@ -645,4 +555,4 @@ function CreateCollection() {
   );
 }
 
-export default CreateCollection; 
+export default CreateCollection;

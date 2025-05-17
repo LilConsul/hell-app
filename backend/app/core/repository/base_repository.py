@@ -28,8 +28,8 @@ class BaseRepository(AbstractRepository[T], Generic[T]):
         default_fetch_depth: int = 0,
     ) -> Optional[T]:
         """Get an entity by its ID"""
-        if fetch_fields and not fetch_links:
-            raise ValueError("fetch_links must be True if fetch_fields is provided")
+        if fetch_fields:
+            fetch_links = True
         entity = await self.model_class.find_one(
             {self.model_class.id: entity_id},
             fetch_links=fetch_links,
@@ -48,8 +48,8 @@ class BaseRepository(AbstractRepository[T], Generic[T]):
         default_fetch_depth: int = 0,
     ) -> Optional[T]:
         """Get an entity by field value"""
-        if fetch_fields and not fetch_links:
-            raise ValueError("fetch_links must be True if fetch_fields is provided")
+        if fetch_fields:
+            fetch_links = True
         entity = await self.model_class.find_one(
             {field_name: field_value},
             fetch_links=fetch_links,
@@ -57,6 +57,19 @@ class BaseRepository(AbstractRepository[T], Generic[T]):
             nesting_depths_per_field=fetch_fields,
         )
         return entity
+
+    async def get_one_by_criteria(
+        self,
+        filter_criteria: Optional[Dict[str, Any]] = None,
+        fetch_links: bool = False,
+        fetch_fields: Optional[dict[str:int]] = None,
+        default_fetch_depth: int = 0,
+    ) -> Optional[T]:
+        """Get entity filtered by criteria"""
+        instance = await self.get_all(
+            filter_criteria, fetch_links, fetch_fields, default_fetch_depth
+        )
+        return instance[0] if instance else None
 
     async def get_all(
         self,
@@ -66,8 +79,8 @@ class BaseRepository(AbstractRepository[T], Generic[T]):
         default_fetch_depth: int = 0,
     ) -> List[T]:
         """Get all entities, optionally filtered"""
-        if fetch_fields and not fetch_links:
-            raise ValueError("fetch_links must be True if fetch_fields is provided")
+        if fetch_fields:
+            fetch_links = True
         entity = await self.model_class.find(
             filter_criteria,
             fetch_links=fetch_links,

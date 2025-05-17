@@ -1,13 +1,8 @@
 import uuid
 from typing import List
 
-from app.core.exceptions import (
-    BadRequestError,
-    ForbiddenError,
-    NotFoundError,
-    UnprocessableEntityError,
-)
-from app.exam.models import ExamStatus, QuestionType, Question
+from beanie import DeleteRules
+
 from app.core.exceptions import (
     BadRequestError,
     ForbiddenError,
@@ -311,11 +306,11 @@ class CollectionService:
     ):
         """Reorder questions in a collection based on provided positions."""
         collection = await self.collection_repository.get_by_id(
-            collection_id, fetch_links=True
+            collection_id, fetch_fields={"questions": 1}
         )
         if not collection:
             raise NotFoundError(_("Collection not found"))
-        if collection.created_by.id != teacher_id:
+        if collection.created_by.ref.id != teacher_id:
             raise ForbiddenError(_("You do not own this collection"))
 
         collection_question_ids = {q.id for q in collection.questions}
@@ -360,7 +355,7 @@ class CollectionService:
             await self.question_repository.update(question_id, {"position": position})
 
         collection = await self.collection_repository.get_by_id(
-            collection_id, fetch_links=True
+            collection_id, fetch_fields={"questions": 1}
         )
         collection.questions.sort(key=lambda q: getattr(q, "position", float("inf")))
         await self.collection_repository.save(collection)

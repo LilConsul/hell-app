@@ -350,11 +350,21 @@ class CollectionService:
 
     async def delete_question(self, question_id: str, user_id: str) -> None:
         """Delete an existing question by its ID."""
-        question = await self.question_repository.get_by_id(question_id)
+        question = await self.question_repository.get_by_id(
+            question_id, fetch_fields={"collection": 1}
+        )
         if not question:
             raise NotFoundError(_("Question not found"))
 
         if question.created_by.ref.id != user_id:
             raise ForbiddenError(_("You do not own this question"))
+
+        # Remove the question from the collection as a Link.
+        # link_rule = DeleteRules.DELETE_LINKS works when we fetch questions in the collection,
+        # but not when we fetch collections without Links.
+        # Very strange behavior...
+        collection = question.collection
+        collection.questions = [q for q in collection.questions if q.ref.id != question_id]
+        await self.collection_repository.save(collection)
 
         await self.question_repository.delete(question_id, link_rule = DeleteRules.DELETE_LINKS)

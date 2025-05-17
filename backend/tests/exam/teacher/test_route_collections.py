@@ -7,8 +7,13 @@ import pytest
 from app.auth.models import User
 from app.auth.schemas import UserRole
 from app.auth.security import get_password_hash
-from app.exam.models import (Collection, ExamStatus, Question, QuestionOption,
-                             QuestionType)
+from app.exam.models import (
+    Collection,
+    ExamStatus,
+    Question,
+    QuestionOption,
+    QuestionType,
+)
 from app.settings import settings
 
 
@@ -244,8 +249,8 @@ class TestTeacherRouter:
     @patch("app.exam.teacher.services.CollectionService.get_public_collections")
     async def test_get_public_collections(self, mock_service, client, auth_headers):
         """Test retrieving public collections"""
-        # Create mock public collections data
-        mock_service.return_value = [
+        # Create mock public collections data with proper structure
+        mock_data = [
             {
                 "id": str(uuid.uuid4()),
                 "title": "Public Collection 1",
@@ -259,12 +264,15 @@ class TestTeacherRouter:
                     "role": "teacher",
                     "receive_notifications": True,
                 },
-                "questions": [],  # Add this field
-                "question_count": 0,  # Add this field
+                "questions": [],
+                "question_count": 0,
                 "created_at": "2023-01-01T00:00:00",
                 "updated_at": "2023-01-01T00:00:00",
             }
         ]
+
+        # Set up mock to return the data directly
+        mock_service.return_value = mock_data
 
         # Test public collections endpoint with auth headers
         response = await client.get(
@@ -279,8 +287,11 @@ class TestTeacherRouter:
         self, mock_service, client, auth_headers
     ):
         """Test retrieving public collections when none exist"""
-        # Mock empty public collections
-        mock_service.return_value = []
+        # Mock empty public collections with proper structure
+        mock_data = []  # Return an empty list directly
+
+        # Set up mock to return the data directly
+        mock_service.return_value = mock_data
 
         # Test public collections endpoint with auth headers
         response = await client.get(

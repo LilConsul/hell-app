@@ -171,6 +171,18 @@ async function deleteQuestion(collectionId, questionId) {
   }
 }
 
+async function reorderQuestions(collectionId, questionOrders) {
+  try {
+    return await apiRequest(`${COLLECTIONS_URL}/${collectionId}/questions/reorder`, {
+      method: 'POST',
+      body: JSON.stringify({ question_orders: questionOrders }),
+    });
+  } catch (err) {
+    console.error(`Error reordering questions in collection ${collectionId}:`, err);
+    throw err;
+  }
+}
+
 export default {
   fetchCollections,
   createCollection,
@@ -183,4 +195,5 @@ export default {
   addBulkQuestions,
   updateQuestion,
   deleteQuestion,
+  reorderQuestions,
 };

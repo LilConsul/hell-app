@@ -1,14 +1,22 @@
-import { useState, useEffect, useMemo } from "react"
+import { useState, useMemo } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
-import { Plus, Trash2, Save, CheckCircle2, CircleDot, AlertCircle } from "lucide-react"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  Plus,
+  Trash2,
+  Save,
+  CheckCircle2,
+  CircleDot,
+  AlertCircle,
+} from "lucide-react"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
+import { PositionEditor } from "@/components/collections/create/position-editor"
+import { WeightSelector } from "@/components/collections/create/weight-selector"
 
 export function QuestionCard({
   question,
@@ -18,14 +26,15 @@ export function QuestionCard({
   onChange,
   onRemove,
   canSave = true,
-  disabled = false
+  disabled = false,
+  usedPositions = [],
+  onPositionChange = null,
 }) {
-
   const [touchedFields, setTouchedFields] = useState({
     questionText: false,
     options: {},
     correctAnswer: false,
-    correctOption: false
+    correctOption: false,
   })
 
   // Memoize question type properties
@@ -57,15 +66,20 @@ export function QuestionCard({
   );
 
   const updateField = (field, value) => {
-    const updated = { ...question, [field]: value, saved: false };
-    onChange?.(updated.id, updated);
+    if (question[field] !== value) {
+      const updated = { ...question, [field]: value, saved: false };
+      onChange?.(updated.id, updated);
+    }
   };
 
   // Update options with a specific transform function for each case
   const updateOptions = (transformFn) => {
     const updatedOptions = transformFn(question.options || []);
-    const updated = { ...question, options: updatedOptions, saved: false };
-    onChange?.(updated.id, updated);
+    const optionsChanged = JSON.stringify(updatedOptions) !== JSON.stringify(question.options);
+    if (optionsChanged) {
+      const updated = { ...question, options: updatedOptions, saved: false };
+      onChange?.(updated.id, updated);
+    }
   };
 
   const markAsTouched = (field, optionIndex = null) => {
@@ -113,7 +127,7 @@ export function QuestionCard({
       questionText: true,
       options: optionTouchedState,
       correctAnswer: true,
-      correctOption: true
+      correctOption: true,
     });
   };
 
@@ -123,6 +137,10 @@ export function QuestionCard({
       return;
     }
     onSave(question.id, question);
+  };
+
+  const handleWeightChange = (value) => {
+    updateField("weight", value);
   };
 
   // Show validation errors only if field has been touched
@@ -139,18 +157,28 @@ export function QuestionCard({
     Object.entries(touchedFields.options).some(([idx, touched]) => 
       touched && !question.options[parseInt(idx)]?.text?.trim()
     );
-
+    
   const hasValidationErrors = 
     showQuestionTextError || 
     showShortAnswerError || 
     showCorrectOptionError || 
     showOptionsWithoutTextError;
 
+  // Unique ID for the weight selector
+  const weightInputId = `weight-${question.id}`;
+
   return (
     <Card className={!question.saved && !isNew ? "border-amber-300 dark:border-amber-600" : ""}>
       <CardHeader className="flex flex-row items-start justify-between space-y-0">
         <div className="flex items-center">
-          <CardTitle className="text-base">Question {index + 1}</CardTitle>
+          <PositionEditor
+            questionId={question.id}
+            currentPosition={question.position}
+            index={index}
+            onPositionChange={onPositionChange}
+            allPositions={usedPositions}
+            disabled={disabled || !canSave}
+          /> 
           <Badge variant="outline" className="ml-2 flex items-center">
             {questionTypeInfo.icon}
             {questionTypeInfo.label}
@@ -355,23 +383,13 @@ export function QuestionCard({
           </div>
         )}
         <div className="grid gap-2">
-          <Label htmlFor={`weight-${question.id}`}>Question Weight</Label>
-          <Select
-            value={question.weight.toString()}
-            onValueChange={(value) => updateField("weight", parseInt(value, 10))}
+          <Label htmlFor={weightInputId}>Question Weight</Label>
+          <WeightSelector
+            id={weightInputId}
+            value={question.weight || 1}
+            onChange={handleWeightChange}
             disabled={disabled}
-          >
-            <SelectTrigger id={`weight-${question.id}`}>
-              <SelectValue placeholder="Select weight" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="1">1 point</SelectItem>
-              <SelectItem value="2">2 points</SelectItem>
-              <SelectItem value="3">3 points</SelectItem>
-              <SelectItem value="4">4 points</SelectItem>
-              <SelectItem value="5">5 points</SelectItem>
-            </SelectContent>
-          </Select>
+          />
         </div>
       </CardContent>
     </Card>

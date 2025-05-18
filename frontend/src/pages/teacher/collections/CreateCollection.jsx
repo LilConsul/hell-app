@@ -42,14 +42,46 @@ function CreateCollection() {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState({ isError: false, message: "" });
   const [isDuplicateModalOpen, setIsDuplicateModalOpen] = useState(false);
+  const [isReordering, setIsReordering] = useState(false);
 
   const questionsPerPage = 10;
   const isArchived = collectionData.status === "archived";
 
+  const sortedQuestions = useMemo(() => {
+    return [...questions].sort((a, b) => {
+      if (a.position !== undefined && b.position !== undefined) {
+        return a.position - b.position;
+      }
+      if (a.position !== undefined) return -1;
+      if (b.position !== undefined) return 1;
+      return 0;
+    });
+  }, [questions]);
+
   const allQuestions = useMemo(
-    () => [...newQuestions, ...questions],
-    [newQuestions, questions]
+    () => [...newQuestions, ...sortedQuestions],
+    [newQuestions, sortedQuestions]
   );
+  
+  const usedPositions = useMemo(() => {
+    return questions
+      .filter(q => q.position !== undefined)
+      .map(q => q.position);
+  }, [questions]);
+
+  const findNextAvailablePosition = () => {
+    if (usedPositions.length === 0) return 0;
+    
+    const sortedPos = [...usedPositions].sort((a, b) => a - b);
+    
+    for (let i = 0; i < sortedPos.length; i++) {
+      if (sortedPos[i] !== i) {
+        return i;
+      }
+    }
+    
+    return sortedPos.length;
+  };
 
   const {
     currentPage,
@@ -86,7 +118,6 @@ function CreateCollection() {
         setCreatedBy(data.created_by);
       }
 
-      // only creator can edit
       const canUserEdit = currentUser?.id === data.created_by?.id;
       setCanEdit(canUserEdit);
 
@@ -100,6 +131,7 @@ function CreateCollection() {
             weight: q.weight || 1,
             options: q.options || [],
             correct_input_answer: q.correct_input_answer || "",
+            position: q.position !== undefined ? q.position : undefined,
             saved: true,
             server_id: q.id,
           }))
@@ -206,18 +238,123 @@ function CreateCollection() {
     }
   };
 
-  const createEmptyQuestion = (type) => ({
-    id: `${Date.now()}-${Math.random()}`,
-    type,
-    question_text: "",
-    has_katex: false,
-    weight: 1,
-    options: ["mcq", "singlechoice"].includes(type)
-      ? Array(3).fill({ text: "", is_correct: false })
-      : [],
-    correct_input_answer: type === "shortanswer" ? "" : "",
-    saved: false,
-  });
+  const handleQuestionPositionChange = async (questionId, newPosition) => {
+    if (isArchived || !canEdit || isReordering) return;
+    
+    setIsReordering(true);
+    
+    try {
+      const isNewQuestion = newQuestions.some(q => q.id === questionId);
+      const question = isNewQuestion 
+        ? newQuestions.find(q => q.id === questionId)
+        : questions.find(q => q.id === questionId);
+        
+      if (!question) return;
+      
+      const isPositionTaken = questions.some(q => 
+        q.id !== questionId && q.position === newPosition
+      );
+      
+      if (!isPositionTaken) {
+        if (isNewQuestion) {
+          const updated = { ...question, position: newPosition };
+          setNewQuestions(qs => qs.map(q => q.id === questionId ? updated : q));
+        } else {
+          if (collectionId !== 'new') {
+            const updates = { [questionId]: newPosition };
+            await CollectionAPI.reorderQuestions(collectionId, updates);
+          }
+          
+          setQuestions(qs => 
+            qs.map(q => q.id === questionId ? { ...q, position: newPosition } : q)
+          );
+        }
+        
+        toast.success("Question position updated");
+      } else {
+        const updates = {};
+        const shiftedQuestionIds = [];
+        
+        updates[questionId] = newPosition;
+        
+        const questionsToShift = questions.filter(q => 
+          q.id !== questionId && q.position >= newPosition
+        ).sort((a, b) => a.position - b.position);
+        
+        let nextPosition = newPosition + 1;
+        questionsToShift.forEach(q => {
+          updates[q.id] = nextPosition++;
+          shiftedQuestionIds.push(q.id);
+        });
+        
+        if (collectionId !== 'new') {
+          await CollectionAPI.reorderQuestions(collectionId, updates);
+        }
+        
+        if (isNewQuestion) {
+          setNewQuestions(qs => qs.map(q => 
+            q.id === questionId ? { ...q, position: newPosition } : q
+          ));
+        }
+        
+        setQuestions(qs => qs.map(q => {
+          if (q.id === questionId && !isNewQuestion) {
+            return { ...q, position: newPosition };
+          } else if (shiftedQuestionIds.includes(q.id)) {
+            return { ...q, position: updates[q.id] };
+          }
+          return q;
+        }));
+        
+        toast.success(
+          `Position updated. ${shiftedQuestionIds.length} question${
+            shiftedQuestionIds.length !== 1 ? 's' : ''
+          } shifted.`
+        );
+      }
+    } catch (err) {
+      setError({
+        isError: true,
+        message: "Failed to update question position. Please try again."
+      });
+    } finally {
+      setIsReordering(false);
+    }
+  };
+  
+  const createEmptyQuestion = (type, existingNewPositions = []) => {
+    let position = findNextAvailablePosition();
+    
+    if (existingNewPositions.includes(position)) {
+      const allPositions = [...usedPositions, ...existingNewPositions];
+      const sortedPos = [...allPositions].sort((a, b) => a - b);
+      
+      for (let i = 0; i < sortedPos.length; i++) {
+        if (sortedPos[i] !== i) {
+          position = i;
+          break;
+        }
+      }
+      
+      if (existingNewPositions.includes(position)) {
+        position = sortedPos.length > 0 ? sortedPos[sortedPos.length - 1] + 1 : 0;
+      }
+    }
+    
+    return {
+      id: `${Date.now()}-${Math.random()}`,
+      type,
+      question_text: "",
+      has_katex: false,
+      weight: 1,
+      position: position,
+      options: ["mcq", "singlechoice"].includes(type)
+        ? Array(3).fill({ text: "", is_correct: false })
+        : [],
+      correct_input_answer: type === "shortanswer" ? "" : "",
+      saved: false,
+    };
+  };
 
   const addQuestion = (type) => {
     if (isArchived) {
@@ -228,7 +365,11 @@ function CreateCollection() {
       toast.error("Duplicate collection to make any changes.");
       return;
     }
-    setNewQuestions([createEmptyQuestion(type), ...newQuestions]);
+    
+    const newPositions = newQuestions.map(q => q.position).filter(p => p !== undefined);
+    
+    const newQuestion = createEmptyQuestion(type, newPositions);
+    setNewQuestions([newQuestion, ...newQuestions]);
     setActiveTab("questions");
   };
 
@@ -270,7 +411,6 @@ function CreateCollection() {
       ? newQuestions.find((q) => q.id === questionId)
       : questions.find((q) => q.id === questionId);
       
-    // If updatedData is provided from the QuestionCard, use that data
     if (updatedData) {
       q = updatedData;
     }
@@ -350,25 +490,20 @@ function CreateCollection() {
       const valid = unsaved.filter(validateQuestion);
       const invalid = unsaved.filter(q => !validateQuestion(q));
   
-      // Separate questions to update (with server_id) and new questions to add in bulk
       const questionsToUpdate = valid.filter(q => q.server_id);
       const newQuestionsToAdd = valid.filter(q => !q.server_id);
       
-      // Handle updates for existing questions
       const updatePromises = questionsToUpdate.map(async q => {
         await CollectionAPI.updateQuestion(collId, q.server_id, q);
         return { ...q, saved: true };
       });
       
-      // Handle bulk addition of new questions
       let addedQuestions = [];
       if (newQuestionsToAdd.length > 0) {
         try {
           const bulkResponse = await CollectionAPI.addBulkQuestions(collId, newQuestionsToAdd);
-          // API returns an array of question id's in data.question_ids
           const questionIds = bulkResponse.data?.question_ids || [];
           
-          // Match the returned IDs with our original questions
           addedQuestions = newQuestionsToAdd.map((q, index) => {
             const savedId = questionIds[index];
             return savedId ? { ...q, server_id: savedId, saved: true } : q;
@@ -378,14 +513,11 @@ function CreateCollection() {
             isError: true,
             message: error || "Failed to add new questions. Please try again."
           });
-          // If bulk add fails keep the new questions in state
         }
       }
       
-      // Combine results from updates and additions
       const savedQuestions = [...await Promise.all(updatePromises), ...addedQuestions];
   
-      // Merge savedQuestions back into state
       setQuestions(prev =>
         prev.map(q => {
           const updated = savedQuestions.find(sq => sq.id === q.id);
@@ -393,7 +525,6 @@ function CreateCollection() {
         })
       );
       
-      // Append new ones that were successfully saved
       setQuestions(prev => [
         ...prev,
         ...savedQuestions.filter(sq => 
@@ -401,7 +532,6 @@ function CreateCollection() {
         )
       ]);
       
-      // Keep only the new invalid ones in newQuestions
       setNewQuestions(invalid.filter(q => !q.server_id));
       
       if (invalid.some(q => q.server_id)) {
@@ -413,7 +543,6 @@ function CreateCollection() {
         );
       }
   
-      // Show success toast
       const updatedCount = questionsToUpdate.length;
       const addedCount = addedQuestions.filter(q => q.server_id).length;
       
@@ -520,6 +649,8 @@ function CreateCollection() {
                         onSave={handleSaveSingleQuestion}
                         onChange={handleQuestionLocalChange}
                         onRemove={removeQuestion}
+                        onPositionChange={handleQuestionPositionChange}
+                        usedPositions={usedPositions}
                         canSave={!isNewCollection && canEdit}
                         disabled={isArchived || !canEdit}
                       />

@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -7,6 +8,7 @@ import { User } from "lucide-react"
 
 export function CollectionDetailsForm({ 
   collectionData, 
+  collectionId,
   onInputChange, 
   onContinue,
   isArchived = false,
@@ -55,7 +57,12 @@ export function CollectionDetailsForm({
           </div>
         </div>
       </CardContent>
-      <CardFooter className="flex justify-end">
+      <CardFooter className="flex justify-between">
+        <Button variant="secondary" className="mr-2" disabled={isArchived || collectionId==="new" ? true : false}>
+          <Link to={`/exams/new?collectionId=${collectionId}`}>
+            Create Exam
+          </Link> 
+        </Button>
         <Button onClick={onContinue}>
           {canEdit ? "Continue to Questions" : "View Questions"}
         </Button>

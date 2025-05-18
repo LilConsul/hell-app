@@ -487,6 +487,7 @@ function CreateCollection() {
             <TabsContent value="details" className="space-y-4">
               <CollectionDetailsForm
                 collectionData={collectionData}
+                collectionId={collectionId}
                 onInputChange={handleInputChange}
                 onContinue={() => setActiveTab("questions")}
                 isArchived={isArchived}

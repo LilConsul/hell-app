@@ -402,12 +402,4 @@ class CollectionService:
         if question.created_by.ref.id != user_id:
             raise ForbiddenError(_("You do not own this question"))
 
-        # Remove the question from the collection as a Link.
-        # link_rule = DeleteRules.DELETE_LINKS works when we fetch questions in the collection,
-        # but not when we fetch collections without Links.
-        # Very strange behavior...
-        collection = question.collection
-        collection.questions = [q for q in collection.questions if q.ref.id != question_id]
-        await self.collection_repository.save(collection)
-
         await self.question_repository.delete(question_id, link_rule = DeleteRules.DELETE_LINKS)

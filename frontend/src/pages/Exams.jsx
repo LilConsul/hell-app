@@ -9,8 +9,8 @@ function Exams() {
       <Navbar />
 
       <main className="flex-1 container py-10">
-        <h1 className="text-3xl font-bold mb-6">Exams</h1>
-        <p>Exams content will go here. For now, this is a placeholder.</p>
+        <h1 className="text-3xl font-bold mb-6">Student Exams</h1>
+        <p>Student Exams content will go here. For now, this is a placeholder.</p>
         <div className="mt-4">
           <Link to="/">
             <Button variant="outline">Back to Home</Button>

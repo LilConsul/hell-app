@@ -251,7 +251,7 @@ function CreateCollection() {
         
       if (!question) return;
       
-      const isPositionTaken = questions.some(q => 
+      const isPositionTaken = [...questions, ...newQuestions].some(q => 
         q.id !== questionId && q.position === newPosition
       );
       
@@ -261,8 +261,7 @@ function CreateCollection() {
           setNewQuestions(qs => qs.map(q => q.id === questionId ? updated : q));
         } else {
           if (collectionId !== 'new') {
-            const updates = { [questionId]: newPosition };
-            await CollectionAPI.reorderQuestions(collectionId, updates);
+            await CollectionAPI.reorderQuestions(collectionId, { [question.server_id]: newPosition });
           }
           
           setQuestions(qs => 
@@ -272,47 +271,10 @@ function CreateCollection() {
         
         toast.success("Question position updated");
       } else {
-        const updates = {};
-        const shiftedQuestionIds = [];
-        
-        updates[questionId] = newPosition;
-        
-        const questionsToShift = questions.filter(q => 
-          q.id !== questionId && q.position >= newPosition
-        ).sort((a, b) => a.position - b.position);
-        
-        let nextPosition = newPosition + 1;
-        questionsToShift.forEach(q => {
-          updates[q.id] = nextPosition++;
-          shiftedQuestionIds.push(q.id);
-        });
-        
-        if (collectionId !== 'new') {
-          await CollectionAPI.reorderQuestions(collectionId, updates);
-        }
-        
-        if (isNewQuestion) {
-          setNewQuestions(qs => qs.map(q => 
-            q.id === questionId ? { ...q, position: newPosition } : q
-          ));
-        }
-        
-        setQuestions(qs => qs.map(q => {
-          if (q.id === questionId && !isNewQuestion) {
-            return { ...q, position: newPosition };
-          } else if (shiftedQuestionIds.includes(q.id)) {
-            return { ...q, position: updates[q.id] };
-          }
-          return q;
-        }));
-        
-        toast.success(
-          `Position updated. ${shiftedQuestionIds.length} question${
-            shiftedQuestionIds.length !== 1 ? 's' : ''
-          } shifted.`
-        );
+        await handlePositionConflict(questionId, newPosition, isNewQuestion, question);
       }
     } catch (err) {
+      console.error("Position update error:", err);
       setError({
         isError: true,
         message: "Failed to update question position. Please try again."
@@ -320,6 +282,108 @@ function CreateCollection() {
     } finally {
       setIsReordering(false);
     }
+  };
+  
+  const handlePositionConflict = async (questionId, newPosition, isNewQuestion, question) => {
+    const updates = {};
+    const allQuestionsList = [...questions, ...newQuestions];
+    const directConflictPositions = [];
+
+    let currentPosition = newPosition;
+    let hasConflictAtPosition = true;
+    
+    while (hasConflictAtPosition) {
+      const conflictsAtPosition = allQuestionsList.filter(q => 
+        q.id !== questionId && q.position === currentPosition
+      );
+      
+      if (conflictsAtPosition.length > 0) {
+        directConflictPositions.push(currentPosition);
+        currentPosition++;
+      } else {
+        hasConflictAtPosition = false;
+      }
+    }
+    
+    // Find questions that need shifting, only those at the direct conflict positions
+    const questionsToShift = allQuestionsList.filter(q => 
+      q.id !== questionId && 
+      directConflictPositions.includes(q.position)
+    );
+    
+    // Sort by position to ensure we shift in proper order (lowest first)
+    questionsToShift.sort((a, b) => a.position - b.position);
+    
+    // Just in case if there are no questions to shift, simply assign the new position
+    if (questionsToShift.length === 0) {
+      if (isNewQuestion) {
+        setNewQuestions(qs => qs.map(q => 
+          q.id === questionId ? { ...q, position: newPosition } : q
+        ));
+      } else {
+        if (collectionId !== 'new' && question.server_id) {
+          updates[question.server_id] = newPosition;
+          await CollectionAPI.reorderQuestions(collectionId, updates);
+        }
+        
+        setQuestions(qs => qs.map(q => 
+          q.id === questionId ? { ...q, position: newPosition } : q
+        ));
+      }
+      toast.success("Question position updated");
+      return;
+    }
+    
+    if (!isNewQuestion && question.server_id) {
+      updates[question.server_id] = newPosition;
+    }
+    
+    // Calculate new positions for shifted questions, maintaining existing gaps
+    let nextPosition = newPosition + 1;
+    const shiftedMap = new Map();
+    
+    questionsToShift.forEach(q => {
+      shiftedMap.set(q.id, nextPosition);
+      
+      if (q.server_id) {
+        updates[q.server_id] = nextPosition;
+      }      
+      nextPosition++;
+    });
+    
+    // Send updates to the backend for saved questions
+    if (Object.keys(updates).length > 0 && collectionId !== 'new') {
+      await CollectionAPI.reorderQuestions(collectionId, updates);
+    }
+    
+    // Update local state for new questions
+    if (isNewQuestion) {
+      setNewQuestions(qs => qs.map(q => {
+        if (q.id === questionId) {
+          return { ...q, position: newPosition };
+        } else if (shiftedMap.has(q.id)) {
+          return { ...q, position: shiftedMap.get(q.id) };
+        }
+        return q;
+      }));
+    }
+    
+    // Update local state for existing questions
+    setQuestions(qs => qs.map(q => {
+      if (q.id === questionId && !isNewQuestion) {
+        return { ...q, position: newPosition };
+      } else if (shiftedMap.has(q.id)) {
+        return { ...q, position: shiftedMap.get(q.id) };
+      }
+      return q;
+    }));
+    
+    const shiftedCount = shiftedMap.size;
+    toast.success(
+      `Position updated. ${shiftedCount} question${
+        shiftedCount !== 1 ? 's' : ''
+      } shifted.`
+    );
   };
   
   const createEmptyQuestion = (type, existingNewPositions = []) => {

@@ -119,6 +119,22 @@ class Question(Document, TimestampMixin):
             "type",
         ]
 
+    @before_event(Delete)
+    async def before_delete(self):
+        """Delete all links to this question in collections when the question is deleted"""
+        collections = await Collection.find(
+            {"questions.$id": self.id},
+            nesting_depth=0,
+            nesting_depths_per_field={"questions": 1},
+        ).to_list()
+
+        for collection in collections:
+            # Usually it should be a single collection
+            collection.questions = [
+                q for q in collection.questions if q.ref.id != self.id
+            ]
+            await collection.save()
+
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
         json_schema_extra={

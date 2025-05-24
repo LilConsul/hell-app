@@ -4,14 +4,22 @@ from typing import List
 from app.auth.repository import UserRepository
 from app.celery.tasks.email_tasks.tasks import exam_reminder_notification
 from app.core.exceptions import ForbiddenError, NotFoundError
-from app.core.utils import (convert_to_user_timezone,
-                            convert_user_timezone_to_utc, make_username)
+from app.core.utils import (
+    convert_to_user_timezone,
+    convert_user_timezone_to_utc,
+    make_username,
+)
 from app.exam.models import ExamStatus, NotificationSettings
-from app.exam.repository import (CollectionRepository, ExamInstanceRepository,
-                                 StudentExamRepository)
-from app.exam.teacher.schemas import (CreateExamInstanceSchema,
-                                      GetExamInstance,
-                                      UpdateExamInstanceSchema)
+from app.exam.repository import (
+    CollectionRepository,
+    ExamInstanceRepository,
+    StudentExamRepository,
+)
+from app.exam.teacher.schemas import (
+    CreateExamInstanceSchema,
+    GetExamInstance,
+    UpdateExamInstanceSchema,
+)
 from app.i18n import _
 from app.settings import settings
 
@@ -34,7 +42,7 @@ class ExamInstanceService:
     ) -> List[GetExamInstance]:
         """Get all exam instances created by a specific teacher."""
         instances = await self.exam_instance_repository.get_all(
-            {"created_by._id": user_id}, fetch_links=True
+            {"created_by.$id": user_id}
         )
 
         return [
@@ -46,14 +54,12 @@ class ExamInstanceService:
         self, user_id: str, instance_id: str, user_timezone=None
     ) -> GetExamInstance:
         """Get an exam instance by its ID."""
-        instance = await self.exam_instance_repository.get_by_field(
-            "_id", instance_id, fetch_links=True
-        )
+        instance = await self.exam_instance_repository.get_by_field("_id", instance_id)
 
         if not instance:
             raise NotFoundError(_("Exam instance not found"))
 
-        if not (user_id and instance.created_by.id == user_id):
+        if not (user_id and instance.created_by.ref.id == user_id):
             raise ForbiddenError(_("You don't have access to this exam instance"))
 
         return await self._process_instance(instance, user_timezone)
@@ -79,28 +85,20 @@ class ExamInstanceService:
         result = []
         for student in students:
             if "student_id" in student:
-                sid = await self._extract_student_id(student["student_id"])
+                sid = self._extract_id(student["student_id"])
                 result.append({"student_id": sid})
         return result
 
     @staticmethod
     def _extract_id(obj):
-        if isinstance(obj, str):
+        """Extract ID from various object types."""
+        if hasattr(obj, "ref"):
+            return obj.ref.id
+        elif isinstance(obj, dict):
+            return obj.get("id") or obj.get("_id") or obj.get("$id")
+        elif isinstance(obj, str):
             return obj
-        if isinstance(obj, dict):
-            return obj.get("id") or obj.get("_id")
         return str(obj)
-
-    @staticmethod
-    async def _extract_student_id(student_obj):
-        if hasattr(student_obj, "fetch"):
-            try:
-                return (await student_obj.fetch()).id
-            except Exception:
-                return str(student_obj)
-        if isinstance(student_obj, dict):
-            return student_obj.get("_id", str(student_obj))
-        return str(student_obj)
 
     async def _send_notification(
         self,
@@ -257,12 +255,12 @@ class ExamInstanceService:
     ) -> str:
         """Create a new exam instance."""
         collection = await self.collection_repository.get_by_id(
-            instance_data.collection_id, fetch_links=True
+            instance_data.collection_id
         )
         if not collection:
             raise NotFoundError(_("Collection not found"))
 
-        is_owner = user_id and collection.created_by.id == user_id
+        is_owner = user_id and collection.created_by.ref.id == user_id
         is_public = collection.status == ExamStatus.PUBLISHED
 
         if not (is_owner or is_public):
@@ -316,13 +314,11 @@ class ExamInstanceService:
         user_timezone=None,
     ) -> None:
         """Update an existing exam instance."""
-        instance = await self.exam_instance_repository.get_by_id(
-            instance_id, fetch_links=True
-        )
+        instance = await self.exam_instance_repository.get_by_id(instance_id)
         if not instance:
             raise NotFoundError(_("Exam instance not found"))
 
-        if instance.created_by.id != user_id:
+        if instance.created_by.ref.id != user_id:
             raise ForbiddenError(_("You do not own this exam instance"))
         update_data = instance_data.model_dump(exclude_unset=True)
 
@@ -343,7 +339,7 @@ class ExamInstanceService:
 
         if "assigned_students" in update_data:
             current_students = [
-                {"student_id": await self._extract_student_id(student.student_id)}
+                {"student_id": self._extract_id(student.student_id)}
                 for student in instance.assigned_students
             ]
 
@@ -397,7 +393,7 @@ class ExamInstanceService:
 
         processed_students = []
         for student in instance.assigned_students:
-            student_id = await self._extract_student_id(student.student_id)
+            student_id = self._extract_id(student.student_id)
             processed_students.append({"student_id": student_id})
 
         await self._remove_students_from_exam(processed_students, instance_id)

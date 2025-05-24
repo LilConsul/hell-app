@@ -4,8 +4,13 @@ from typing import Any, Dict, List
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.auth.schemas import UserResponse
-from app.exam.models import (ExamInstance, ExamStatus, NotificationSettings,
-                             QuestionType, SecuritySettings)
+from app.exam.models import (
+    ExamInstance,
+    ExamStatus,
+    NotificationSettings,
+    QuestionType,
+    SecuritySettings,
+)
 
 
 class TimeStamp(BaseModel):
@@ -157,6 +162,7 @@ class UpdateExamInstanceSchema(BaseModel):
 
 
 class GetExamInstance(ExamInstance):
+    id: Any = Field(..., alias="_id", serialization_alias="id")
     collection_id: str
     created_by: str
     assigned_students: List[UserId] | None = None

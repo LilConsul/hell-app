@@ -118,6 +118,22 @@ async def add_question_to_collection(
         data={"question_id": question_id},
     )
 
+@router.post("/{collection_id}/questions/bulk")
+async def add_bulk_questions_to_collection(
+    collection_id: str,
+    questions_data: List[QuestionSchema],
+    teacher_id: str = Depends(get_current_teacher_id),
+    collection_service: CollectionService = Depends(get_collection_service),
+):
+    """Add multiple questions to a collection"""
+    question_ids = await collection_service.add_question_to_collection_bulk(
+        collection_id, teacher_id, questions_data
+    )
+    return BaseReturn(
+        message=_("Questions added successfully"),
+        data={"question_ids": question_ids},
+    )
+
 
 @router.post("/{collection_id}/questions/reorder")
 async def reorder_questions(

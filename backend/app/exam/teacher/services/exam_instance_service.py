@@ -109,7 +109,7 @@ class ExamInstanceService:
         exam_end_time: datetime,
         exam_instance_id: str,
     ) -> None:
-        # Convert reminder strings to timedeltas (e.g. "24h" -> 24 hours before exam)
+        # Convert reminder strings to time deltas (e.g. "24h" -> 24 hours before exam)
         reminder_times = []
         for reminder in reminders:
             if reminder.endswith("h"):

@@ -1,1 +1,2 @@
-
+TODO: Remake unit tests to service testing rather than api testing
+TODO: Womp womp

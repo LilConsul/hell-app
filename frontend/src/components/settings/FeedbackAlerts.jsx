@@ -1,21 +1,36 @@
+import { memo } from "react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CheckCircle, AlertTriangle } from "lucide-react";
+import { cn } from "@/lib/utils";
 
-export function FeedbackAlerts({ successMessage, errorMsg }) {
+function FeedbackAlerts({ successMessage, errorMsg }) {
   return (
     <>
       {successMessage && (
-        <div className="flex items-center justify-center p-3 bg-green-50 border border-green-200 text-green-700 rounded-md text-sm font-medium transition-opacity duration-500">
-          <CheckCircle className="h-4 w-4 mr-2" />
-          {successMessage}
-        </div>
+        <Alert className={cn(
+          "border-emerald-500 bg-emerald-50/50 text-emerald-800",
+          "dark:border-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-300"
+        )}>
+          <CheckCircle className="h-4 w-4 mr-2 text-emerald-600 dark:text-emerald-400" />
+          <AlertDescription className="font-medium">
+            {successMessage}
+          </AlertDescription>
+        </Alert>
       )}
-      
+
       {errorMsg && (
-        <div className="flex items-center justify-center p-3 bg-red-50 border border-red-200 text-red-700 rounded-md text-sm font-medium transition-opacity duration-500">
-          <AlertTriangle className="h-4 w-4 mr-2" />
-          {errorMsg}
-        </div>
+        <Alert className={cn(
+          "border-red-500 bg-red-50/50 text-red-800",
+          "dark:border-red-700 dark:bg-red-950/20 dark:text-red-300"
+        )}>
+          <AlertTriangle className="h-4 w-4 mr-2 text-red-600 dark:text-red-400" />
+          <AlertDescription className="font-medium">
+            {errorMsg}
+          </AlertDescription>
+        </Alert>
       )}
     </>
   );
 }
+
+export { FeedbackAlerts };

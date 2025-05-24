@@ -22,7 +22,7 @@ import Exams from './pages/role-based/ExamDecider';
 import Collections from './pages/teacher/collections/Collections';
 import CreateCollection from './pages/teacher/collections/CreateCollection';
 import AllExams from './pages/teacher/exams/AllExams';
-import CreateExams from './pages/teacher/exams/CreateExams';
+import CreateExam from './pages/teacher/exams/CreateExam';
 
 // Placeholders
 import Students from './pages/Students';
@@ -71,7 +71,7 @@ export default function App() {
             <Route path="/collections" element={<Collections />} />
             <Route path="/collections/:collectionId" element={<CreateCollection />} />
             <Route path="/all-exams" element={<AllExams />} />
-            <Route path="/create-exams" element={<CreateExams />} />
+            <Route path="/exams/:examId" element={<CreateExam />} />
           </Route>
 
         {/* Admin only */}

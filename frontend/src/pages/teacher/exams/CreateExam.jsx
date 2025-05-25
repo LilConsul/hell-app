@@ -1,13 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  Loader2
-} from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { StudentsTab } from "@/components/exams/tabs/students";
 import { BasicInfoTab } from "@/components/exams/tabs/basic-info";
-import { QuestionsTab } from "@/components/exams/tabs/questions";
+import { QuestionsTab } from "@/components/exams/tabs/questions/tab";
 import { ExamSettingsTab } from "@/components/exams/tabs/exam-settings";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";

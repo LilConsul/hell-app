@@ -1,12 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2 } from "lucide-react";
 import { StudentsTab } from "@/components/exams/tabs/students";
 import { BasicInfoTab } from "@/components/exams/tabs/basic-info";
 import { QuestionsTab } from "@/components/exams/tabs/questions/tab";
 import { ExamSettingsTab } from "@/components/exams/tabs/exam-settings";
+import { ExamHeader } from "@/components/exams/page-header";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { toast } from "sonner";
@@ -47,26 +46,16 @@ function CreateExam() {
     }
   });
 
-  // Loading states
   const [loading, setLoading] = useState(false);
   const [studentsLoading, setStudentsLoading] = useState(false);
   const [collectionsLoading, setCollectionsLoading] = useState(false);
-  
-  // Data state
   const [collections, setCollections] = useState([]);
   const [students, setStudents] = useState([]);
-  
-  // Error states
   const [studentsError, setStudentsError] = useState(null);
   const [collectionsError, setCollectionsError] = useState(null);
 
-  // Load students on component mount
   useEffect(() => {
     loadStudents();
-  }, []);
-
-  // Load collections on component mount
-  useEffect(() => {
     loadCollections();
   }, []);
 
@@ -148,9 +137,7 @@ function CreateExam() {
     return true;
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
+  const handleSubmit = async () => {
     if (!validateForm()) {
       return;
     }
@@ -195,81 +182,74 @@ function CreateExam() {
     }
   };
 
+  // Check if form can be submitted
+  const canSubmit = basicInfo.examTitle.trim() && 
+    basicInfo.selectedCollection && 
+    basicInfo.startDate && 
+    basicInfo.duration && 
+    parseInt(basicInfo.duration) >= 5 && 
+    selectedStudents.length > 0;
+
   return (
     <div className="flex min-h-screen flex-col">
       <Navbar />
       <Toaster closeButton />
+      
+      <ExamHeader
+        title="Assign New Exam"
+        subtitle="Create and assign an exam to students"
+        onSubmit={handleSubmit}
+        loading={loading}
+        canSubmit={canSubmit}
+      />
+      
       <main className="flex-1 space-y-4 p-8 pt-6">
         <div className="max-w-6xl mx-auto">
-          <div className="flex items-center justify-between space-y-2 mb-6">
-            <div>
-              <h2 className="text-3xl font-bold tracking-tight">Assign New Exam</h2>
-              <p className="text-muted-foreground">Create and assign an exam to students</p>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <div className="bg-background/90 backdrop-blur-sm transition-all duration-200 z-10 sticky top-34">
+              <div className="max-w-6xl mx-auto px-4 sm:px-6">
+                <TabsList className="grid w-full grid-cols-4">
+                  <TabsTrigger value="basic">Basic Info</TabsTrigger>
+                  <TabsTrigger value="questions">Questions</TabsTrigger>
+                  <TabsTrigger value="students">Students</TabsTrigger>
+                  <TabsTrigger value="settings">Settings</TabsTrigger>
+                </TabsList>
+              </div>
             </div>
-            <Button variant="outline" onClick={() => navigate('/exams')}>
-              Back to Exams
-            </Button>
-          </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-4">
-                <TabsTrigger value="basic">Basic Info</TabsTrigger>
-                <TabsTrigger value="questions">Questions</TabsTrigger>
-                <TabsTrigger value="students">Students</TabsTrigger>
-                <TabsTrigger value="settings">Settings</TabsTrigger>
-              </TabsList>
+            <TabsContent value="basic" className="space-y-4">
+              <BasicInfoTab
+                basicInfo={basicInfo}
+                setBasicInfo={setBasicInfo}
+                collections={collections}
+                collectionsLoading={collectionsLoading}
+                collectionsError={collectionsError}
+              />
+            </TabsContent>
 
-              <TabsContent value="basic" className="space-y-4">
-                <BasicInfoTab
-                  basicInfo={basicInfo}
-                  setBasicInfo={setBasicInfo}
-                  collections={collections}
-                  collectionsLoading={collectionsLoading}
-                  collectionsError={collectionsError}
-                />
-              </TabsContent>
+            <TabsContent value="questions" className="space-y-4">
+              <QuestionsTab 
+                selectedCollection={basicInfo.selectedCollection}
+              />
+            </TabsContent>
 
-              <TabsContent value="questions" className="space-y-4">
-                <QuestionsTab 
-                  selectedCollection={basicInfo.selectedCollection}
-                />
-              </TabsContent>
+            <TabsContent value="students" className="space-y-4">
+              <StudentsTab
+                selectedStudents={selectedStudents}
+                onStudentsChange={handleStudentsChange}
+                students={students}
+                loading={studentsLoading}
+                error={studentsError}
+              />
+            </TabsContent>
 
-              <TabsContent value="students" className="space-y-4">
-                <StudentsTab
-                  selectedStudents={selectedStudents}
-                  onStudentsChange={handleStudentsChange}
-                  students={students}
-                  loading={studentsLoading}
-                  error={studentsError}
-                />
-              </TabsContent>
-
-              <TabsContent value="settings" className="space-y-4">
-                <ExamSettingsTab
-                  examSettings={examSettings}
-                  setExamSettings={setExamSettings}
-                />
-              </TabsContent>
-            </Tabs>
-
-            <div className="flex justify-end gap-4 pt-6 border-t">
-              <Button type="button" variant="outline" onClick={() => navigate('/exams')}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={loading}>
-                {loading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Assigning...
-                  </>
-                ) : (
-                  "Assign Exam"
-                )}
-              </Button>
-            </div>
-          </form>
+            <TabsContent value="settings" className="space-y-4">
+              <ExamSettingsTab
+                examSettings={examSettings}
+                setExamSettings={setExamSettings}
+              />
+            </TabsContent>
+          </Tabs>
         </div>
       </main>
       <Footer />

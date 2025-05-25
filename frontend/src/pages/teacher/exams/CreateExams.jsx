@@ -3,14 +3,14 @@ import { Navbar } from "@/components/navbar"
 import { Footer } from "@/components/footer"
 import { Link } from "react-router-dom"
 
-function Dashboard() {
+function CreateExams() {
   return (
     <div className="flex flex-col min-h-screen">
       <Navbar />
 
       <main className="flex-1 container py-10">
-        <h1 className="text-3xl font-bold mb-6">Dashboard</h1>
-        <p>Dashboard content will go here. For now, this is a placeholder.</p>
+        <h1 className="text-3xl font-bold mb-6">Exams</h1>
+        <p>CreateExams content will go here. For now, this is a placeholder.</p>
         <div className="mt-4">
           <Link to="/">
             <Button variant="outline">Back to Home</Button>
@@ -23,4 +23,4 @@ function Dashboard() {
   )
 }
 
-export default Dashboard; 
+export default CreateExams;

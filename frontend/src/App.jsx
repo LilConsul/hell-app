@@ -1,32 +1,45 @@
-import { useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from './components/theme-provider';
-import { ProtectedRoute } from './components/protected-route';
-import { AdminProvider } from "./contexts/admin-context.jsx";
 import { AuthProvider } from './contexts/auth-context';
+import { AdminProvider } from './contexts/admin-context';
+import { ProtectedLayout } from './components/protected-layout';
 
-import Home from './pages/Home';
-import Dashboard from './pages/Dashboard';
-import Exams from './pages/Exams';
+// Regualr pages
+import Home from './pages/regular/Home';
+import Settings from './pages/regular/Settings'; 
+import PrivacyPolicy from './pages/regular/PrivacyPolicy';
+import NotFoundPage from './pages/regular/NotFoundPage';
+import DeleteAccount from './pages/regular/DeleteAccount';
+import PasswordReset from './pages/regular/PasswordReset';
+import EmailVerification from './pages/regular/EmailVerification';
+
+// Pages based on user role
+import Dashboard  from './pages/role-based/DashboardDecider';
+import Exams from './pages/role-based/ExamDecider';
+
+// Teacher pages
+import Collections from './pages/teacher/collections/Collections';
+import CreateCollection from './pages/teacher/collections/CreateCollection';
+import AllExams from './pages/teacher/exams/AllExams';
+import CreateExams from './pages/teacher/exams/CreateExams';
+
+// Placeholders
 import Students from './pages/Students';
 import Reports from './pages/Reports';
-import Settings from './pages/Settings';
-import EmailVerification from './pages/EmailVerification';
-import PrivacyPolicy from './pages/PrivacyPolicy';
-import PasswordReset from './pages/PasswordReset';
-import AdminPanel from "./pages/Admin-Panel.jsx";
+
+// Admin pages
+import AdminPanel from './pages/admin/Admin-Panel.jsx';
+
 
 function HomeWithLoginModal() {
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (window.openLoginModal) {
-        window.openLoginModal();
-      }
+      if (window.openLoginModal) window.openLoginModal();
     }, 100);
-    
     return () => clearTimeout(timer);
   }, []);
-  
+
   return <Home />;
 }
 
@@ -35,28 +48,46 @@ export default function App() {
     <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
       <AuthProvider>
         <Routes>
-          {/* Public routes */}
+          {/* Public pages */}
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<HomeWithLoginModal />} />
           <Route path="/verify/:token" element={<EmailVerification />} />
           <Route path="/password-reset/:token" element={<PasswordReset />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/delete-account/:token" element={<DeleteAccount />} />
+          <Route path="*" element={<NotFoundPage />} />
 
-          {/* Protected routes */}
-          <Route path="/dashboard" element={<ProtectedRoute element={<Dashboard />} />} />
-          <Route path="/exams" element={<ProtectedRoute element={<Exams />} />} />
-          <Route path="/students" element={<ProtectedRoute element={<Students />} allowedRoles={['teacher', 'admin']} />} />
-          <Route path="/reports" element={<ProtectedRoute element={<Reports />} allowedRoles={['teacher', 'admin']} />} />
-          <Route path="/settings" element={<ProtectedRoute element={<Settings/>}/>}/>
+          {/* All authenticated users */}
+          <Route element={<ProtectedLayout />}>
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/exams" element={<Exams/>} />
+            <Route path="/settings" element={<Settings />} />
+          </Route>
 
-          {/*Admin routes*/}
-          <Route path="/admin" element={<ProtectedRoute element={
-            <AdminProvider>
-              <AdminPanel/>
-            </AdminProvider>
-          } allowedRoles={['admin']}/>}/>
+          {/* Teacher & Admin */}
+          <Route element={<ProtectedLayout allowedRoles={['teacher', 'admin']} />}>
+            <Route path="/students" element={<Students />} />
+            <Route path="/reports" element={<Reports />} />
+            <Route path="/collections" element={<Collections />} />
+            <Route path="/collections/:collectionId" element={<CreateCollection />} />
+            <Route path="/all-exams" element={<AllExams />} />
+            <Route path="/create-exams" element={<CreateExams />} />
+          </Route>
+
+        {/* Admin only */}
+          <Route element={<ProtectedLayout allowedRoles={['admin']} />}>
+            <Route
+              path="/admin"
+              element={
+                <AdminProvider>
+                  <AdminPanel />
+                </AdminProvider>
+              }
+            />
+          </Route>
         </Routes>
       </AuthProvider>
     </ThemeProvider>
   );
 }
+

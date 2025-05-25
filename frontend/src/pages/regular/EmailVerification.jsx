@@ -4,6 +4,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { CheckCircle, AlertTriangle, Loader2, Mail, ArrowRight } from "lucide-react"
+import { Footer } from "@/components/footer"
+import { apiRequest } from "@/lib/utils"
 
 const verificationCache = {};
 
@@ -44,44 +46,34 @@ function EmailVerification() {
     
     const verifyEmail = async () => {
       try {
-        const response = await fetch('/api/v1/auth/verify', {
+        const data = await apiRequest('/api/v1/auth/verify', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ token })
         });
-                
-        const data = await response.json();
         
-        let result = { state: "error", errorMessage: "" };
-        
-        if (response.ok) {
-          result.state = "success";
-          setVerificationState("success");
-        } else {
-          if (data.detail === "User is already verified") {
-            result.state = "already-verified";
-            setVerificationState("already-verified");
-          } else if (data.detail === "Invalid or expired verification token") {
-            result.errorMessage = "The verification link has expired or is invalid. Please request a new one.";
-            setVerificationState("error");
-            setErrorMessage(result.errorMessage);
-          } else {
-            result.errorMessage = data.detail || "Verification failed. Please try again later.";
-            setVerificationState("error");
-            setErrorMessage(result.errorMessage);
-          }
-        }
+        let result = { state: "success", errorMessage: "" };
+        setVerificationState("success");
         
         verificationCache[token] = result;
         
       } catch (error) {
-        const result = {
+        let result = {
           state: "error",
-          errorMessage: "An unexpected error occurred. Please try again later."
+          errorMessage: error.message
         };
-        setVerificationState(result.state);
-        setErrorMessage(result.errorMessage);
+
+        if (error.message.includes("User is already verified")) {
+          result.state = "already-verified";
+          setVerificationState("already-verified");
+        } else if (error.message.includes("Invalid or expired verification token")) {
+          result.errorMessage = "The verification link has expired or is invalid. Please request a new one.";
+          setVerificationState("error");
+        } else {
+          result.errorMessage = error.message || "Verification failed. Please try again later.";
+          setVerificationState("error");
+        }
         
+        setErrorMessage(result.errorMessage);
         verificationCache[token] = result;
       }
     };
@@ -123,7 +115,7 @@ function EmailVerification() {
                 Thank you for verifying your email address. Your account is now fully activated.
               </p>
               <Alert className="bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-700">
-                <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
+                 <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
                 <AlertTitle>Verification Complete</AlertTitle>
                 <AlertDescription>Your account is now active.</AlertDescription>
               </Alert>
@@ -135,7 +127,7 @@ function EmailVerification() {
             </CardFooter>
           </>
         )
-
+      
       case "already-verified":
         return (
           <>
@@ -179,7 +171,7 @@ function EmailVerification() {
               </div>
               <p className="text-center mb-6">{errorMessage || "The verification link appears to be invalid."}</p>
               <Alert variant="destructive" className="bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700">
-                <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" />
+                 <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" />
                 <AlertTitle>Verification Error</AlertTitle>
                 <AlertDescription>Please contact support if you need assistance.</AlertDescription>
               </Alert>
@@ -210,11 +202,7 @@ function EmailVerification() {
         </div>
       </main>
   
-      <footer className="border-t py-4 w-full">
-        <div className="container mx-auto text-center text-sm text-muted-foreground"> 
-          <p>© 2025 SecureExam. All rights reserved.</p>
-        </div>
-      </footer>
+      <Footer/>
     </div>
   )
 }

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StudentsTab } from "@/components/exams/tabs/students";
 import { BasicInfoTab } from "@/components/exams/tabs/basic-info";
@@ -16,11 +16,15 @@ import collectionAPI from "@/pages/teacher/collections/Collections.api";
 
 function CreateExam() {
   const navigate = useNavigate();
+  const { examId } = useParams();
+  const [searchParams] = useSearchParams();
+  const isEditMode = examId && examId !== 'new';
+  const preselectedCollectionId = searchParams.get('collectionId');
   
   // Centralized basic info state
   const [basicInfo, setBasicInfo] = useState({
     examTitle: "",
-    selectedCollection: "",
+    selectedCollection: preselectedCollectionId || "",
     startDate: "",
     duration: "120", // in minutes
     maxAttempts: 1,
@@ -47,17 +51,81 @@ function CreateExam() {
   });
 
   const [loading, setLoading] = useState(false);
+  const [examLoading, setExamLoading] = useState(false);
   const [studentsLoading, setStudentsLoading] = useState(false);
   const [collectionsLoading, setCollectionsLoading] = useState(false);
   const [collections, setCollections] = useState([]);
   const [students, setStudents] = useState([]);
   const [studentsError, setStudentsError] = useState(null);
   const [collectionsError, setCollectionsError] = useState(null);
+  const [examError, setExamError] = useState(null);
 
   useEffect(() => {
     loadStudents();
     loadCollections();
-  }, []);
+    
+    // Load exam data if in edit mode
+    if (isEditMode) {
+      loadExamData();
+    }
+  }, [isEditMode, examId]);
+
+  const loadExamData = async () => {
+    try {
+      setExamLoading(true);
+      setExamError(null);
+      const response = await examAPI.getExam(examId);
+      const examData = response.data;
+      
+      // Populate basic info
+      setBasicInfo({
+        examTitle: examData.title,
+        selectedCollection: examData.collection_id,
+        startDate: new Date(examData.start_date).toISOString().slice(0, 16), // Format for datetime-local input
+        duration: Math.round((new Date(examData.end_date) - new Date(examData.start_date)) / 60000).toString(), // Convert to minutes
+        maxAttempts: examData.max_attempts,
+        passingScore: examData.passing_score
+      });
+      
+      // Populate selected students
+      const assignedStudentIds = examData.assigned_students.map(s => s.student_id);
+      // We'll need to wait for students to load and then match them
+      if (students.length > 0) {
+        const assignedStudents = students.filter(student => 
+          assignedStudentIds.includes(student.id)
+        );
+        setSelectedStudents(assignedStudents);
+      } else {
+        // Store the IDs to match later when students load
+        setSelectedStudents(assignedStudentIds);
+      }
+      
+      // Populate exam settings
+      setExamSettings({
+        security_settings: {
+          shuffle_questions: examData.security_settings.shuffle_questions,
+          allow_review: examData.security_settings.allow_review,
+          prevent_tab_switching: examData.security_settings.prevent_tab_switching,
+          tab_switch_limit: examData.security_settings.tab_switch_limit || 0,
+          gaze_tracking: examData.security_settings.gaze_tracking,
+          gaze_limit: examData.security_settings.gaze_limit || 0
+        },
+        notification_settings: {
+          reminder_enabled: examData.notification_settings.reminder_enabled,
+          reminders: examData.notification_settings.reminders
+        }
+      });
+      
+    } catch (error) {
+      console.error("Failed to load exam data:", error);
+      setExamError(error);
+      toast.error("Failed to load exam data", {
+        description: "Please try refreshing the page."
+      });
+    } finally {
+      setExamLoading(false);
+    }
+  };
 
   const loadStudents = async () => {
     try {
@@ -92,6 +160,17 @@ function CreateExam() {
       setCollectionsLoading(false);
     }
   };
+
+  // Effect to match student ids when students load (for edit mode)
+  useEffect(() => {
+    if (isEditMode && students.length > 0 && Array.isArray(selectedStudents) && selectedStudents.length > 0 && typeof selectedStudents[0] === 'string') {
+      // selectedStudents contains ids, need to convert to student objects
+      const assignedStudents = students.filter(student => 
+        selectedStudents.includes(student.id)
+      );
+      setSelectedStudents(assignedStudents);
+    }
+  }, [students, isEditMode]);
 
   const handleStudentsChange = useCallback((newSelectedStudents) => {
     setSelectedStudents(newSelectedStudents);
@@ -162,19 +241,28 @@ function CreateExam() {
         }))
       };
       
-      console.log("Creating exam:", examData);
+      console.log(isEditMode ? "Updating exam:" : "Creating exam:", examData);
       
-      const result = await examAPI.createExam(examData);
-      
-      toast.success("Exam assigned successfully!", {
-        description: `${basicInfo.examTitle} has been assigned to ${selectedStudents.length} student${selectedStudents.length > 1 ? 's' : ''}.`
-      });
-      
-      navigate("/exams");
+      let result;
+      if (isEditMode) {
+        result = await examAPI.updateExam(examId, examData);
+        toast.success("Exam updated successfully!", {
+          description: `${basicInfo.examTitle} has been updated.`
+        });
+      } else {
+        result = await examAPI.createExam(examData);
+        toast.success("Exam assigned successfully!", {
+          description: `${basicInfo.examTitle} has been assigned to ${selectedStudents.length} student${selectedStudents.length > 1 ? 's' : ''}.`
+        });
+        
+        if (result.data) {
+          navigate(`/exams/${result.data}`, { replace: true });
+        }
+      }
       
     } catch (error) {
-      console.error("Failed to create exam:", error);
-      toast.error("Failed to assign exam", {
+      console.error(`Failed to ${isEditMode ? 'update' : 'create'} exam:`, error);
+      toast.error(`Failed to ${isEditMode ? 'update' : 'assign'} exam`, {
         description: error.message || "Please try again later."
       });
     } finally {
@@ -190,18 +278,60 @@ function CreateExam() {
     parseInt(basicInfo.duration) >= 5 && 
     selectedStudents.length > 0;
 
+  // Header props based on mode
+  const headerProps = {
+    title: isEditMode ? "Edit Exam" : "Assign New Exam",
+    subtitle: isEditMode ? "Update exam details and settings" : "Create and assign an exam to students",
+    onSubmit: handleSubmit,
+    loading: loading,
+    canSubmit: canSubmit,
+    submitText: isEditMode ? "Update Exam" : "Assign Exam",
+    loadingText: isEditMode ? "Updating..." : "Assigning..."
+  };
+
+  // Loading state while fetching exam data
+  if (isEditMode && examLoading) {
+    return (
+      <div className="flex min-h-screen flex-col">
+        <Navbar />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading exam data...</p>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  // Error state if failed to load exam data
+  if (isEditMode && examError) {
+    return (
+      <div className="flex min-h-screen flex-col">
+        <Navbar />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-destructive mb-4">Failed to load exam data</p>
+            <button 
+              onClick={() => loadExamData()} 
+              className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
   return (
     <div className="flex min-h-screen flex-col">
       <Navbar />
       <Toaster closeButton />
       
-      <ExamHeader
-        title="Assign New Exam"
-        subtitle="Create and assign an exam to students"
-        onSubmit={handleSubmit}
-        loading={loading}
-        canSubmit={canSubmit}
-      />
+      <ExamHeader {...headerProps} />
       
       <main className="flex-1 space-y-4 p-8 pt-6">
         <div className="max-w-6xl mx-auto">

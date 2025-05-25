@@ -8,7 +8,9 @@ export function ExamHeader({
   subtitle = "Create and assign an exam to students",
   onSubmit,
   loading = false,
-  canSubmit = true
+  canSubmit = true,
+  submitText = "Assign Exam",
+  loadingText = "Assigning..."
 }) {
   const [isSticky, setIsSticky] = useState(false);
 
@@ -50,10 +52,10 @@ export function ExamHeader({
                 {loading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Assigning...
+                    {loadingText}
                   </>
                 ) : (
-                  "Assign Exam"
+                  submitText
                 )}
               </Button>
             </div>

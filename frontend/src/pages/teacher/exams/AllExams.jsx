@@ -9,7 +9,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
-  Table, TableBody, TableCaption, TableCell, TableHead, 
+  Table, TableBody, TableCaption, TableCell, TableHead,
   TableHeader, TableRow
 } from '@/components/ui/table';
 import {
@@ -29,25 +29,24 @@ import { Navbar } from '@/components/navbar';
 import { Footer } from '@/components/footer';
 import { apiRequest } from '@/lib/utils';
 import { Link } from 'react-router-dom';
-import { 
-  Search, ArrowUpDown, AlertCircle, FileText, 
+import {
+  Search, ArrowUpDown, AlertCircle, FileText,
   BarChart, PlusCircle, Calendar, Clock, Users, Edit
 } from 'lucide-react';
 
-// SearchBar Component
 const SearchBar = ({ searchQuery, setSearchQuery }) => (
   <div className="relative">
     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-    <Input 
+    <Input
       placeholder="Search exams by title..."
-      className="pl-10" 
+      className="pl-10"
       value={searchQuery}
       onChange={(e) => setSearchQuery(e.target.value)}
     />
   </div>
 );
 
-// SortDropdown Component
+
 const SortDropdown = ({ sortBy, setSortBy, sortDirection, setSortDirection }) => (
   <DropdownMenu>
     <DropdownMenuTrigger asChild>
@@ -71,9 +70,9 @@ const SortDropdown = ({ sortBy, setSortBy, sortDirection, setSortDirection }) =>
       <DropdownMenuItem onClick={() => setSortBy('updated_at')}>
         Last Updated
       </DropdownMenuItem>
-      
+
       <Separator className="my-2" />
-      
+
       <div className="px-2 py-1.5 text-sm font-semibold">Sort Direction</div>
       <DropdownMenuItem onClick={() => setSortDirection('asc')} className="gap-2">
         <div className={`${sortDirection === 'asc' ? 'opacity-100' : 'opacity-0'} transition-opacity`}>✓</div>
@@ -87,10 +86,10 @@ const SortDropdown = ({ sortBy, setSortBy, sortDirection, setSortDirection }) =>
   </DropdownMenu>
 );
 
-// ExamRow Component
+
 const ExamRow = ({ exam, onExamClick }) => {
   const now = new Date();
-  
+
   const formatDate = (iso) => {
     const d = new Date(iso);
     return d.toLocaleDateString('en-US', { dateStyle: 'medium' });
@@ -110,7 +109,7 @@ const ExamRow = ({ exam, onExamClick }) => {
     const durationMs = end - start;
     const hours = Math.floor(durationMs / (1000 * 60 * 60));
     const minutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
-    
+
     return `${hours}h ${minutes}m`;
   };
 
@@ -173,7 +172,7 @@ const ExamRow = ({ exam, onExamClick }) => {
   );
 };
 
-// ExamsTable Component
+
 const ExamsTable = ({ exams, onExamClick }) => {
   return (
     <Table>
@@ -189,10 +188,10 @@ const ExamsTable = ({ exams, onExamClick }) => {
       <TableBody>
         {exams.length > 0 ? (
           exams.map((exam, index) => (
-            <ExamRow 
-              key={exam.id || `exam-${exam.title}-${new Date(exam.start_date).getTime()}-${index}`} 
-              exam={exam} 
-              onExamClick={onExamClick} 
+            <ExamRow
+              key={exam.id || `exam-${exam.title}-${new Date(exam.start_date).getTime()}-${index}`}
+              exam={exam}
+              onExamClick={onExamClick}
             />
           ))
         ) : (
@@ -206,10 +205,10 @@ const ExamsTable = ({ exams, onExamClick }) => {
     </Table>
   );
 };
-// ExamDetailDialog Component
+
 const ExamDetailDialog = ({ open, onOpenChange, exam }) => {
   if (!exam) return null;
-  
+
   const formatDate = (iso) => {
     const d = new Date(iso);
     return d.toLocaleDateString('en-US', { dateStyle: 'medium' });
@@ -229,7 +228,7 @@ const ExamDetailDialog = ({ open, onOpenChange, exam }) => {
     const durationMs = end - start;
     const hours = Math.floor(durationMs / (1000 * 60 * 60));
     const minutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
-    
+
     return `${hours}h ${minutes}m`;
   };
 
@@ -242,7 +241,7 @@ const ExamDetailDialog = ({ open, onOpenChange, exam }) => {
             {exam.status === 'draft' ? 'Draft Exam' : 'Published Exam'}
           </DialogDescription>
         </DialogHeader>
-        
+
         <div className="py-4">
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
@@ -261,7 +260,7 @@ const ExamDetailDialog = ({ open, onOpenChange, exam }) => {
                 <p>{formatDateTime(exam.start_date)}</p>
               </div>
             </div>
-            
+
             <div className="space-y-1">
               <div className="flex items-center text-sm text-muted-foreground">
                 <Clock className="mr-2 h-4 w-4" />
@@ -269,9 +268,9 @@ const ExamDetailDialog = ({ open, onOpenChange, exam }) => {
               </div>
               <p>{calculateDuration(exam.start_date, exam.end_date)}</p>
             </div>
-            
+
             <Separator />
-            
+
             <div className="space-y-2">
               <div className="flex items-center text-sm text-muted-foreground">
                 <Users className="mr-2 h-4 w-4" />
@@ -296,7 +295,7 @@ const ExamDetailDialog = ({ open, onOpenChange, exam }) => {
             </div>
           </div>
         </div>
-        
+
         <DialogFooter className="flex justify-between border-t pt-4">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Close
@@ -314,24 +313,24 @@ const ExamDetailDialog = ({ open, onOpenChange, exam }) => {
   );
 };
 
-// PaginationControls Component
+
 const PaginationControls = ({ currentPage, totalPages, onPageChange }) => {
   if (totalPages <= 1) return null;
-  
+
   const maxVisiblePages = 5;
   const pages = [];
-  
+
   let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
   let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-  
+
   if (endPage - startPage + 1 < maxVisiblePages) {
     startPage = Math.max(1, endPage - maxVisiblePages + 1);
   }
-  
+
   for (let i = startPage; i <= endPage; i++) {
     pages.push(
       <PaginationItem key={i}>
-        <PaginationLink 
+        <PaginationLink
           isActive={currentPage === i}
           onClick={() => onPageChange(i)}
         >
@@ -340,18 +339,18 @@ const PaginationControls = ({ currentPage, totalPages, onPageChange }) => {
       </PaginationItem>
     );
   }
-  
+
   return (
     <Pagination className="mt-6">
       <PaginationContent>
         <PaginationItem>
-          <PaginationPrevious 
+          <PaginationPrevious
             onClick={() => onPageChange(Math.max(1, currentPage - 1))}
             disabled={currentPage === 1}
             className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
           />
         </PaginationItem>
-        
+
         {startPage > 1 && (
           <>
             <PaginationItem>
@@ -360,9 +359,9 @@ const PaginationControls = ({ currentPage, totalPages, onPageChange }) => {
             {startPage > 2 && <PaginationEllipsis />}
           </>
         )}
-        
+
         {pages}
-        
+
         {endPage < totalPages && (
           <>
             {endPage < totalPages - 1 && <PaginationEllipsis />}
@@ -373,9 +372,9 @@ const PaginationControls = ({ currentPage, totalPages, onPageChange }) => {
             </PaginationItem>
           </>
         )}
-        
+
         <PaginationItem>
-          <PaginationNext 
+          <PaginationNext
             onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
             disabled={currentPage === totalPages}
             className={currentPage === totalPages ? "pointer-events-none opacity-50" : ""}
@@ -386,7 +385,7 @@ const PaginationControls = ({ currentPage, totalPages, onPageChange }) => {
   );
 };
 
-// Main AllExams Component
+
 export default function AllExams() {
   const [exams, setExams] = useState([]);
   const [filteredExams, setFilteredExams] = useState([]);
@@ -398,11 +397,11 @@ export default function AllExams() {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedExam, setSelectedExam] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
-  
+
   const itemsPerPage = 10;
 
   useEffect(() => {
-    // Fetch exam instances from the API
+
     apiRequest('/api/v1/exam/teacher/exam-instances/')
       .then((res) => {
         const data = Array.isArray(res.data) ? res.data : [];
@@ -413,21 +412,21 @@ export default function AllExams() {
   }, []);
 
   useEffect(() => {
-    // Apply filters and sorting
+
     let result = [...exams];
-    
-    // Apply search filter
+
+
     if (searchQuery) {
-      result = result.filter(exam => 
+      result = result.filter(exam =>
         exam.title.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
-    
-    // Apply sorting
+
+
     result.sort((a, b) => {
       let valueA, valueB;
-      
-      switch(sortBy) {
+
+      switch (sortBy) {
         case 'title':
           valueA = a.title.toLowerCase();
           valueB = b.title.toLowerCase();
@@ -448,14 +447,14 @@ export default function AllExams() {
           valueA = new Date(a.start_date);
           valueB = new Date(b.start_date);
       }
-      
+
       if (sortDirection === 'asc') {
         return valueA > valueB ? 1 : -1;
       } else {
         return valueA < valueB ? 1 : -1;
       }
     });
-    
+
     setFilteredExams(result);
   }, [exams, searchQuery, sortBy, sortDirection]);
 
@@ -464,7 +463,7 @@ export default function AllExams() {
     setDialogOpen(true);
   };
 
-  // Pagination logic
+
   const totalPages = Math.ceil(filteredExams.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
@@ -492,18 +491,18 @@ export default function AllExams() {
         <Card className="border border-border">
           <CardContent className="p-4 sm:p-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* Search */}
-              <SearchBar 
-                searchQuery={searchQuery} 
-                setSearchQuery={setSearchQuery} 
+
+              <SearchBar
+                searchQuery={searchQuery}
+                setSearchQuery={setSearchQuery}
               />
-              
-              {/* Sort Dropdown */}
-              <SortDropdown 
-                sortBy={sortBy} 
-                setSortBy={setSortBy} 
-                sortDirection={sortDirection} 
-                setSortDirection={setSortDirection} 
+
+
+              <SortDropdown
+                sortBy={sortBy}
+                setSortBy={setSortBy}
+                sortDirection={sortDirection}
+                setSortDirection={setSortDirection}
               />
             </div>
           </CardContent>
@@ -534,17 +533,17 @@ export default function AllExams() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="overflow-x-auto">
-                <ExamsTable 
-                  exams={currentExams} 
-                  onExamClick={handleExamClick} 
+                <ExamsTable
+                  exams={currentExams}
+                  onExamClick={handleExamClick}
                 />
               </CardContent>
               <CardFooter className="flex flex-col sm:flex-row justify-between items-center">
                 <div className="text-sm text-muted-foreground mb-4 sm:mb-0">
                   {filteredExams.length} {filteredExams.length === 1 ? 'exam' : 'exams'} found
                 </div>
-                
-                <PaginationControls 
+
+                <PaginationControls
                   currentPage={currentPage}
                   totalPages={totalPages}
                   onPageChange={setCurrentPage}
@@ -554,10 +553,10 @@ export default function AllExams() {
           </>
         )}
 
-        <ExamDetailDialog 
-          open={dialogOpen} 
-          onOpenChange={setDialogOpen} 
-          exam={selectedExam} 
+        <ExamDetailDialog
+          open={dialogOpen}
+          onOpenChange={setDialogOpen}
+          exam={selectedExam}
         />
       </main>
       <Footer />

@@ -48,10 +48,9 @@ import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
 import { apiRequest } from '@/lib/utils';
 
-// Component for displaying error messages
 const ErrorAlert = ({ error, dismissError }) => {
   if (!error) return null;
-  
+
   return (
     <Alert variant="destructive" className="mb-4">
       <div className="flex justify-between items-start">
@@ -62,10 +61,10 @@ const ErrorAlert = ({ error, dismissError }) => {
             <AlertDescription>{error}</AlertDescription>
           </div>
         </div>
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          onClick={dismissError} 
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={dismissError}
           className="-mt-1 -mr-2"
         >
           <XCircle className="h-5 w-5" />
@@ -76,7 +75,7 @@ const ErrorAlert = ({ error, dismissError }) => {
   );
 };
 
-// Component for the page header
+
 const PageHeader = () => (
   <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
     <div>
@@ -88,12 +87,12 @@ const PageHeader = () => (
   </div>
 );
 
-// Component for summary cards
+
 const SummaryCards = ({ loading, upcomingExams, exams, formatDate, formatDateTime, handleExamClick }) => {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
       {loading ? (
-        // Skeleton loaders for cards while loading
+
         <>
           {[1, 2, 3].map((i) => (
             <Card key={`skeleton-${i}`} className="flex flex-col h-full">
@@ -211,14 +210,12 @@ const SummaryCards = ({ loading, upcomingExams, exams, formatDate, formatDateTim
   );
 };
 
-// Component for exam calendar
+
 const ExamCalendar = ({ selectedDate, setSelectedDate, isDateHighlighted }) => (
   <Card className="col-span-full lg:col-span-1 border">
     <CardHeader className="pb-2">
       <CardTitle className="text-lg">Exam Calendar</CardTitle>
-      <CardDescription>
-        Select a date to view scheduled exams
-      </CardDescription>
+      <CardDescription>Select a date to view scheduled exams</CardDescription>
     </CardHeader>
     <CardContent>
       <div className="flex flex-col items-center">
@@ -227,24 +224,30 @@ const ExamCalendar = ({ selectedDate, setSelectedDate, isDateHighlighted }) => (
           selected={selectedDate}
           onSelect={(date) => setSelectedDate(date || selectedDate)}
           className="rounded-md border"
-          modifiers={{
-            highlighted: isDateHighlighted
-          }}
+          modifiers={{ highlighted: isDateHighlighted }}
           modifiersStyles={{
             highlighted: {
               backgroundColor: "hsl(var(--primary) / 0.15)",
-              fontWeight: "bold"
-            }
+              fontWeight: "bold",
+            },
+            selected: {
+              backgroundColor: "hsl(var(--primary) / 0.3)",
+              color: "hsl(var(--primary-foreground))",
+            },
+            today: {
+              backgroundColor: "hsl(210 20% 80% / 0.3)",
+              color: "hsl(var(--primary-foreground))",
+            },
           }}
         />
         <div className="flex items-center justify-center gap-4 mt-4">
           <div className="flex items-center gap-1">
             <div className="h-3 w-3 rounded-full bg-primary/30"></div>
-            <span className="text-xs text-muted-foreground">Has exams</span>
+            <span className="text-xs text-muted-foreground">Selected</span>
           </div>
           <div className="flex items-center gap-1">
             <div className="h-3 w-3 rounded-full bg-primary"></div>
-            <span className="text-xs text-muted-foreground">Selected</span>
+            <span className="text-xs text-muted-foreground">Has exams</span>
           </div>
         </div>
       </div>
@@ -252,7 +255,7 @@ const ExamCalendar = ({ selectedDate, setSelectedDate, isDateHighlighted }) => (
   </Card>
 );
 
-// Component for exams on selected date
+
 const ExamsForSelectedDate = ({ selectedDate, searchQuery, setSearchQuery, listExams, formatDateTime, handleExamClick, getStatusBadge }) => (
   <Card className="col-span-full lg:col-span-1 border">
     <CardHeader className="pb-2">
@@ -321,7 +324,7 @@ const ExamsForSelectedDate = ({ selectedDate, searchQuery, setSearchQuery, listE
   </Card>
 );
 
-// Component for RecentExamsTabs
+
 const RecentExamsTabs = ({ pastExams, ongoingExams, formatDate, formatDateTime, handleExamClick }) => (
   <Card className="col-span-full lg:col-span-1 border">
     <CardHeader className="pb-0">
@@ -405,9 +408,9 @@ const RecentExamsTabs = ({ pastExams, ongoingExams, formatDate, formatDateTime, 
   </Card>
 );
 
-// Component for UpcomingExamsSection
+
 const UpcomingExamsSection = ({ upcomingExams, searchQuery, setSearchQuery, handleExamClick, formatDate, getStatusBadge }) => {
-  // Take only the next 3 upcoming published exams
+
   const nextExams = upcomingExams
     .sort((a, b) => new Date(a.start_date) - new Date(b.start_date))
     .slice(0, 3);
@@ -451,12 +454,6 @@ const UpcomingExamsSection = ({ upcomingExams, searchQuery, setSearchQuery, hand
                     </button>
                     <div className="flex items-center gap-2 mt-2 sm:mt-0">
                       <Badge>Upcoming</Badge>
-                      <Link to={`/exam/${exam.id}/details`}>
-                        <Button variant="secondary" size="sm">
-                          <FileText className="h-4 w-4" />
-                          <span className="sr-only">View</span>
-                        </Button>
-                      </Link>
                     </div>
                   </div>
                 </li>
@@ -479,10 +476,10 @@ const UpcomingExamsSection = ({ upcomingExams, searchQuery, setSearchQuery, hand
   );
 };
 
-// Component for exam details dialog
+
 const ExamDetailsDialog = ({ dialogOpen, setDialogOpen, selectedExam, formatDate, formatDateTime, calculateDuration }) => {
   if (!selectedExam) return null;
-  
+
   return (
     <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
       <DialogContent className="bg-background text-foreground max-w-md">
@@ -573,7 +570,7 @@ const ExamDetailsDialog = ({ dialogOpen, setDialogOpen, selectedExam, formatDate
   );
 };
 
-// Main component
+
 export default function TeacherExams() {
   const [exams, setExams] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -593,7 +590,7 @@ export default function TeacherExams() {
       setLoading(true);
       const res = await apiRequest('/api/v1/exam/teacher/exam-instances/');
       const data = Array.isArray(res.data) ? res.data : [];
-      setExams(data.filter(exam => exam.status !== 'draft')); // Filter out draft exams
+      setExams(data.filter(exam => exam.status !== 'draft'));
       setError(null);
     } catch (err) {
       console.error('Failed to load exams:', err);
@@ -609,7 +606,7 @@ export default function TeacherExams() {
 
   const now = new Date();
 
-  const publishedExams = exams; // All exams are published now
+  const publishedExams = exams;
 
   const upcomingExams = publishedExams.filter((e) =>
     new Date(e.start_date) > now
@@ -661,7 +658,7 @@ export default function TeacherExams() {
     setDialogOpen(true);
   };
 
-  // Calendar highlight function for the shadcn Calendar component
+
   const isDateHighlighted = (date) => {
     return exams.some(exam => {
       const examDate = new Date(exam.start_date);
@@ -669,7 +666,7 @@ export default function TeacherExams() {
     });
   };
 
-  // Generate badge variant based on exam status
+
   const getStatusBadge = (exam) => {
     if (now > new Date(exam.end_date)) {
       return <Badge variant="destructive">Ended</Badge>;
@@ -684,18 +681,18 @@ export default function TeacherExams() {
     <div className="flex flex-col min-h-screen bg-background text-foreground">
       <Navbar />
       <main className="flex-1 container mx-auto px-4 md:px-6 lg:px-8 py-8 space-y-6">
-        {/* Error Alert */}
+
         <ErrorAlert error={error} dismissError={dismissError} />
 
-        {/* Page header with responsive layout */}
+
         <PageHeader />
 
-        {/* Summary cards with responsive grid */}
-        <SummaryCards 
-          loading={loading} 
-          upcomingExams={upcomingExams} 
-          exams={exams} 
-          formatDate={formatDate} 
+
+        <SummaryCards
+          loading={loading}
+          upcomingExams={upcomingExams}
+          exams={exams}
+          formatDate={formatDate}
           formatDateTime={formatDateTime}
           handleExamClick={handleExamClick}
         />
@@ -712,38 +709,38 @@ export default function TeacherExams() {
           </Card>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Calendar using shadcn's Calendar component */}
-            <ExamCalendar 
-              selectedDate={selectedDate} 
-              setSelectedDate={setSelectedDate} 
-              isDateHighlighted={isDateHighlighted} 
+
+            <ExamCalendar
+              selectedDate={selectedDate}
+              setSelectedDate={setSelectedDate}
+              isDateHighlighted={isDateHighlighted}
             />
 
-            {/* Exams for Selected Date */}
-            <ExamsForSelectedDate 
-              selectedDate={selectedDate} 
-              searchQuery={searchQuery} 
-              setSearchQuery={setSearchQuery} 
+
+            <ExamsForSelectedDate
+              selectedDate={selectedDate}
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
               listExams={listExams}
               formatDateTime={formatDateTime}
               handleExamClick={handleExamClick}
               getStatusBadge={getStatusBadge}
             />
 
-            {/* Recent Exams using Tabs */}
-            <RecentExamsTabs 
-              pastExams={pastExams} 
-              ongoingExams={ongoingExams} 
-              formatDate={formatDate} 
-              formatDateTime={formatDateTime} 
+
+            <RecentExamsTabs
+              pastExams={pastExams}
+              ongoingExams={ongoingExams}
+              formatDate={formatDate}
+              formatDateTime={formatDateTime}
               handleExamClick={handleExamClick}
             />
           </div>
         )}
 
-        {/* Upcoming Exams Section (replaces Draft Exams) */}
+
         {!loading && (
-          <UpcomingExamsSection 
+          <UpcomingExamsSection
             upcomingExams={upcomingExams}
             searchQuery={upcomingSearchQuery}
             setSearchQuery={setUpcomingSearchQuery}
@@ -753,14 +750,14 @@ export default function TeacherExams() {
           />
         )}
 
-        {/* Exam Details Dialog */}
-        <ExamDetailsDialog 
-          dialogOpen={dialogOpen} 
-          setDialogOpen={setDialogOpen} 
-          selectedExam={selectedExam} 
-          formatDate={formatDate} 
-          formatDateTime={formatDateTime} 
-          calculateDuration={calculateDuration} 
+
+        <ExamDetailsDialog
+          dialogOpen={dialogOpen}
+          setDialogOpen={setDialogOpen}
+          selectedExam={selectedExam}
+          formatDate={formatDate}
+          formatDateTime={formatDateTime}
+          calculateDuration={calculateDuration}
           getStatusBadge={getStatusBadge}
         />
       </main>

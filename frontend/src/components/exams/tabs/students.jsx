@@ -232,6 +232,8 @@ export function StudentsTab({
                 <Checkbox
                   checked={selectedStudents.some(s => s.id === student.id)}
                   onCheckedChange={() => handleStudentToggle(student)}
+                  onClick={e => e.stopPropagation()}
+                  className="cursor-pointer"
                 />
                 <div className="flex-1">
                   <div className="font-medium">{student.first_name} {student.last_name}</div>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,69 +25,74 @@ export function StudentsTab({
 }) {
   const [searchStudents, setSearchStudents] = useState("");
 
-  const filteredStudents = students.filter(student => {
-    const fullName = `${student.first_name} ${student.last_name}`.toLowerCase();
-    const search = searchStudents.toLowerCase();
-    return fullName.includes(search) || student.email.toLowerCase().includes(search);
-  });
+  const filteredStudents = useMemo(() => {
+    return students.filter(student => {
+      const fullName = `${student.first_name} ${student.last_name}`.toLowerCase();
+      const search = searchStudents.toLowerCase();
+      return fullName.includes(search) || student.email.toLowerCase().includes(search);
+    });
+  }, [students, searchStudents]);
 
-  // Pagination setup - 20 students per page
   const {
     currentPage,
     totalPages,
     paginatedItems: paginatedStudents,
     goToPage
-  } = usePagination(filteredStudents, 20, {
-    scrollToRef: "#students-list" // Will scroll to students list container
-  });
+  } = usePagination(filteredStudents, 20);
 
-  // Reset to first page when search changes
   useEffect(() => {
-    goToPage(1);
-  }, [searchStudents, goToPage]);
-
-  const handleStudentToggle = (student) => {
-    const exists = selectedStudents.find(s => s.id === student.id);
-    if (exists) {
-      onStudentsChange(selectedStudents.filter(s => s.id !== student.id));
-    } else {
-      onStudentsChange([...selectedStudents, student]);
+    if (currentPage !== 1) {
+      goToPage(1);
     }
-  };
+  }, [searchStudents]);
 
-  const removeStudent = (studentId) => {
-    onStudentsChange(selectedStudents.filter(s => s.id !== studentId));
-  };
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [currentPage]);
 
-  const selectAllFiltered = () => {
-    const newStudents = [...selectedStudents];
-    filteredStudents.forEach(student => {
-      if (!newStudents.find(s => s.id === student.id)) {
-        newStudents.push(student);
+  const handleStudentToggle = useCallback((student) => {
+    onStudentsChange(prevSelectedStudents => {
+      const exists = prevSelectedStudents.find(s => s.id === student.id);
+      if (exists) {
+        return prevSelectedStudents.filter(s => s.id !== student.id);
+      } else {
+        return [...prevSelectedStudents, student];
       }
     });
-    onStudentsChange(newStudents);
-  };
+  }, [onStudentsChange]);
 
-  const deselectAllFiltered = () => {
-    const filteredIds = filteredStudents.map(s => s.id);
-    onStudentsChange(selectedStudents.filter(s => !filteredIds.includes(s.id)));
-  };
+  const handleCardClick = useCallback((student, event) => {
+    if (event.target.type === 'checkbox' || event.target.closest('input[type="checkbox"]')) {
+      return;
+    }
+    handleStudentToggle(student);
+  }, [handleStudentToggle]);
 
-  const selectAllCurrentPage = () => {
-    const newStudents = [...selectedStudents];
-    paginatedStudents.forEach(student => {
-      if (!newStudents.find(s => s.id === student.id)) {
-        newStudents.push(student);
-      }
+  const removeStudent = useCallback((studentId) => {
+    onStudentsChange(prevSelectedStudents => prevSelectedStudents.filter(s => s.id !== studentId));
+  }, [onStudentsChange]);
+
+  const selectAllFiltered = useCallback(() => {
+    onStudentsChange(prevSelectedStudents => {
+      const newSelectedStudents = [...prevSelectedStudents];
+      let changed = false;
+      filteredStudents.forEach(student => {
+        if (!newSelectedStudents.find(s => s.id === student.id)) {
+          newSelectedStudents.push(student);
+          changed = true;
+        }
+      });
+      return changed ? newSelectedStudents : prevSelectedStudents;
     });
-    onStudentsChange(newStudents);
-  };
+  }, [filteredStudents, onStudentsChange]);
 
-  const deselectAllCurrentPage = () => {
-    const currentPageIds = paginatedStudents.map(s => s.id);
-    onStudentsChange(selectedStudents.filter(s => !currentPageIds.includes(s.id)));
-  };
+  const deselectAllFiltered = useCallback(() => {
+    onStudentsChange(prevSelectedStudents => {
+      const filteredIdsSet = new Set(filteredStudents.map(s => s.id));
+      const newSelectedStudents = prevSelectedStudents.filter(s => !filteredIdsSet.has(s.id));
+      return newSelectedStudents.length !== prevSelectedStudents.length ? newSelectedStudents : prevSelectedStudents;
+    });
+  }, [filteredStudents, onStudentsChange]);
 
   if (error) {
     return (
@@ -151,17 +156,6 @@ export function StudentsTab({
                 <UserPlus className="h-3 w-3" />
                 Select All Results ({filteredStudents.length})
               </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={selectAllCurrentPage}
-                className="flex items-center gap-1"
-                disabled={paginatedStudents.length === 0}
-              >
-                <UserPlus className="h-3 w-3" />
-                Select Page ({paginatedStudents.length})
-              </Button>
               {selectedStudents.length > 0 && (
                 <>
                   <Button
@@ -173,16 +167,6 @@ export function StudentsTab({
                   >
                     <UserMinus className="h-3 w-3" />
                     Deselect All Results
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={deselectAllCurrentPage}
-                    className="flex items-center gap-1"
-                  >
-                    <UserMinus className="h-3 w-3" />
-                    Deselect Page
                   </Button>
                 </>
               )}
@@ -198,15 +182,14 @@ export function StudentsTab({
               {selectedStudents.map(student => (
                 <Badge key={student.id} variant="secondary" className="pr-1">
                   <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center">
+                    <div className="w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center cursor-default">
                       {student.first_name?.[0]?.toUpperCase()}{student.last_name?.[0]?.toUpperCase()}
                     </div>
                     <span>{student.first_name} {student.last_name}</span>
                     <Button
-                      type="button"
                       variant="ghost"
                       size="sm"
-                      className="h-4 w-4 p-0 hover:bg-destructive hover:text-destructive-foreground"
+                      className="h-4 w-4 p-0 hover:bg-muted hover:cursor-pointer"
                       onClick={() => removeStudent(student.id)}
                     >
                       <X className="h-3 w-3" />
@@ -243,52 +226,28 @@ export function StudentsTab({
             paginatedStudents.map(student => (
               <div
                 key={student.id}
-                className="flex items-center space-x-3 p-3 hover:bg-muted/50 border-b last:border-b-0 cursor-pointer transition-colors"
-                onClick={() => handleStudentToggle(student)}
+                className="flex items-center space-x-3 p-3 hover:bg-muted/50 border-b last:border-b-0 transition-colors cursor-pointer"
+                onClick={(e) => handleCardClick(student, e)}
               >
                 <Checkbox
                   checked={selectedStudents.some(s => s.id === student.id)}
                   onCheckedChange={() => handleStudentToggle(student)}
-                  onClick={(e) => e.stopPropagation()} // Prevent double toggle
                 />
-                <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground text-sm flex items-center justify-center">
-                  {student.first_name?.[0]?.toUpperCase()}{student.last_name?.[0]?.toUpperCase()}
-                </div>
                 <div className="flex-1">
-                  <p className="font-medium">{student.first_name} {student.last_name}</p>
-                  <p className="text-sm text-muted-foreground">{student.email}</p>
+                  <div className="font-medium">{student.first_name} {student.last_name}</div>
+                  <div className="text-sm text-muted-foreground">{student.email}</div>
                 </div>
               </div>
             ))
           )}
         </div>
 
-        {/* Pagination */}
-        {!loading && filteredStudents.length > 0 && totalPages > 1 && (
+        {!loading && filteredStudents.length > 0 && (
           <CustomPagination
             currentPage={currentPage}
             totalPages={totalPages}
             onPageChange={goToPage}
           />
-        )}
-
-        {/* Summary */}
-        {!loading && students.length > 0 && (
-          <div className="text-sm text-muted-foreground">
-            {filteredStudents.length > 0 ? (
-              <>
-                Showing {((currentPage - 1) * 20) + 1}-{Math.min(currentPage * 20, filteredStudents.length)} of {filteredStudents.length} students
-                {filteredStudents.length !== students.length && ` (filtered from ${students.length})`}
-              </>
-            ) : (
-              `Showing 0 of ${students.length} students`
-            )}
-            {selectedStudents.length > 0 && (
-              <span className="ml-2 font-medium text-foreground">
-                • {selectedStudents.length} selected
-              </span>
-            )}
-          </div>
         )}
       </CardContent>
     </Card>

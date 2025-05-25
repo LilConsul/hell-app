@@ -4,7 +4,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { BookOpen, AlertCircle } from "lucide-react";
+import { BookOpen, AlertCircle, Calendar, Clock } from "lucide-react";
+import { DateTimePicker24h } from "@/components/date-time-picker";
 
 export function BasicInfoTab({
   basicInfo,
@@ -28,10 +29,12 @@ export function BasicInfoTab({
           Exam Details
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="grid grid-cols-1 gap-4">
+      <CardContent className="space-y-6">
+        <div className="grid grid-cols-1 gap-6">
           <div className="space-y-2">
-            <Label htmlFor="title">Exam Title *</Label>
+            <Label htmlFor="title">
+              Exam Title <span className="text-destructive">*</span>
+            </Label>
             <Input
               id="title"
               value={basicInfo.examTitle}
@@ -42,7 +45,9 @@ export function BasicInfoTab({
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="collection">Question Collection *</Label>
+            <Label htmlFor="collection">
+              Question Collection <span className="text-destructive">*</span>
+            </Label>
             {collectionsError ? (
               <Alert>
                 <AlertCircle className="h-4 w-4" />
@@ -61,7 +66,10 @@ export function BasicInfoTab({
                 </SelectTrigger>
                 <SelectContent>
                   {collections.map(collection => (
-                    <SelectItem key={collection.id} value={collection.id.toString()}>
+                    <SelectItem 
+                      key={collection.id} 
+                      value={collection.id.toString()}
+                    >
                       <div className="flex items-center justify-between w-full">
                         <span>{collection.title}</span>
                         <Badge variant="secondary" className="ml-2">
@@ -77,16 +85,18 @@ export function BasicInfoTab({
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="startDate">Start Date & Time *</Label>
-              <Input
-                id="startDate"
-                type="datetime-local"
+              <Label htmlFor="startDate" className="flex items-center gap-2">
+                <Calendar className="h-4 w-4" />
+                Start Date & Time <span className="text-destructive">*</span>
+              </Label>
+              <DateTimePicker24h
                 value={basicInfo.startDate}
-                onChange={(e) => handleChange('startDate', e.target.value)}
+                onChange={(date) => handleChange('startDate', date)}
+                placeholder="Select start date and time..."
                 required
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="duration">Duration (minutes) *</Label>
               <Input
@@ -100,9 +110,27 @@ export function BasicInfoTab({
                 required
               />
             </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="passingScore">
+                Passing Score (%)
+              </Label>
+              <Input
+                id="passingScore"
+                type="number"
+                min="0"
+                max="100"
+                value={basicInfo.passingScore}
+                onChange={(e) => handleChange('passingScore', parseInt(e.target.value) || 0)}
+              />
+            </div>
 
             <div className="space-y-2">
-              <Label htmlFor="attempts">Max Attempts</Label>
+              <Label htmlFor="attempts">
+                Max Attempts
+              </Label>
               <Select 
                 value={basicInfo.maxAttempts.toString()} 
                 onValueChange={(value) => handleChange('maxAttempts', parseInt(value))}
@@ -118,20 +146,7 @@ export function BasicInfoTab({
                 </SelectContent>
               </Select>
             </div>
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="passingScore">Passing Score (%)</Label>
-              <Input
-                id="passingScore"
-                type="number"
-                min="0"
-                max="100"
-                value={basicInfo.passingScore}
-                onChange={(e) => handleChange('passingScore', parseInt(e.target.value) || 0)}
-              />
-            </div>
           </div>
         </div>
       </CardContent>

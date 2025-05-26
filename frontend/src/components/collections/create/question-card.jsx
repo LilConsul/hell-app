@@ -11,6 +11,7 @@ import {
   CheckCircle2,
   CircleDot,
   AlertCircle,
+  Check,
 } from "lucide-react"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Textarea } from "@/components/ui/textarea"
@@ -29,6 +30,7 @@ export function QuestionCard({
   disabled = false,
   usedPositions = [],
   onPositionChange = null,
+  viewOnly = false,
 }) {
   const [touchedFields, setTouchedFields] = useState({
     questionText: false,
@@ -166,6 +168,90 @@ export function QuestionCard({
 
   // Unique ID for the weight selector
   const weightInputId = `weight-${question.id}`;
+
+  // View-only mode rendering
+  if (viewOnly) {
+    return (
+      <Card className="border-muted">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground text-sm font-semibold">
+                {index}
+              </div>
+              <Badge variant="outline" className="flex items-center">
+                {questionTypeInfo.icon}
+                {questionTypeInfo.label}
+              </Badge>
+              <Badge variant="secondary" className="text-xs">
+                {question.weight || 1} {(question.weight || 1) === 1 ? 'point' : 'points'}
+              </Badge>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <h3 className="font-medium text-sm text-muted-foreground mb-2">Question</h3>
+            <p className="text-base">{question.question_text}</p>
+          </div>
+          
+          {isChoiceQuestion && question.options && (
+            <div>
+              <h3 className="font-medium text-sm text-muted-foreground mb-3">Options</h3>
+              <div className="space-y-2">
+                {question.options.map((option, optIndex) => (
+                  <div 
+                    key={optIndex} 
+                    className={`flex items-center space-x-3 p-3 rounded-lg border ${
+                      option.is_correct 
+                        ? 'bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800' 
+                        : 'bg-muted/30'
+                    }`}
+                  >
+                    {option.is_correct && (
+                      <Check className="h-4 w-4 text-green-600 dark:text-green-400 flex-shrink-0" />
+                    )}
+                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
+                      option.is_correct 
+                        ? 'border-green-500 bg-green-500' 
+                        : 'border-muted-foreground/30'
+                    }`}>
+                      {question.type === "singlechoice" ? (
+                        <div className={`w-2 h-2 rounded-full ${
+                          option.is_correct ? 'bg-white' : ''
+                        }`} />
+                      ) : (
+                        option.is_correct && <Check className="h-3 w-3 text-white" />
+                      )}
+                    </div>
+                    <span className={`flex-1 ${
+                      option.is_correct ? 'font-medium text-green-700 dark:text-green-300' : ''
+                    }`}>
+                      {option.text}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          {question.type === "shortanswer" && (
+            <div>
+              <h3 className="font-medium text-sm text-muted-foreground mb-2">Correct Answer</h3>
+              <div className="p-3 rounded-lg bg-green-50 border border-green-200 dark:bg-green-900/20 dark:border-green-800">
+                <div className="flex items-center space-x-2">
+                  <Check className="h-4 w-4 text-green-600 dark:text-green-400" />
+                  <span className="font-medium text-green-700 dark:text-green-300">
+                    {question.correct_input_answer}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className={!question.saved && !isNew ? "border-amber-300 dark:border-amber-600" : ""}>

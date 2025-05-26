@@ -11,7 +11,7 @@ export function EmptyCollections() {
         <Library className="h-12 w-12 text-muted-foreground mb-4" />
         <p className="text-center text-muted-foreground">No collections found</p>
         <Button variant="outline" className="mt-4" asChild>
-          <Link to="/collections/create">
+          <Link to="/collections/new">
             <PlusCircle className="mr-2 h-4 w-4" />
             Create Collection
           </Link>

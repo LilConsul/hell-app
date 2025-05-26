@@ -12,7 +12,6 @@ export function PageHeader({
   onStatusChange, 
   onSave, 
   onDuplicateClick, 
-  isSaveDisabled,
   error = false,
   errorMessage = "There was an error. Please try again.",
   canEdit = true,

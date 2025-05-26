@@ -175,7 +175,7 @@ export function CollectionFilters({
   };
 
   return (
-    <div className="flex flex-col space-y-2 md:flex-row md:items-center md:justify-between md:space-y-0">
+    <div className="flex flex-col space-y-2 space-x-2 md:flex-row md:items-center md:justify-between md:space-y-0">
       <div className="flex w-full items-center space-x-2 md:w-2/3">
         <div className="relative w-full">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />

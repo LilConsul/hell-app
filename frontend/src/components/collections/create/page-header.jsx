@@ -91,7 +91,7 @@ export function PageHeader({
           ${isSticky ? 'sticky top-12' : ''}`}
       >
         <div className="py-4">
-          <div className="max-w-screen-2xl mx-auto px-4 sm:px-6">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center">
                 <Button variant="ghost" size="sm" className="mr-2" asChild>

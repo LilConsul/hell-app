@@ -39,7 +39,7 @@ export function ExamSettingsTab({
   };
 
   return (
-    <div className="space-y-4">
+    <div  className="max-w-5xl mx-auto space-y-4">
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">

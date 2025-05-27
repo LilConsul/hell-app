@@ -2,11 +2,12 @@ import { useState, useEffect, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, User } from "lucide-react";
-import { Navbar } from "@/components/navbar";
-import { Footer } from "@/components/footer";
-import { useAuth } from "@/contexts/auth-context";
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
+import { useAuth } from "@/contexts/auth-context";
+import { Navbar } from "@/components/navbar";
+import { Footer } from "@/components/footer";
+import { CollectionsHeader } from "@/components/collections/page-header";
 import { CollectionCard } from "@/components/collections/collection-card";
 import { CollectionFilters } from "@/components/collections/filters";
 import { CustomPagination } from "@/components/pagination";
@@ -289,21 +290,8 @@ function Collections() {
       <Navbar />
       <Toaster closeButton />
       <main className="flex-1 space-y-4 p-8 pt-6">
-        <div className="max-w-6xl mx-auto flex items-center justify-between space-y-2">
-          <div>
-            <h2 className="text-3xl font-bold tracking-tight">Test Collections</h2>
-            <p className="text-muted-foreground">Create and manage your test question collections</p>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Button asChild>
-              <Link to="/collections/new">
-                <PlusCircle className="mr-2 h-4 w-4" />
-                Create Collection
-              </Link>
-            </Button>
-          </div>
-        </div>
-        <div className="max-w-6xl mx-auto flex flex-col space-y-4">
+        <CollectionsHeader/>
+        <div className="max-w-5xl mx-auto flex flex-col space-y-4">
           <CollectionFilters
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}

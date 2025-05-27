@@ -11,7 +11,7 @@ export function QuestionsStateHandler({
   // No collection selected
   if (state === "no-collection") {
     return (
-      <Card>
+      <Card className="max-w-5xl mx-auto">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <BookOpen className="h-5 w-5" />
@@ -32,7 +32,7 @@ export function QuestionsStateHandler({
   // Loading state
   if (state === "loading") {
     return (
-      <Card>
+      <Card className="max-w-5xl mx-auto">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <BookOpen className="h-5 w-5" />
@@ -62,7 +62,7 @@ export function QuestionsStateHandler({
   // Error state
   if (state === "error") {
     return (
-      <Card>
+      <Card className="max-w-5xl mx-auto">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <BookOpen className="h-5 w-5" />
@@ -84,7 +84,7 @@ export function QuestionsStateHandler({
   // No questions in collection
   if (state === "no-questions") {
     return (
-      <Card>
+      <Card className="max-w-5xl mx-auto">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <BookOpen className="h-5 w-5" />

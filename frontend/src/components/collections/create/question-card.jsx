@@ -17,7 +17,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { PositionEditor } from "@/components/collections/create/position-editor"
-import { WeightSelector } from "@/components/collections/create/weight-selector"
+import { ValueSelector } from "@/components/value-selector"
 
 export function QuestionCard({
   question,
@@ -470,11 +470,13 @@ export function QuestionCard({
         )}
         <div className="grid gap-2">
           <Label htmlFor={weightInputId}>Question Weight</Label>
-          <WeightSelector
+          <ValueSelector
             id={weightInputId}
             value={question.weight || 1}
             onChange={handleWeightChange}
             disabled={disabled}
+            customTitle = "Custom Weight"
+            unitLabel = "point"
           />
         </div>
       </CardContent>

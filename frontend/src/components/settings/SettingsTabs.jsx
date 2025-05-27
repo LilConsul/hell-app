@@ -1,263 +1,321 @@
+import { memo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardFooter, 
-  CardHeader, 
-  CardTitle 
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  Pencil, 
-  Save, 
-  User, 
-  Lock, 
-  Globe, 
-  Bell, 
-  Trash2 
+import {
+  Pencil,
+  Save,
+  User,
+  Lock,
+  Globe,
+  Bell,
+  Trash2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export function SettingsTabs({
-    // Tab state
-    activeTab,
-    setActiveTab,
-    
-    // User data
-    user,
-    firstName,
-    lastName,
-    language,
-    notifications,
-    
-    // Form state
-    editField,
-    setEditField,
-    isUpdating,
-    
-    // State setters
-    setFirstName,
-    setLastName,
-    
-    // Event handlers
-    handleSaveName,
-    handleChangeLanguage,
-    handleToggleNotifications,
-    handleOpenCurrentPasswordModal,
-    setShowDeleteModal
-  }) {
+const EditableField = memo(function EditableField({
+  id,
+  label,
+  value,
+  isEditing,
+  isUpdating,
+  onEdit,
+  onChange,
+  onSave
+}) {
   return (
-    <Tabs value={activeTab} onValueChange={setActiveTab}>
-      <TabsList className="grid grid-cols-4 mb-8">
-        <TabsTrigger value="account" className="flex gap-2 items-center">
-          <User size={16} />
-          <span className="hidden sm:inline">Account</span>
-        </TabsTrigger>
-        <TabsTrigger value="security" className="flex gap-2 items-center">
-          <Lock size={16} />
-          <span className="hidden sm:inline">Security</span>
-        </TabsTrigger>
-        <TabsTrigger value="preferences" className="flex gap-2 items-center">
-          <Globe size={16} />
-          <span className="hidden sm:inline">Preferences</span>
-        </TabsTrigger>
-        <TabsTrigger value="danger" className="flex gap-2 items-center">
-          <Trash2 size={16} />
-          <span className="hidden sm:inline">Danger Zone</span>
-        </TabsTrigger>
-      </TabsList>
+    <div className="space-y-2">
+      <Label htmlFor={id}>{label}</Label>
+      <div className="flex items-center gap-2">
+        <Input
+          id={id}
+          value={value}
+          disabled={!isEditing}
+          onChange={(e) => onChange(e.target.value)}
+          className={cn(!isEditing && "border-transparent bg-muted/30")}
+        />
+        {isEditing ? (
+          <Button
+            size="icon"
+            onClick={onSave}
+            disabled={isUpdating}
+          >
+            {isUpdating ? (
+              <span className="animate-spin">⟳</span>
+            ) : (
+              <Save className="h-4 w-4" />
+            )}
+          </Button>
+        ) : (
+          <Button size="icon" variant="ghost" onClick={onEdit}>                    
+            <Pencil className="h-4 w-4" />
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+});
 
-      <TabsContent value="account" className="space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Personal Information</CardTitle>
-            <CardDescription>
-              Update your account information and how others see you on the platform.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input 
-                id="email" 
-                disabled 
-                value={user?.email || ""} 
-                className="bg-muted/50"
-              />
-              <p className="text-xs text-muted-foreground">
-                Your email cannot be changed. Contact support if you need to update it.
+const AccountTab = memo(function AccountTab({
+  user,
+  firstName,
+  lastName,
+  editField,
+  isUpdating,
+  setEditField,
+  setFirstName,
+  setLastName,
+  handleSaveName
+}) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Personal Information</CardTitle>
+        <CardDescription>
+          Update your account information and how others see you on the platform.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="email">Email</Label>
+          <Input
+            id="email"
+            disabled
+            value={user?.email || ""}
+            className="bg-muted/50"
+          />
+          <p className="text-xs text-muted-foreground">
+            Your email cannot be changed. Contact support if you need to update it.
+          </p>
+        </div>
+
+        <EditableField
+          id="firstName"
+          label="First Name"
+          value={firstName}
+          isEditing={editField === "firstName"}
+          isUpdating={isUpdating}
+          onEdit={() => setEditField("firstName")}
+          onChange={setFirstName}
+          onSave={() => handleSaveName("firstName")}
+        />
+
+        <EditableField
+          id="lastName"
+          label="Last Name"
+          value={lastName}
+          isEditing={editField === "lastName"}
+          isUpdating={isUpdating}
+          onEdit={() => setEditField("lastName")}
+          onChange={setLastName}
+          onSave={() => handleSaveName("lastName")}
+        />
+      </CardContent>
+    </Card>
+  );
+});
+
+const SecurityTab = memo(function SecurityTab({ handleOpenCurrentPasswordModal }) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Password</CardTitle>
+        <CardDescription>
+          Update your password to keep your account secure.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-sm font-medium">Change Password</h3>
+            <p className="text-sm text-muted-foreground">
+              We recommend updating your password regularly for security.
+            </p>
+          </div>
+          <Button variant="outline" onClick={handleOpenCurrentPasswordModal}>
+            Change Password
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+});
+
+const PreferencesTab = memo(function PreferencesTab({
+  language,
+  notifications,
+  handleChangeLanguage,
+  handleToggleNotifications
+}) {
+  return (
+    <>
+      <Card>
+        <CardHeader>
+          <CardTitle>Language</CardTitle>
+          <CardDescription>
+            Choose your preferred language for the application interface.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col gap-2 max-w-xs">
+            <Label htmlFor="language">Select Language</Label>
+            <Select value={language} onValueChange={handleChangeLanguage} id="language">
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select Language" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="en">English</SelectItem>
+                <SelectItem value="ro">Română</SelectItem>
+                <SelectItem value="fr">Français</SelectItem>
+                <SelectItem value="de">Deutsch</SelectItem>
+                <SelectItem value="es">Español</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Notification Preferences</CardTitle>
+          <CardDescription>
+            Manage how you receive notifications.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between py-2">
+            <div>
+              <h3 className="text-sm font-medium">Email Notifications</h3>
+              <p className="text-sm text-muted-foreground">
+                Receive updates, results, and important announcements via email.
               </p>
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="firstName">First Name</Label>
-              <div className="flex items-center gap-2">
-                <Input 
-                  id="firstName"
-                  value={firstName} 
-                  disabled={editField !== "firstName"} 
-                  onChange={(e) => setFirstName(e.target.value)} 
-                  className={cn(editField !== "firstName" && "border-transparent bg-muted/30")}
-                />
-                {editField === "firstName" ? (
-                  <Button 
-                    size="icon" 
-                    onClick={() => handleSaveName("firstName")}
-                    disabled={isUpdating}
-                  >
-                    {isUpdating ? (
-                      <span className="animate-spin">⟳</span>
-                    ) : (
-                      <Save size={16} />
-                    )}
-                  </Button>
-                ) : (
-                  <Button size="icon" variant="ghost" onClick={() => setEditField("firstName")}>
-                    <Pencil size={16} />
-                  </Button>
-                )}
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="lastName">Last Name</Label>
-              <div className="flex items-center gap-2">
-                <Input 
-                  id="lastName"
-                  value={lastName} 
-                  disabled={editField !== "lastName"} 
-                  onChange={(e) => setLastName(e.target.value)} 
-                  className={cn(editField !== "lastName" && "border-transparent bg-muted/30")}
-                />
-                {editField === "lastName" ? (
-                  <Button 
-                    size="icon" 
-                    onClick={() => handleSaveName("lastName")}
-                    disabled={isUpdating}
-                  >
-                    {isUpdating ? (
-                      <span className="animate-spin">⟳</span>
-                    ) : (
-                      <Save size={16} />
-                    )}
-                  </Button>
-                ) : (
-                  <Button size="icon" variant="ghost" onClick={() => setEditField("lastName")}>
-                    <Pencil size={16} />
-                  </Button>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </TabsContent>
-
-      <TabsContent value="security" className="space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Password</CardTitle>
-            <CardDescription>
-              Update your password to keep your account secure.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="font-medium">Change Password</h3>
-                <p className="text-sm text-muted-foreground">
-                  We recommend updating your password regularly for security.
-                </p>
-              </div>
-              <Button variant="outline" onClick={handleOpenCurrentPasswordModal}>
-                Change Password
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </TabsContent>
-
-      <TabsContent value="preferences" className="space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Language</CardTitle>
-            <CardDescription>
-              Choose your preferred language for the application interface.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-col gap-2 max-w-xs">
-              <Label htmlFor="language">Select Language</Label>
-              <Select value={language} onValueChange={handleChangeLanguage} id="language">
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select Language" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="en">English</SelectItem>
-                  <SelectItem value="ro">Română</SelectItem>
-                  <SelectItem value="fr">Français</SelectItem>
-                  <SelectItem value="de">Deutsch</SelectItem>
-                  <SelectItem value="es">Español</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Notification Preferences</CardTitle>
-            <CardDescription>
-              Manage how you receive notifications.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between py-2">
-              <div>
-                <h3 className="font-medium">Email Notifications</h3>
-                <p className="text-sm text-muted-foreground">
-                  Receive updates, results, and important announcements via email.
-                </p>
-              </div>
-              <Switch 
-                checked={notifications.email} 
-                onCheckedChange={(v) => handleToggleNotifications(v)} 
-              />
-            </div>
-          </CardContent>
-        </Card>
-      </TabsContent>
-
-      <TabsContent value="danger" className="space-y-6">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-red-500 flex items-center gap-2">
-              <Trash2 size={18} />
-              Danger Zone
-            </CardTitle>
-            <CardDescription>
-              Actions that could have serious consequences for your account.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground mb-4">
-              Once you delete your account, there is no going back. Please be certain.
-            </p>
-            <Button 
-  size="sm" 
-  onClick={() => setShowDeleteModal(true)}
-  className="bg-red-500 hover:bg-red-600 dark:bg-red-500 dark:hover:bg-red-400 text-white font-medium"
->
-  Delete Account
-</Button>
-
-          </CardContent>
-        </Card>
-      </TabsContent>
-    </Tabs>
+            <Switch
+              checked={notifications.email}
+              onCheckedChange={handleToggleNotifications}
+            />
+          </div>
+        </CardContent>
+      </Card>
+    </>
   );
-}
+});
+
+const DangerTab = memo(function DangerTab({ setShowDeleteModal }) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-destructive flex items-center gap-2">
+          <Trash2 className="h-4 w-4 text-destructive" />
+          Danger Zone
+        </CardTitle>
+        <CardDescription>
+          Actions that could have serious consequences for your account.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <p className="text-sm text-muted-foreground mb-4">
+          Once you delete your account, there is no going back. Please be certain.
+        </p>
+        <Button
+          variant="destructive"
+          onClick={() => setShowDeleteModal(true)}
+        >
+          Delete Account
+        </Button>
+      </CardContent>
+    </Card>
+  );
+});
+
+const SettingsTabs = memo(function SettingsTabs({
+  activeTab,
+  setActiveTab,
+  user,
+  firstName,
+  lastName,
+  language,
+  notifications,
+  editField,
+  setEditField,
+  isUpdating,
+  setFirstName,
+  setLastName,
+  handleSaveName,
+  handleChangeLanguage,
+  handleToggleNotifications,
+  handleOpenCurrentPasswordModal,
+  setShowDeleteModal
+}) {
+  const tabIcons = {
+    account: <User className="h-4 w-4" />,
+    security: <Lock className="h-4 w-4" />,
+    preferences: <Globe className="h-4 w-4" />,
+    danger: <Trash2 className="h-4 w-4" />
+  };
+
+  const tabNames = {
+    account: "Account",
+    security: "Security",
+    preferences: "Preferences",
+    danger: "Danger Zone"
+  };
+  
+  return (
+    <div className="w-full max-w-5xl mx-auto">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+        <TabsList className="grid w-full grid-cols-4">
+          {Object.keys(tabIcons).map((tab) => (
+            <TabsTrigger key={tab} value={tab} className="flex items-center gap-2">
+              {tabIcons[tab]}
+              <span className="hidden sm:inline">{tabNames[tab]}</span>
+            </TabsTrigger>
+          ))}
+        </TabsList>
+
+        <TabsContent value="account" className="space-y-4">
+          <AccountTab
+            user={user}
+            firstName={firstName}
+            lastName={lastName}
+            editField={editField}
+            isUpdating={isUpdating}
+            setEditField={setEditField}
+            setFirstName={setFirstName}
+            setLastName={setLastName}
+            handleSaveName={handleSaveName}
+          />
+        </TabsContent>
+
+        <TabsContent value="security" className="space-y-4">
+          <SecurityTab handleOpenCurrentPasswordModal={handleOpenCurrentPasswordModal} />
+        </TabsContent>
+
+        <TabsContent value="preferences" className="space-y-4">
+          <PreferencesTab
+            language={language}
+            notifications={notifications}
+            handleChangeLanguage={handleChangeLanguage}
+            handleToggleNotifications={handleToggleNotifications}
+          />
+        </TabsContent>
+
+        <TabsContent value="danger" className="space-y-4">
+          <DangerTab setShowDeleteModal={setShowDeleteModal} />
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+});
+
+export { SettingsTabs };

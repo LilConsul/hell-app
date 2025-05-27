@@ -27,7 +27,7 @@ export function BasicInfoTab({
   };
 
   return (
-    <Card className="max-w-4xl mx-auto">
+    <Card className="max-w-5xl mx-auto">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <BookOpen className="h-5 w-5" />

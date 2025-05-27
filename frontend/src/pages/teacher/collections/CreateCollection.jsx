@@ -164,14 +164,16 @@ function CreateCollection() {
       <div className="flex min-h-screen flex-col">
         <Navbar />
         <main className="flex-1 p-8 pt-6">
-          <Alert className="bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700">
-            <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
-            <AlertDescription>{error.message}</AlertDescription>
-          </Alert>
-          <div className="flex justify-center mt-8">
-            <Button asChild>
-              <Link to="/collections">Back to Collections</Link>
-            </Button>
+          <div className="max-w-5xl mx-auto">
+            <Alert className="bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700">
+              <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
+              <AlertDescription>{error.message}</AlertDescription>
+            </Alert>
+            <div className="flex justify-center mt-8">
+              <Button asChild>
+                <Link to="/collections">Back to Collections</Link>
+              </Button>
+            </div>
           </div>
         </main>
         <Footer />
@@ -652,19 +654,18 @@ function CreateCollection() {
       <Navbar />
       <Toaster />
       <main className="flex-1 p-8 pt-6">
-        <div className="max-w-7xl mx-auto">
-          <PageHeader
-            title={collectionData.title}
-            status={collectionData.status}
-            onStatusChange={handleStatusChange}
-            onSave={handleSaveCollection}
-            onDuplicateClick={handleDuplicateClick}
-            error={error.isError}
-            errorMessage={error.message}
-            canEdit={canEdit || isSaving}
-            isNewCollection={isNewCollection}
-          />
-
+        <PageHeader
+          title={collectionData.title}
+          status={collectionData.status}
+          onStatusChange={handleStatusChange}
+          onSave={handleSaveCollection}
+          onDuplicateClick={handleDuplicateClick}
+          error={error.isError}
+          errorMessage={error.message}
+          canEdit={canEdit || isSaving}
+          isNewCollection={isNewCollection}
+        />
+        <div className="max-w-5xl mx-auto">
           <Tabs
             value={activeTab}
             onValueChange={setActiveTab}

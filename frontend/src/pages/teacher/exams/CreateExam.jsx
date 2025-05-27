@@ -241,8 +241,6 @@ function CreateExam() {
         }))
       };
       
-      console.log(isEditMode ? "Updating exam:" : "Creating exam:", examData);
-      
       let result;
       if (isEditMode) {
         result = await examAPI.updateExam(examId, examData);

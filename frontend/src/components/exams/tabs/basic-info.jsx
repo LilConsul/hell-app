@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { BookOpen, AlertCircle, Calendar, Clock } from "lucide-react";
 import { DateTimePicker24h } from "@/components/date-time-picker";
+import { ValueSelector } from "@/components/value-selector";
 import { useNavigate } from "react-router-dom";
 
 export function BasicInfoTab({
@@ -165,20 +166,13 @@ export function BasicInfoTab({
               <Label htmlFor="attempts">
                 Max Attempts
               </Label>
-              <Select 
-                value={basicInfo.maxAttempts.toString()} 
-                onValueChange={(value) => handleChange('maxAttempts', parseInt(value))}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="1">1 attempt</SelectItem>
-                  <SelectItem value="2">2 attempts</SelectItem>
-                  <SelectItem value="3">3 attempts</SelectItem>
-                  <SelectItem value="5">5 attempts</SelectItem>
-                </SelectContent>
-              </Select>
+              <ValueSelector
+                id="attempts"
+                value={basicInfo.maxAttempts}
+                onChange={(value) => handleChange('maxAttempts', value)}
+                customTitle="Max Attempts"
+                unitLabel="attempt"
+              />
             </div>
           </div>
         </div>

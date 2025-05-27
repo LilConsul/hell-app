@@ -5,17 +5,24 @@ import { ChevronDown } from "lucide-react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
 
-export const WeightSelector = ({
+export const ValueSelector = ({
   id,
   value = 1,
   onChange,
   disabled = false,
+  customTitle = "Custom value",
+  unitLabel = "point"
 }) => {
   const [isOpen, setIsOpen] = useState(false)
   const [inputValue, setInputValue] = useState(value?.toString() || "1")
   const inputRef = useRef(null)
   
-  const presets = ["1", "2", "3", "4", "5"]
+  const presets = ["1", "2", "3", "5"]
+
+  const formatUnit = (num) => {
+    const count = parseInt(num, 10)
+    return `${count} ${unitLabel}${count !== 1 ? "s" : ""}`
+  }
 
   const handleSelect = (preset) => {
     const numValue = parseInt(preset, 10)
@@ -62,7 +69,7 @@ export const WeightSelector = ({
           aria-haspopup="dialog"
           aria-expanded={isOpen}
         >
-          <span>{value} point{value !== 1 ? "s" : ""}</span>
+          <span>{formatUnit(value)}</span>
           <ChevronDown className="h-4 w-4 opacity-50 ml-2" />
         </Button>
       </PopoverTrigger>
@@ -79,7 +86,7 @@ export const WeightSelector = ({
         }}
       >
         <div className="p-3 border-b">
-          <div className="mb-2 text-sm font-medium">Custom weight</div>
+          <div className="mb-2 text-sm font-medium">{customTitle}</div>
           <Input
             ref={inputRef}
             type="number"
@@ -90,7 +97,7 @@ export const WeightSelector = ({
             onKeyDown={handleKeyDown}
             className="h-8"
             disabled={disabled}
-            aria-label="Custom weight"
+            aria-label={customTitle}
           />
           <p className="text-xs text-muted-foreground mt-2">
             Please enter a positive integer
@@ -115,7 +122,7 @@ export const WeightSelector = ({
                 }
               }}
             >
-              {preset} point{preset !== "1" ? "s" : ""}
+              {formatUnit(preset)}
             </div>
           ))}
         </div>

@@ -54,6 +54,21 @@ export function PositionEditor({
       onPositionChange(questionId, newPosition, allPositions);
     }
   };
+  //event listener of enter to handle position change
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Enter' && showPositionEditor) {
+        e.preventDefault();
+        handlePositionChange();
+      }
+    };
+    
+    document.addEventListener('keydown', handleKeyDown);
+    
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [showPositionEditor, positionInput, currentPosition, questionId, onPositionChange, allPositions]);
 
   return (
     <TooltipProvider>

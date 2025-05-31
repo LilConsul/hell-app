@@ -1,6 +1,6 @@
 import { useAuth } from "@/contexts/auth-context";
 
-import StudentExams from "@/pages/student/Exams"
+import StudentExams from "@/pages/student/exams/StudentExams"
 import TeacherExams from "@/pages/teacher/exams/Exams"
 
 function Exams() {

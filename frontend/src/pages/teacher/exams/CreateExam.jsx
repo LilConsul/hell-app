@@ -1,11 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { StudentsTab } from "@/components/exams/tabs/students";
-import { BasicInfoTab } from "@/components/exams/tabs/basic-info";
-import { QuestionsTab } from "@/components/exams/tabs/questions/tab";
-import { ExamSettingsTab } from "@/components/exams/tabs/exam-settings";
-import { ExamHeader } from "@/components/exams/page-header";
+import { StudentsTab } from "@/components/exams/teacher/tabs/students";
+import { BasicInfoTab } from "@/components/exams/teacher/tabs/basic-info";
+import { QuestionsTab } from "@/components/exams/teacher/tabs/questions/tab";
+import { ExamSettingsTab } from "@/components/exams/teacher/tabs/exam-settings";
+import { ExamHeader } from "@/components/exams/teacher/page-header";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { toast } from "sonner";

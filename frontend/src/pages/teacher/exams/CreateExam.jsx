@@ -1,11 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { StudentsTab } from "@/components/exams/tabs/students";
-import { BasicInfoTab } from "@/components/exams/tabs/basic-info";
-import { QuestionsTab } from "@/components/exams/tabs/questions/tab";
-import { ExamSettingsTab } from "@/components/exams/tabs/exam-settings";
-import { ExamHeader } from "@/components/exams/page-header";
+import { StudentsTab } from "@/components/exams/teacher/tabs/students";
+import { BasicInfoTab } from "@/components/exams/teacher/tabs/basic-info";
+import { QuestionsTab } from "@/components/exams/teacher/tabs/questions/tab";
+import { ExamSettingsTab } from "@/components/exams/teacher/tabs/exam-settings";
+import { ExamHeader } from "@/components/exams/teacher/page-header";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { toast } from "sonner";
@@ -70,6 +70,19 @@ function CreateExam() {
     }
   }, [isEditMode, examId]);
 
+  // Convert UTC string to local datetime string for DateTimePicker display
+  const utcToLocalDateTimeString = (utcString) => {
+    if (!utcString) return "";
+    
+    const utcDate = new Date(utcString);
+    if (isNaN(utcDate.getTime())) return "";
+    
+    const timezoneOffset = utcDate.getTimezoneOffset();
+    const localDate = new Date(utcDate.getTime() - (timezoneOffset * 60000));
+    // Format to YYYY-MM-DDTHH:mm for datetime-local input
+    return localDate.toISOString().slice(0, 16);
+  };
+ 
   const loadExamData = async () => {
     try {
       setExamLoading(true);
@@ -81,7 +94,7 @@ function CreateExam() {
       setBasicInfo({
         examTitle: examData.title,
         selectedCollection: examData.collection_id,
-        startDate: new Date(examData.start_date).toISOString().slice(0, 16), // Format for datetime-local input
+        startDate: utcToLocalDateTimeString(examData.start_date),
         duration: Math.round((new Date(examData.end_date) - new Date(examData.start_date)) / 60000).toString(), // Convert to minutes
         maxAttempts: examData.max_attempts,
         passingScore: examData.passing_score
@@ -176,6 +189,7 @@ function CreateExam() {
     setSelectedStudents(newSelectedStudents);
   }, []);
 
+
   const calculateEndDate = (startDate, durationInMinutes) => {
     const start = new Date(startDate);
     const end = new Date(start.getTime() + (durationInMinutes * 60000));
@@ -224,13 +238,13 @@ function CreateExam() {
     setLoading(true);
     
     try {
-      const startDate = new Date(basicInfo.startDate).toISOString();
+      const startDate = basicInfo.startDate;
       const endDate = calculateEndDate(basicInfo.startDate, parseInt(basicInfo.duration));
 
       const examData = {
         title: basicInfo.examTitle,
         start_date: startDate,
-        end_date: endDate,
+        end_date: utcToLocalDateTimeString(endDate), 
         max_attempts: basicInfo.maxAttempts,
         passing_score: basicInfo.passingScore,
         security_settings: examSettings.security_settings,

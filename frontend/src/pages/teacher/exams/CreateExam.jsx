@@ -189,9 +189,9 @@ function CreateExam() {
     setSelectedStudents(newSelectedStudents);
   }, []);
 
-  const calculateEndDate = (localDateTimeString, durationInMinutes) => {
-    const utcStartDate = localDateTimeString;
-    const start = new Date(utcStartDate);
+
+  const calculateEndDate = (startDate, durationInMinutes) => {
+    const start = new Date(startDate);
     const end = new Date(start.getTime() + (durationInMinutes * 60000));
     return end.toISOString();
   };
@@ -244,7 +244,7 @@ function CreateExam() {
       const examData = {
         title: basicInfo.examTitle,
         start_date: startDate,
-        end_date: endDate,
+        end_date: utcToLocalDateTimeString(endDate), 
         max_attempts: basicInfo.maxAttempts,
         passing_score: basicInfo.passingScore,
         security_settings: examSettings.security_settings,

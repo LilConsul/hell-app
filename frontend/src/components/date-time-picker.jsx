@@ -170,9 +170,22 @@ export function DateTimePicker24h({ value, onChange, placeholder = "DD/MM/YYYY H
   const infiniteHours = Array(INFINITE_SCROLL_LOOPS).fill(null).flatMap(() => availableHours);
   const infiniteMinutes = Array(INFINITE_SCROLL_LOOPS).fill(null).flatMap(() => availableMinutes);
 
-  const selectedDateTime = useMemo(() => 
-    value ? (typeof value==='string'?new Date(value):value) : new Date(), [value]);
+  const selectedDateTime = useMemo(() => {
+    if (value) {
+      const parsedDate = typeof value === 'string' ? new Date(value) : value;
+      return !isNaN(parsedDate.getTime()) ? parsedDate : new Date();
+    }
+    return new Date();
+  }, [value]);
   
+  const calendarMonth = useMemo(() => {
+    if (value) {
+      const parsedDate = typeof value === 'string' ? new Date(value) : value;
+      return !isNaN(parsedDate.getTime()) ? parsedDate : undefined;
+    }
+    return undefined;
+  }, [value]);
+
   const emitFormattedDateTime = dateTime => onChange?.(format(dateTime, "yyyy-MM-dd'T'HH:mm"));
 
   // Rounds up current minute to next 5-minute increment for initial selection
@@ -202,6 +215,8 @@ export function DateTimePicker24h({ value, onChange, placeholder = "DD/MM/YYYY H
   };
 
   const handleDateSelection = selectedDate => {
+    if (!selectedDate) return;
+    
     const updatedDateTime = new Date(selectedDateTime);
     updatedDateTime.setFullYear(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate());
     emitFormattedDateTime(updatedDateTime);
@@ -248,7 +263,8 @@ export function DateTimePicker24h({ value, onChange, placeholder = "DD/MM/YYYY H
           <div className="flex">
             <CalendarComponent 
               mode="single" 
-              selected={selectedDateTime} 
+              selected={value ? selectedDateTime : undefined}
+              defaultMonth={calendarMonth || new Date()}
               onSelect={handleDateSelection} 
               initialFocus 
               className="rounded-r-none border-r" 

@@ -70,6 +70,19 @@ function CreateExam() {
     }
   }, [isEditMode, examId]);
 
+  // Convert UTC string to local datetime string for DateTimePicker display
+  const utcToLocalDateTimeString = (utcString) => {
+    if (!utcString) return "";
+    
+    const utcDate = new Date(utcString);
+    if (isNaN(utcDate.getTime())) return "";
+    
+    const timezoneOffset = utcDate.getTimezoneOffset();
+    const localDate = new Date(utcDate.getTime() - (timezoneOffset * 60000));
+    // Format to YYYY-MM-DDTHH:mm for datetime-local input
+    return localDate.toISOString().slice(0, 16);
+  };
+ 
   const loadExamData = async () => {
     try {
       setExamLoading(true);
@@ -81,7 +94,7 @@ function CreateExam() {
       setBasicInfo({
         examTitle: examData.title,
         selectedCollection: examData.collection_id,
-        startDate: new Date(examData.start_date).toISOString().slice(0, 16), // Format for datetime-local input
+        startDate: utcToLocalDateTimeString(examData.start_date),
         duration: Math.round((new Date(examData.end_date) - new Date(examData.start_date)) / 60000).toString(), // Convert to minutes
         maxAttempts: examData.max_attempts,
         passingScore: examData.passing_score
@@ -176,8 +189,9 @@ function CreateExam() {
     setSelectedStudents(newSelectedStudents);
   }, []);
 
-  const calculateEndDate = (startDate, durationInMinutes) => {
-    const start = new Date(startDate);
+  const calculateEndDate = (localDateTimeString, durationInMinutes) => {
+    const utcStartDate = localDateTimeString;
+    const start = new Date(utcStartDate);
     const end = new Date(start.getTime() + (durationInMinutes * 60000));
     return end.toISOString();
   };
@@ -224,7 +238,7 @@ function CreateExam() {
     setLoading(true);
     
     try {
-      const startDate = new Date(basicInfo.startDate).toISOString();
+      const startDate = basicInfo.startDate;
       const endDate = calculateEndDate(basicInfo.startDate, parseInt(basicInfo.duration));
 
       const examData = {

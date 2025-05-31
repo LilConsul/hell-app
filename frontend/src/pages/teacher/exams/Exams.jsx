@@ -170,7 +170,7 @@ const SummaryCards = ({ loading, upcomingExams, exams, formatDate, formatDateTim
               </div>
             </CardContent>
             <CardFooter className="pt-0">
-              <Link to="/create-exams" className="w-full">
+              <Link to="/exams/new" className="w-full">
                 <Button size="sm" className="w-full">
                   Create New Exam
                 </Button>
@@ -477,7 +477,7 @@ const ExamDetailsDialog = ({ dialogOpen, setDialogOpen, selectedExam, formatDate
         <DialogHeader>
           <DialogTitle className="text-xl">{selectedExam.title}</DialogTitle>
           <DialogDescription className="text-muted-foreground">
-            Published Exam
+            Exam Details
           </DialogDescription>
         </DialogHeader>
 
@@ -544,7 +544,7 @@ const ExamDetailsDialog = ({ dialogOpen, setDialogOpen, selectedExam, formatDate
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Link to={`/exam/${selectedExam.id}`} className="w-full sm:w-auto order-1 sm:order-2">
+                <Link to={`/exams/${selectedExam.id}`} className="w-full sm:w-auto order-1 sm:order-2">
                   <Button className="w-full">
                     <FileText className="mr-2 h-4 w-4" /> View Details
                   </Button>
@@ -579,8 +579,7 @@ export default function TeacherExams() {
     try {
       setLoading(true);
       const examData = await ExamAPI.fetchExams();
-      const filteredExams = Array.isArray(examData) ? examData.filter(exam => exam.status !== 'draft') : [];
-      setExams(filteredExams);
+      setExams(examData);
       setError(null);
     } catch (err) {
       console.error('Failed to load exams:', err);
@@ -596,15 +595,13 @@ export default function TeacherExams() {
 
   const now = new Date();
 
-  const publishedExams = exams;
-
-  const upcomingExams = publishedExams.filter((e) =>
+  const upcomingExams = exams.filter((e) =>
     new Date(e.start_date) > now
   );
-  const ongoingExams = publishedExams.filter((e) =>
+  const ongoingExams = exams.filter((e) =>
     new Date(e.start_date) <= now && new Date(e.end_date) >= now
   );
-  const pastExams = publishedExams
+  const pastExams = exams
     .filter((e) => new Date(e.end_date) < now)
     .sort((a, b) => new Date(b.end_date) - new Date(a.end_date));
 

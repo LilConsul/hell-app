@@ -27,8 +27,8 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Navbar } from '@/components/navbar';
 import { Footer } from '@/components/footer';
-import { usePagination } from '@/hooks/use-pagination'; // Adjust path as needed
-import ExamAPI from './Exam.api'; // Adjust path as needed
+import { usePagination } from '@/hooks/use-pagination'; 
+import ExamAPI from './Exam.api'; 
 import { Link } from 'react-router-dom';
 import {
   Search, ArrowUpDown, AlertCircle, FileText,
@@ -134,7 +134,7 @@ const ExamRow = ({ exam, onExamClick }) => {
             <Tooltip>
               <TooltipTrigger asChild>
                 <Link
-                  to={`/exam/${exam.id}/edit`}
+                  to={`/exams/${exam.id}`}
                   onClick={(e) => e.stopPropagation()}
                 >
                   <Button variant="ghost" size="icon">
@@ -152,7 +152,7 @@ const ExamRow = ({ exam, onExamClick }) => {
             <Tooltip>
               <TooltipTrigger asChild>
                 <Link
-                  to={`/exam/${exam.id}/report`}
+                  to={`/exams/${exam.id}/report`}
                   onClick={(e) => e.stopPropagation()}
                 >
                   <Button variant="ghost" size="icon">
@@ -236,7 +236,7 @@ const ExamDetailDialog = ({ open, onOpenChange, exam }) => {
         <DialogHeader>
           <DialogTitle className="text-xl">{exam.title}</DialogTitle>
           <DialogDescription className="text-muted-foreground">
-            Exam
+            Exam Details
           </DialogDescription>
         </DialogHeader>
 
@@ -299,7 +299,7 @@ const ExamDetailDialog = ({ open, onOpenChange, exam }) => {
             Close
           </Button>
           <div className="flex space-x-2">
-            <Link to={`/exam/${exam.id}`}>
+            <Link to={`/exams/${exam.id}`}>
               <Button>
                 <FileText className="mr-2 h-4 w-4" /> View Details
               </Button>
@@ -402,8 +402,6 @@ export default function AllExams() {
   const [sortDirection, setSortDirection] = useState('desc');
   const [selectedExam, setSelectedExam] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
-
-  // Create a ref for scrolling to top of table
   const tableRef = useRef(null);
 
   // Use the pagination hook with the filtered exams
@@ -430,8 +428,8 @@ export default function AllExams() {
         setLoading(true);
         const data = await ExamAPI.fetchExams();
         
-        const publishedExams = Array.isArray(data) ? data.filter(exam => exam.status !== 'draft') : [];
-        setExams(publishedExams);
+        // Set exams directly as requested - no filtering
+        setExams(data);
       } catch (err) {
         console.error('Error loading exams:', err);
         setError('Failed to load exams');
@@ -495,7 +493,6 @@ export default function AllExams() {
     setDialogOpen(true);
   };
 
-  // Calculate display info for pagination
   const startIndex = (currentPage - 1) * 10;
   const endIndex = Math.min(startIndex + 10, filteredExams.length);
 
@@ -511,7 +508,7 @@ export default function AllExams() {
             </p>
           </div>
           <Button asChild size="lg" className="h-10 w-full sm:w-auto">
-            <Link to="/create-exams">
+            <Link to="/exams/new">
               <PlusCircle className="mr-2 h-5 w-5" />
               Create New Exam
             </Link>

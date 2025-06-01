@@ -8,6 +8,7 @@ import { SectionHeader } from "@/components/section-header"
 import { SectionContainer } from "@/components/section-container"
 import { TestimonialCard } from "@/components/testimonial-card"
 import { FeatureCard } from "@/components/feature-card"
+import HellAppLogo from "../../components/hell-app-logo"
 
 function Home() {
   const featuresRef = useRef(null)
@@ -59,7 +60,7 @@ function Home() {
                 <div
                   className="bg-background rounded-lg shadow-xl border p-4 transform rotate-2 transition-transform hover:rotate-0 duration-300">
                   <div className="aspect-video bg-muted/50 rounded-md flex items-center justify-center">
-                    <Shield className="h-20 w-20 text-primary/30"/>
+                    <HellAppLogo className="h-20 w-20 text-primary/30"/>
                   </div>
                 </div>
               </div>

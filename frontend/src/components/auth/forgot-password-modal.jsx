@@ -2,8 +2,9 @@ import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Shield, X, ArrowLeft, CheckCircle } from "lucide-react"
+import { X, ArrowLeft, CheckCircle } from "lucide-react"
 import { createPortal } from "react-dom"
+import HellAppLogo from "../hell-app-logo"
 
 export function ForgotPasswordModal({ isOpen, onClose, onBackToLogin }) {
   const [isLoading, setIsLoading] = useState(false)
@@ -85,7 +86,7 @@ export function ForgotPasswordModal({ isOpen, onClose, onBackToLogin }) {
             <>
               <div className="space-y-2 text-center">
                 <div className="flex justify-center">
-                  <Shield className="h-8 w-8" />
+                  <HellAppLogo className="h-8 w-8 mb-2" />
                 </div>
                 <h1 className="text-2xl font-bold">Reset your password</h1>
                 <p className="text-sm text-muted-foreground">

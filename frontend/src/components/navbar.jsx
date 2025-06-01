@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { AuthModals } from "@/components/auth/auth-modals";
 import { Button } from "@/components/ui/button";
-import { LogOut, Moon, Settings, Shield, Sun } from "lucide-react";
+import { LogOut, Moon, Settings, Sun } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/auth-context";
 import { useTheme } from "next-themes";
@@ -12,6 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import HellAppLogo from "./hell-app-logo";
 
 export function Navbar() {
   const {user, isAuthenticated, logout} = useAuth();
@@ -69,7 +70,7 @@ export function Navbar() {
             className="flex items-center gap-2 font-semibold"
             onClick={scrollToTop}
           >
-            <Shield className={`transition-all ${isScrolled ? 'h-4 w-4' : 'h-5 w-5'}`}/>
+            <HellAppLogo className={`transition-all ${isScrolled ? 'h-5 w-5' : 'h-6 w-6'}`}/>
             <span>HellApp</span>
           </Link>
 

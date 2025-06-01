@@ -16,6 +16,7 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { Checkbox } from "@/components/ui/checkbox"
+import HellAppLogo from "../hell-app-logo"
 
 import { PasswordInput } from "@/components/password/password-input"
 import { PasswordRequirements } from "@/components/password/password-requirements"
@@ -159,7 +160,7 @@ export function RegisterModal({ isOpen, onClose, onLoginClick }) {
 
           <div className="flex flex-col items-center justify-center space-y-4 py-6">
             <div className="h-12 w-12 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-              <Shield className="text-green-600 dark:text-green-400 h-6 w-6" />
+              <HellAppLogo className="text-green-600 dark:text-green-400 h-6 w-6" />
             </div>
             <h2 className="text-2xl font-bold">Registration Successful!</h2>
             <p className="text-muted-foreground">
@@ -187,7 +188,7 @@ export function RegisterModal({ isOpen, onClose, onLoginClick }) {
         <div className="space-y-6">
           <div className="space-y-2 text-center">
             <div className="flex justify-center">
-              <Shield className="h-8 w-8" />
+              <HellAppLogo className="h-8 w-8 mb-2" />
             </div>
             <h1 className="text-2xl font-bold">Create an account</h1>
             <p className="text-sm text-muted-foreground">Enter your information to create an account</p>

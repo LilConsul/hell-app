@@ -9,6 +9,7 @@ import { Shield, X } from "lucide-react"
 import { createPortal } from "react-dom"
 import { useAuth } from "@/contexts/auth-context"
 import { PasswordInput } from "@/components/password/password-input"
+import HellAppLogo from "../hell-app-logo"
 import {
   Form,
   FormControl,
@@ -104,7 +105,7 @@ export function LoginModal({ isOpen, onClose, onRegisterClick, onForgotPasswordC
         <div className="space-y-6">
           <div className="space-y-2 text-center">
             <div className="flex justify-center">
-              <Shield className="h-8 w-8" />
+              <HellAppLogo className="h-8 w-8 mb-2" />
             </div>
             <h1 className="text-2xl font-bold">Welcome back</h1>
             <p className="text-sm text-muted-foreground">Enter your credentials to sign in to your account</p>

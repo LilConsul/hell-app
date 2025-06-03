@@ -1,11 +1,7 @@
 import { BookOpen, AlertTriangle } from "lucide-react";
 
-export function ExamsHeader({ exams = [] }) {
-  const overdueCount = exams.filter(exam => {
-    const now = new Date();
-    const endDate = new Date(exam.exam_instance_id?.end_date);
-    return endDate < now && exam.current_status !== "completed";
-  }).length;
+export function ExamsHeader({ exams = [], getExamStatus }) {
+  const overdueCount = exams.filter(exam => getExamStatus(exam) === "overdue").length;
 
   return (
     <div className="max-w-6xl mx-auto">

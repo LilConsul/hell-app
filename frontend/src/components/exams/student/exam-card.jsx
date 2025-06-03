@@ -21,61 +21,6 @@ import {
 } from "lucide-react";
 import { ExamConfirmationModal } from "@/components/exams/student/handle-exams";
 
-const getStatusConfig = (status) => {
-  const configs = {
-    not_started: {
-      badge: { variant: "secondary", text: "Not Started" },
-      icon: PlayCircle,
-      color: "text-gray-500 dark:text-gray-400"
-    },
-    in_progress: {
-      badge: { variant: "default", text: "In Progress" },
-      icon: PauseCircle,
-      color: "text-blue-500 dark:text-blue-400"
-    },
-    submitted: {
-      badge: { variant: "outline", text: "Submitted" },
-      icon: Clock,
-      color: "text-orange-500 dark:text-orange-400"
-    },
-    completed: {
-      badge: { variant: "default", text: "Completed" },
-      icon: CheckCircle,
-      color: "text-green-500 dark:text-green-400"
-    }
-  };
-  return configs[status] || configs.not_started;
-};
-
-const getTimeStatus = (startDate, endDate) => {
-  const now = new Date();
-  const start = new Date(startDate);
-  const end = new Date(endDate);
-  
-  if (now < start) {
-    return {
-      status: "upcoming",
-      text: `Starts soon`,
-      color: "text-blue-600 dark:text-blue-400",
-      icon: Calendar
-    };
-  } else if (now > end) {
-    return {
-      status: "overdue",
-      text: `Ended`,
-      color: "text-red-500 dark:text-red-400",
-      icon: AlertTriangle
-    };
-  } else {
-    return {
-      status: "active",
-      text: `Active`,
-      color: "text-green-600 dark:text-green-400",
-      icon: Clock
-    };
-  }
-};
-
 const formatDate = (dateString) => {
   const date = new Date(dateString);
   return date.toLocaleDateString('en-US', { 
@@ -94,22 +39,34 @@ const formatTime = (dateString) => {
   });
 };
 
-export function ExamCard({ exam, onStartExam, onResumeExam }) {
+const iconMap = {
+  PlayCircle,
+  PauseCircle,
+  Clock,
+  CheckCircle,
+  AlertTriangle,
+  Calendar
+};
+
+export function ExamCard({ exam, onStartExam, onResumeExam, getExamStatus, getTimeStatus, getStatusConfig }) {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  
+  const examStatus = getExamStatus(exam);
+  const statusConfig = getStatusConfig(examStatus);
+  const timeStatus = getTimeStatus(
+    exam.exam_instance_id.start_date, 
+    exam.exam_instance_id.end_date
+  );
+  
+  const StatusIcon = iconMap[statusConfig.icon];
+  const TimeIcon = iconMap[timeStatus.icon];
+  
   const now = new Date();
   const startDate = new Date(exam.exam_instance_id.start_date);
   const endDate = new Date(exam.exam_instance_id.end_date);
   const isBeforeStart = now < startDate;
   const isAfterEnd = now > endDate;
   const isBetween = now >= startDate && now <= endDate;
-  
-  const statusConfig = getStatusConfig(exam.current_status);
-  const timeStatus = getTimeStatus(
-    exam.exam_instance_id.start_date, 
-    exam.exam_instance_id.end_date
-  );
-  const StatusIcon = statusConfig.icon;
-  const TimeIcon = timeStatus.icon;
 
   const hasAttempted = exam.attempts_count > 0;
   const attemptsRemaining = exam.exam_instance_id.max_attempts - exam.attempts_count;
@@ -132,7 +89,7 @@ export function ExamCard({ exam, onStartExam, onResumeExam }) {
 
   // Right button configuration
   const getRightButtonConfig = () => {
-    if (exam.current_status === "completed") {
+    if (examStatus === "completed") {
       return {
         text: "Completed",
         icon: CheckCircle,
@@ -142,7 +99,7 @@ export function ExamCard({ exam, onStartExam, onResumeExam }) {
     }
 
     // If in progress show resume (only if between dates)
-    if (exam.current_status === "in_progress") {
+    if (examStatus === "in_progress") {
       return {
         text: isBetween ? "Resume Exam" : "Not Available",
         icon: isBetween ? Play : Clock,
@@ -152,7 +109,7 @@ export function ExamCard({ exam, onStartExam, onResumeExam }) {
     }
 
     // If submitted and has attempts remaining
-    if (exam.current_status === "submitted" && attemptsRemaining > 0) {
+    if (examStatus === "submitted" && attemptsRemaining > 0) {
       return {
         text: isBetween ? "Retake Exam" : "Not Available",
         icon: isBetween ? RotateCcw : Clock,
@@ -182,7 +139,7 @@ export function ExamCard({ exam, onStartExam, onResumeExam }) {
     }
 
     // If between dates and not started
-    if (isBetween && exam.current_status === "not_started") {
+    if (isBetween && examStatus === "not_started") {
       return {
         text: "Start Exam",
         icon: Play,
@@ -206,7 +163,7 @@ export function ExamCard({ exam, onStartExam, onResumeExam }) {
   const handleConfirmStart = () => {
     setShowConfirmModal(false);
     
-    if (exam.current_status === "in_progress") {
+    if (examStatus === "in_progress") {
       onResumeExam?.(exam.id);
     } else {
       onStartExam?.(exam.id);
@@ -230,11 +187,6 @@ export function ExamCard({ exam, onStartExam, onResumeExam }) {
                 <Badge variant={statusConfig.badge.variant}>
                   {statusConfig.badge.text}
                 </Badge>
-                {timeStatus.status === "overdue" && (
-                  <Badge variant="outline" className="text-xs border-red-300 text-red-700 dark:border-red-700 dark:text-red-300 bg-red-50 dark:bg-red-950">
-                    Overdue
-                  </Badge>
-                )}
               </div>
               <h3 className="text-lg font-semibold leading-tight mb-1 truncate text-foreground">
                 {exam.exam_instance_id.title}
@@ -372,7 +324,7 @@ export function ExamCard({ exam, onStartExam, onResumeExam }) {
         onClose={() => setShowConfirmModal(false)}
         onConfirm={handleConfirmStart}
         examTitle={exam.exam_instance_id.title}
-        isResuming={exam.current_status === "in_progress"}
+        isResuming={examStatus === "in_progress"}
         attemptsRemaining={attemptsRemaining}
       />
     </>

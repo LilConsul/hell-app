@@ -20,6 +20,127 @@ import {
     AlertDialogTitle,
   } from "@/components/ui/alert-dialog";
 
+// Loading state for exam details page
+export function LoadingExamDetails() {
+  return (
+    <div className="space-y-6 p-8 pt-6">
+      <div className="max-w-4xl mx-auto space-y-6">
+        {/* Header skeleton */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <Skeleton className="h-9 w-32" /> {/* Back button */}
+            <Skeleton className="h-6 w-24" /> {/* Status badge */}
+          </div>
+          
+          <Skeleton className="h-8 w-3/4" /> {/* Title */}
+        </div>
+
+        {/* Info card skeleton */}
+        <Card>
+          <CardContent className="p-6">
+            <div className="space-y-4">
+              <Skeleton className="h-5 w-32" /> {/* Section title */}
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-4/5" />
+                <Skeleton className="h-4 w-3/5" />
+              </div>
+              
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4">
+                {[...Array(4)].map((_, i) => (
+                  <div key={i} className="space-y-2">
+                    <Skeleton className="h-4 w-20" />
+                    <Skeleton className="h-5 w-16" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Actions skeleton */}
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex gap-3">
+              <Skeleton className="h-10 w-32" />
+              <Skeleton className="h-10 w-28" />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Attempts skeleton */}
+        <Card>
+          <CardContent className="p-6">
+            <div className="space-y-4">
+              <Skeleton className="h-5 w-40" />
+              <div className="space-y-3">
+                {[...Array(2)].map((_, i) => (
+                  <div key={i} className="flex items-center justify-between p-3 border rounded">
+                    <div className="space-y-2">
+                      <Skeleton className="h-4 w-32" />
+                      <Skeleton className="h-3 w-24" />
+                    </div>
+                    <Skeleton className="h-8 w-20" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+// Error state for exam details
+export function ErrorExamDetails({ error, retryAction }) {
+  return (
+    <div className="space-y-6 p-8 pt-6">
+      <div className="max-w-4xl mx-auto">
+        <Alert variant="destructive" className="mb-6">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            Failed to load exam details. Please try again.
+          </AlertDescription>
+        </Alert>
+
+        <Card className="text-center">
+          <CardContent className="flex flex-col items-center space-y-6 py-12">
+            <div className="p-4 bg-destructive/10 rounded-full">
+              <AlertTriangle className="h-8 w-8 text-destructive" />
+            </div>
+
+            <div className="space-y-2 max-w-sm">
+              <h3 className="text-lg font-semibold text-destructive">
+                Something went wrong
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                {error || "An unexpected error occurred while loading the exam details."}
+              </p>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Button
+                onClick={retryAction}
+                className="flex items-center gap-2"
+              >
+                <RefreshCw className="h-4 w-4" />
+                Try Again
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => window.location.reload()}
+              >
+                Refresh Page
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
 // Loading state with shadcn Skeleton components
 export function LoadingExams() {
   return (
@@ -181,7 +302,6 @@ export function EmptyFilteredExams({ onClearFilters, activeFiltersCount = 0 }) {
     </Card>
   );
 }
-
 
 export function ExamConfirmationModal({
   isOpen,

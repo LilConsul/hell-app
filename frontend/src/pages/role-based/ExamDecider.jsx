@@ -1,20 +1,12 @@
-import { useAuth } from "@/contexts/auth-context";
+import RoleBasedComponent from "@/components/role-based-component";
+import StudentExams from "@/pages/student/exams/Exams";
+import TeacherExams from "@/pages/teacher/exams/Exams";
 
-import StudentExams from "@/pages/student/exams/StudentExams"
-import TeacherExams from "@/pages/teacher/exams/Exams"
-
-function Exams() {
-  const { user } = useAuth();
-
-  if (user.role === 'teacher' || user.role === 'admin') {
-    return <TeacherExams/>;
-  } else if (user.role === 'student') {
-    return <StudentExams/>;
-  }
-  //some error handling
-  // e.g. redirect to 404 page
-  // or sth like that
-  return <div>Unauthorized</div>;
+export default function Exams() {
+  return (
+    <RoleBasedComponent
+      studentComponent={StudentExams}
+      teacherComponent={TeacherExams}
+    />
+  );
 }
-
-export default Exams;

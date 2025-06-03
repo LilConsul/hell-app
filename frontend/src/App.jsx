@@ -17,12 +17,12 @@ import EmailVerification from './pages/regular/EmailVerification';
 // Pages based on user role
 import Dashboard  from './pages/role-based/DashboardDecider';
 import Exams from './pages/role-based/ExamDecider';
+import ExamDetails from './pages/role-based/ExamDetailsDecider';
 
 // Teacher pages
 import Collections from './pages/teacher/collections/Collections';
 import CreateCollection from './pages/teacher/collections/CreateCollection';
 import AllExams from './pages/teacher/exams/AllExams';
-import CreateExam from './pages/teacher/exams/CreateExam';
 
 // Placeholders
 import Students from './pages/Students';
@@ -30,6 +30,7 @@ import Reports from './pages/Reports';
 
 // Admin pages
 import AdminPanel from './pages/admin/Admin-Panel.jsx';
+
 
 
 function HomeWithLoginModal() {
@@ -61,6 +62,7 @@ export default function App() {
           <Route element={<ProtectedLayout />}>
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/exams" element={<Exams/>} />
+            <Route path="/exams/:examId" element={<ExamDetails />} />
             <Route path="/settings" element={<Settings />} />
           </Route>
 
@@ -71,7 +73,6 @@ export default function App() {
             <Route path="/collections" element={<Collections />} />
             <Route path="/collections/:collectionId" element={<CreateCollection />} />
             <Route path="/all-exams" element={<AllExams />} />
-            <Route path="/exams/:examId" element={<CreateExam />} />
           </Route>
 
         {/* Admin only */}

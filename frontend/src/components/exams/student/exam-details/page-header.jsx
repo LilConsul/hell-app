@@ -1,44 +1,15 @@
-import { Badge } from "@/components/ui/badge";
-import { 
-  CheckCircle, 
-  PlayCircle, 
-  PauseCircle, 
-  Clock,
-  ArrowLeft
-} from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-
-const getStatusConfig = (status) => {
-  const configs = {
-    not_started: {
-      badge: { variant: "secondary", text: "Not Started" },
-      icon: PlayCircle,
-      color: "text-gray-500 dark:text-gray-400"
-    },
-    in_progress: {
-      badge: { variant: "default", text: "In Progress" },
-      icon: PauseCircle,
-      color: "text-blue-500 dark:text-blue-400"
-    },
-    submitted: {
-      badge: { variant: "outline", text: "Submitted" },
-      icon: Clock,
-      color: "text-orange-500 dark:text-orange-400"
-    },
-    completed: {
-      badge: { variant: "default", text: "Completed" },
-      icon: CheckCircle,
-      color: "text-green-500 dark:text-green-400"
-    }
-  };
-  return configs[status] || configs.not_started;
-};
+import { useExamStatus } from "@/hooks/use-student-exam-status";
+import { StatusBadge } from "@/components/exams/status-badge";
 
 export function ExamDetailsHeader({ exam }) {
   const navigate = useNavigate();
-  const statusConfig = getStatusConfig(exam.current_status);
-  const StatusIcon = statusConfig.icon;
+  const { getExamStatus, getStatusConfig } = useExamStatus();
+  
+  const examStatus = getExamStatus(exam);
+  const statusConfig = getStatusConfig(examStatus);
 
   const handleBackClick = () => {
     navigate('/exams');
@@ -47,7 +18,6 @@ export function ExamDetailsHeader({ exam }) {
   return (
     <div className="max-w-6xl mx-auto space-y-4">
       <div className="flex items-center justify-between gap-4">
-        {/* Back Button and Title */}
         <div className="flex items-center gap-4 min-w-0 flex-1">
           <Button 
             variant="ghost" 
@@ -63,12 +33,13 @@ export function ExamDetailsHeader({ exam }) {
           </h1>
         </div>
 
-        {/* Status Badge */}
-        <div className="flex items-center gap-2 flex-shrink-0">
-          <StatusIcon className={`h-5 w-5 ${statusConfig.color}`} />
-          <Badge variant={statusConfig.badge.variant} className="text-sm">
-            {statusConfig.badge.text}
-          </Badge>
+        <div className="flex-shrink-0">
+          <StatusBadge 
+            config={statusConfig}
+            showIcon={true}
+            showBadge={true}
+            size="lg"
+          />
         </div>
       </div>
     </div>

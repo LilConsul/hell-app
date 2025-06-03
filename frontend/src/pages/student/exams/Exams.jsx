@@ -20,7 +20,8 @@ import {
 
 function StudentExams() {
   const navigate = useNavigate();
-  const { getExamStatus, getTimeStatus, getStatusConfig } = useExamStatus();
+  const statusHook = useExamStatus();
+  const { getExamStatus } = statusHook;
   
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
@@ -44,7 +45,7 @@ function StudentExams() {
     goToPage: handlePageChange
   } = usePagination(exams, 10);
 
-  // Memoize enriched exams with status
+  // Memoize exams with derived status
   const enrichedAllExams = useMemo(() => {
     return allExams.map(exam => ({
       ...exam,
@@ -52,6 +53,15 @@ function StudentExams() {
     }));
   }, [allExams, getExamStatus]);
 
+  // Debounced search effect
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Load on mount
   useEffect(() => {
     const loadExams = async () => {
       try {
@@ -69,18 +79,13 @@ function StudentExams() {
     loadExams();
   }, []);
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearchQuery(searchQuery);
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
-
+  // Memoized sorting function
   const sortExams = useCallback((filteredExams) => {
     if (!filteredExams.length) return [];
     
     const sortedExams = [...filteredExams];
     
+    // Apply selected sort
     switch (sortOption) {
       case "due-date-nearest":
         sortedExams.sort((a, b) => new Date(a.exam_instance_id.end_date) - new Date(b.exam_instance_id.end_date));
@@ -108,8 +113,8 @@ function StudentExams() {
         break;
     }
     
-    // Ensure status-based grouping
-    return sortedExams.sort((a, b) => {
+    // Apply status priority sorting when showing all exams
+    if (activeFilter === "all") {
       const statusPriority = {
         'active': 0,
         'not_started': 1,
@@ -119,40 +124,46 @@ function StudentExams() {
         'completed': 5
       };
       
-      if (activeFilter === "all") {
-        return statusPriority[a.derivedStatus] - statusPriority[b.derivedStatus];
-      }
-      return 0;
-    });
+      return sortedExams.sort((a, b) => {
+        const primarySort = statusPriority[a.derivedStatus] - statusPriority[b.derivedStatus];
+        return primarySort !== 0 ? primarySort : 0; // Keep existing sort if same priority
+      });
+    }
     
+    return sortedExams;
   }, [sortOption, activeFilter]);
 
+  // Memoized filtering and sorting
   const applyAllFilters = useCallback(() => {
     if (!enrichedAllExams.length) return [];
     
     let filteredExams = enrichedAllExams.filter(exam => {
-      // Filter by status using derived status
+      // Status filter
       if (activeFilter !== "all" && activeFilter !== exam.derivedStatus) return false;
       
-      // Filter by search query
-      if (debouncedSearchQuery &&
-          !exam.exam_instance_id.title.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) &&
-          !(exam.exam_instance_id.created_by?.first_name + " " + exam.exam_instance_id.created_by?.last_name)
-            .toLowerCase().includes(debouncedSearchQuery.toLowerCase())) return false;
-      
-      // ... rest of filter logic remains the same
+      // Search filter
+      if (debouncedSearchQuery) {
+        const searchLower = debouncedSearchQuery.toLowerCase();
+        const titleMatch = exam.exam_instance_id.title.toLowerCase().includes(searchLower);
+        const instructorMatch = (exam.exam_instance_id.created_by?.first_name + " " + exam.exam_instance_id.created_by?.last_name)
+          .toLowerCase().includes(searchLower);
+        
+        if (!titleMatch && !instructorMatch) return false;
+      }
       
       return true;
     });
     
     return sortExams(filteredExams);
-  }, [activeFilter, debouncedSearchQuery, filters, enrichedAllExams, sortExams]);
+  }, [activeFilter, debouncedSearchQuery, enrichedAllExams, sortExams]);
 
+  // Apply filters when dependencies change
   useEffect(() => {
     const filtered = applyAllFilters();
     setExams(filtered);
   }, [applyAllFilters]);
 
+  // Event handlers
   const handleStartExam = async (studentExamId) => {
     try {
       await StudentExamsAPI.startExam(studentExamId);
@@ -168,9 +179,20 @@ function StudentExams() {
     navigate(`/exams/${studentExamId}/take`);
   };
 
-  const handleViewResults = (studentExamId, attemptId) => {
-    navigate(`/exams/${studentExamId}/results/${attemptId}`);
-  };
+  const handleRetry = useCallback(() => {
+    setLoading(true);
+    setError(null);
+    StudentExamsAPI.fetchStudentExams()
+      .then(data => {
+        setAllExams(data);
+        setLoading(false);
+      })
+      .catch(error => {
+        const errorMessage = error.message || "Failed to load exams. Please try again later.";
+        setError(errorMessage);
+        setLoading(false);
+      });
+  }, []);
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -200,20 +222,7 @@ function StudentExams() {
           ) : error ? (
             <ErrorExams 
               error={error} 
-              retryAction={() => {
-                setLoading(true);
-                setError(null);
-                StudentExamsAPI.fetchStudentExams()
-                  .then(data => {
-                    setAllExams(data);
-                    setLoading(false);
-                  })
-                  .catch(error => {
-                    const errorMessage = error.message || "Failed to load exams. Please try again later.";
-                    setError(errorMessage);
-                    setLoading(false);
-                  });
-              }} 
+              retryAction={handleRetry}
             />
           ) : (
             <div className="space-y-4">
@@ -227,10 +236,6 @@ function StudentExams() {
                       exam={exam}
                       onStartExam={handleStartExam}
                       onResumeExam={handleResumeExam}
-                      onViewResults={handleViewResults}
-                      getExamStatus={getExamStatus}
-                      getTimeStatus={getTimeStatus}
-                      getStatusConfig={getStatusConfig}
                     />
                   ))}
                   <CustomPagination 

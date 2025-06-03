@@ -1,7 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { 
   Eye, 
@@ -11,124 +10,20 @@ import {
   Timer,
   TrendingUp
 } from "lucide-react";
-
-const formatDateTime = (dateString) => {
-  if (!dateString) return 'N/A';
-  const date = new Date(dateString);
-  return date.toLocaleDateString('en-US', { 
-    month: 'short', 
-    day: 'numeric', 
-    year: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true 
-  });
-};
-
-const getStatusConfig = (status) => {
-  const configs = {
-    not_started: {
-      badge: { variant: "secondary", text: "Not Started" },
-      icon: Clock,
-      color: "text-gray-500"
-    },
-    in_progress: {
-      badge: { variant: "default", text: "In Progress" },
-      icon: Timer,
-      color: "text-blue-500"
-    },
-    submitted: {
-      badge: { variant: "outline", text: "Submitted" },
-      icon: CheckCircle,
-      color: "text-orange-500"
-    },
-    completed: {
-      badge: { variant: "default", text: "Completed" },
-      icon: CheckCircle,
-      color: "text-green-500"
-    }
-  };
-  return configs[status] || configs.not_started;
-};
-
-const getPassFailConfig = (passFail) => {
-  if (passFail === "pass") {
-    return {
-      badge: { variant: "default", text: "Pass" },
-      icon: CheckCircle,
-      color: "text-green-500"
-    };
-  } else if (passFail === "fail") {
-    return {
-      badge: { variant: "destructive", text: "Fail" },
-      icon: XCircle,
-      color: "text-red-500"
-    };
-  }
-  return null;
-};
-
-const calculateDuration = (startTime, endTime) => {
-  if (!startTime || !endTime) return null;
-  
-  const start = new Date(startTime);
-  const end = new Date(endTime);
-  const durationMs = end - start;
-  
-  const minutes = Math.floor(durationMs / (1000 * 60));
-  const seconds = Math.floor((durationMs % (1000 * 60)) / 1000);
-  
-  if (minutes > 0) {
-    return `${minutes}m ${seconds}s`;
-  }
-  return `${seconds}s`;
-};
-
-const calculateTimeRemaining = (startTime, examEndDate) => {
-  if (!startTime || !examEndDate) return null;
-  
-  const now = new Date();
-  const endDate = new Date(examEndDate);
-  const timeLeft = endDate - now;
-  
-  if (timeLeft <= 0) return "Time expired";
-  
-  const hours = Math.floor(timeLeft / (1000 * 60 * 60));
-  const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
-  
-  if (hours > 0) {
-    return `${hours}h ${minutes}m remaining`;
-  }
-  return `${minutes}m remaining`;
-};
-
-const calculateAverage = (attempts) => {
-  if (!attempts || attempts.length === 0) return null;
-  
-  const gradesWithValues = attempts.filter(attempt => 
-    attempt.grade !== null && attempt.grade !== undefined
-  );
-  
-  if (gradesWithValues.length === 0) return null;
-  
-  const sum = gradesWithValues.reduce((acc, attempt) => acc + attempt.grade, 0);
-  return Math.round(sum / gradesWithValues.length);
-};
-
-const getHighestGrade = (attempts) => {
-  if (!attempts || attempts.length === 0) return null;
-  
-  const gradesWithValues = attempts.filter(attempt => 
-    attempt.grade !== null && attempt.grade !== undefined
-  );
-  
-  if (gradesWithValues.length === 0) return null;
-  
-  return Math.max(...gradesWithValues.map(attempt => attempt.grade));
-};
+import { StatusBadge } from "@/components/exams/status-badge";
+import { useExamStatus } from "@/hooks/use-student-exam-status";
 
 export function ExamDetailsAttempts({ exam, onViewAttempt }) {
   const navigate = useNavigate();
+  const { 
+    getAttemptStatusConfig,
+    getPassFailConfig,
+    formatDateTime,
+    calculateDuration,
+    calculateTimeRemaining,
+    calculateAverage,
+    getHighestGrade
+  } = useExamStatus();
 
   if (!exam.attempts || exam.attempts.length === 0) {
     return (
@@ -175,7 +70,6 @@ export function ExamDetailsAttempts({ exam, onViewAttempt }) {
     onViewAttempt?.(attemptId);
   };
 
-  // Add toast msg for attempt number click
   const handleAttemptNumberClick = (attempt) => {
     if (attempt.status === 'submitted' && allowReview) {
       handleViewAttempt(attempt.id);
@@ -184,8 +78,6 @@ export function ExamDetailsAttempts({ exam, onViewAttempt }) {
     }
   };
 
-
-  // Calculate attempt number based on time
   const getAttemptNumber = (attempt) => {
     const chronologicalIndex = sortedAttempts.findIndex(a => a.id === attempt.id);
     return exam.attempts.length - chronologicalIndex;
@@ -200,7 +92,6 @@ export function ExamDetailsAttempts({ exam, onViewAttempt }) {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Score Summary */}
         {(averageGrade !== null || highestGrade !== null) && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {averageGrade !== null && (
@@ -229,12 +120,10 @@ export function ExamDetailsAttempts({ exam, onViewAttempt }) {
           </div>
         )}
 
-        {/* Attempts List */}
         <div className="space-y-4">
           {displayAttempts.map((attempt) => {
-            const statusConfig = getStatusConfig(attempt.status);
-            const passFailConfig = getPassFailConfig(attempt.pass_fail);
-            const StatusIcon = statusConfig.icon;
+            const statusConfig = getAttemptStatusConfig(attempt.status);
+            const passFailConfig = attempt.pass_fail ? getPassFailConfig(attempt.pass_fail) : null;
             const duration = calculateDuration(attempt.started_at, attempt.submitted_at);
             const timeRemaining = attempt.status === 'in_progress' 
               ? calculateTimeRemaining(attempt.started_at, exam.exam_instance_id.end_date)
@@ -244,10 +133,8 @@ export function ExamDetailsAttempts({ exam, onViewAttempt }) {
 
             return (
               <div key={attempt.id} className="border rounded-lg p-4 space-y-3">
-                {/* Attempt Header */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <StatusIcon className={`h-4 w-4 ${statusConfig.color}`} />
                     <span 
                       className={`font-medium ${
                         canViewResults 
@@ -258,20 +145,24 @@ export function ExamDetailsAttempts({ exam, onViewAttempt }) {
                     >
                       Attempt {attemptNumber}
                     </span>
-                    <Badge variant={statusConfig.badge.variant} className="text-xs">
-                      {statusConfig.badge.text}
-                    </Badge>
+                    <StatusBadge 
+                      config={statusConfig}
+                      showIcon={false}
+                      showBadge={true}
+                      size="sm"
+                    />
                   </div>
                   
-                  {/* Pass/Fail Badge */}
                   {passFailConfig && (
-                    <Badge variant={passFailConfig.badge.variant} className="text-xs">
-                      {passFailConfig.badge.text}
-                    </Badge>
+                    <StatusBadge 
+                      config={passFailConfig}
+                      showIcon={false}
+                      showBadge={true}
+                      size="sm"
+                    />
                   )}
                 </div>
 
-                {/* Attempt Details */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                   <div>
                     <div className="text-muted-foreground mb-1">Started</div>
@@ -309,7 +200,6 @@ export function ExamDetailsAttempts({ exam, onViewAttempt }) {
                   )}
                 </div>
 
-                {/* Action Button */}
                 {attempt.status === 'submitted' && allowReview && (
                   <div className="pt-2 border-t">
                     <Button
@@ -337,9 +227,6 @@ export function ExamDetailsAttempts({ exam, onViewAttempt }) {
           })}
         </div>
 
-
-
-        {/* Review Notice */}
         {!allowReview && exam.attempts.some(a => a.status === 'submitted') && (
           <div className="bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
             <div className="flex items-center gap-2 text-yellow-800 dark:text-yellow-200">

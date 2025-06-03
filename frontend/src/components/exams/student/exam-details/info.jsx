@@ -1,7 +1,8 @@
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { StatusBadge } from "@/components/exams/status-badge";
+import { useExamStatus } from "@/hooks/use-student-exam-status";
 import { 
   Calendar, 
   Clock, 
@@ -10,59 +11,26 @@ import {
   FileText,
   Settings,
   Shield,
-  Eye,
   Copy
 } from "lucide-react";
 
-const formatDateTime = (dateString) => {
-  const date = new Date(dateString);
-  return {
-    date: date.toLocaleDateString('en-US', { 
-      month: 'short', 
-      day: 'numeric', 
-      year: 'numeric' 
-    }),
-    time: date.toLocaleTimeString('en-US', { 
-      hour: 'numeric', 
-      minute: '2-digit',
-      hour12: true 
-    })
-  };
-};
-
-const getTimeStatus = (startDate, endDate) => {
-  const now = new Date();
-  const start = new Date(startDate);
-  const end = new Date(endDate);
-  
-  if (now < start) {
-    return {
-      status: "upcoming",
-      text: "Starts soon",
-      color: "text-blue-600 dark:text-blue-400"
-    };
-  } else if (now > end) {
-    return {
-      status: "overdue", 
-      text: "Ended",
-      color: "text-red-500 dark:text-red-400"
-    };
-  } else {
-    return {
-      status: "active",
-      text: "Active now",
-      color: "text-green-600 dark:text-green-400"
-    };
-  }
-};
-
 export function ExamDetailsInfo({ exam }) {
-  const startDateTime = formatDateTime(exam.exam_instance_id.start_date);
-  const endDateTime = formatDateTime(exam.exam_instance_id.end_date);
+  const { 
+    getTimeStatus, 
+    getStatusConfig, 
+    getSecurityFeatureStatus,
+    formatDateTimeDetailed 
+  } = useExamStatus();
+
+  const startDateTime = formatDateTimeDetailed(exam.exam_instance_id.start_date);
+  const endDateTime = formatDateTimeDetailed(exam.exam_instance_id.end_date);
+  
   const timeStatus = getTimeStatus(exam.exam_instance_id.start_date, exam.exam_instance_id.end_date);
+  const timeStatusConfig = getStatusConfig(timeStatus);
+  const securitySettings = exam.exam_instance_id.security_settings;
+  const securityFeatures = getSecurityFeatureStatus(securitySettings);
   
   const attemptsRemaining = exam.exam_instance_id.max_attempts - exam.attempts_count;
-  const securitySettings = exam.exam_instance_id.security_settings;
 
   const copyEmailToClipboard = async (email) => {
     try {
@@ -82,12 +50,12 @@ export function ExamDetailsInfo({ exam }) {
               <FileText className="h-5 w-5" />
               Exam Information
             </div>
-            <Badge 
-              variant="outline" 
-              className={`text-xs ${timeStatus.status === 'active' ? 'border-green-200 text-green-700 dark:border-green-800 dark:text-green-300' : timeStatus.status === 'upcoming' ? 'border-blue-200 text-blue-700 dark:border-blue-800 dark:text-blue-300' : 'border-red-200 text-red-700 dark:border-red-800 dark:text-red-300'}`}
-            >
-              {timeStatus.text}
-            </Badge>
+            <StatusBadge 
+              config={timeStatusConfig}
+              size="sm"
+              showIcon={false}
+              showBadge={true}
+            />
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -158,37 +126,18 @@ export function ExamDetailsInfo({ exam }) {
               Security Features
             </div>
             <div className="flex flex-wrap gap-2">
-              {securitySettings?.shuffle_questions ? (
-                <Badge variant="outline" className="text-xs border-purple-200 text-purple-700 dark:border-purple-800 dark:text-purple-300">
-                  Questions Shuffled
-                </Badge>
-              ) : (
-                <Badge variant="outline" className="text-xs border-gray-200 text-gray-600 dark:border-gray-700 dark:text-gray-400">
-                  Questions Not Shuffled
-                </Badge>
-              )}
-
-              {securitySettings?.prevent_tab_switching ? (
-                <Badge variant="outline" className="text-xs border-red-200 text-red-700 dark:border-red-800 dark:text-red-300">
-                  Tab Switching Prevented
-                </Badge>
-              ) : (
-                <Badge variant="outline" className="text-xs border-gray-200 text-gray-600 dark:border-gray-700 dark:text-gray-400">
-                  Tab Switching Allowed
-                </Badge>
-              )}
-
-              {securitySettings?.allow_review ? (
-                <Badge variant="outline" className="text-xs border-green-200 text-green-700 dark:border-green-800 dark:text-green-300">
-                  <Eye className="h-3 w-3 mr-1" />
-                  Review Allowed
-                </Badge>
-              ) : (
-                <Badge variant="outline" className="text-xs border-gray-200 text-gray-600 dark:border-gray-700 dark:text-gray-400">
-                  <Eye className="h-3 w-3 mr-1" />
-                  Review Not Allowed
-                </Badge>
-              )}
+              {securityFeatures.map((feature, index) => {
+                const config = getStatusConfig(feature);
+                return (
+                  <StatusBadge 
+                    key={index}
+                    config={config}
+                    size="xs"
+                    showIcon={true}
+                    showBadge={true}
+                  />
+                );
+              })}
             </div>
           </div>
 
@@ -200,11 +149,11 @@ export function ExamDetailsInfo({ exam }) {
             <Button 
               variant="link" 
               size="sm" 
-              className="!p-0 h-auto text-muted-foreground hover:text-foreground"
+              className="!p-0 h-auto text-muted-foreground hover:text-foreground flex items-center gap-1"
               onClick={() => copyEmailToClipboard(exam.exam_instance_id.created_by?.email)}
             >
               {exam.exam_instance_id.created_by?.email}
-              <Copy className="h-3 w-3 mr-1" />
+              <Copy className="h-3 w-3" />
             </Button>
           </div>
         </CardContent>

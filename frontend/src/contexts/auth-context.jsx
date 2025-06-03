@@ -13,7 +13,6 @@ export function AuthProvider({ children }) {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Data for fetch frequency safety logic
   const lastFetchRef = useRef(0);
   const FETCH_INTERVAL = 30 * 1000;
 
@@ -72,8 +71,6 @@ export function AuthProvider({ children }) {
       await fetchUser();
       navigate("/dashboard");
       return true;
-    } catch (error) {
-      throw new Error(error || "Unexpected error occurred during login");
     } finally {
       setLoading(false);
     }
@@ -90,8 +87,23 @@ export function AuthProvider({ children }) {
     }
   };
 
+  const updateUser = (userData) => {
+    if (!userData) return;
+    const updatedUser = { ...user, ...userData };
+    setUser(updatedUser);
+    sessionStorage.setItem('user', JSON.stringify(updatedUser));
+  };
+
   const value = useMemo(
-    () => ({ user, loading, isAuthenticated: !!user, login, logout, refreshUser: fetchUser }),
+    () => ({ 
+      user, 
+      loading, 
+      isAuthenticated: !!user, 
+      login, 
+      logout, 
+      refreshUser: fetchUser,
+      updateUser
+    }),
     [user, loading, login, logout, fetchUser]
   );
 

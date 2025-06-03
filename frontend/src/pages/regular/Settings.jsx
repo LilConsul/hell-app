@@ -15,11 +15,13 @@ export default function SettingsPage() {
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
 
+  // ✅ Initialize with empty strings instead of undefined
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [editField, setEditField] = useState(null);
   const [isUpdating, setIsUpdating] = useState(false);
 
+  // ✅ Initialize password fields with empty strings
   const [showCurrentPasswordModal, setShowCurrentPasswordModal] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
@@ -36,19 +38,24 @@ export default function SettingsPage() {
   } = usePasswordValidation(newPassword);
 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [deleteConfirmText, setDeleteConfirmText] = useState(''); // ✅ Empty string
   const [isDeletionEmailSent, setIsDeletionEmailSent] = useState(false);
   const [showDeletionEmailSentModal, setShowDeletionEmailSentModal] = useState(false);
 
-  const [language, setLanguage] = useState('en');
-  const [notifications, setNotifications] = useState({ email: true });
+  const [language, setLanguage] = useState('en'); // ✅ Default value
+  const [notifications, setNotifications] = useState({ email: true }); // ✅ Default object
 
   useEffect(() => {
     if (user) {
+      // ✅ Always provide fallback empty strings
       setFirstName(user.first_name || user.firstName || '');
       setLastName(user.last_name || user.lastName || '');
-      setLanguage(user.language || user.preferences?.language || 'en');
+      
+      // ✅ Provide fallback for language
+      const savedLanguage = localStorage.getItem('userLanguage');
+      setLanguage(savedLanguage || user.language || user.preferences?.language || 'en');
 
+      // ✅ Provide fallback for notifications
       const savedNotifications = localStorage.getItem('notifications');
       if (savedNotifications) {
         try {
@@ -61,6 +68,20 @@ export default function SettingsPage() {
       }
     }
   }, [user]);
+
+  useEffect(() => {
+    const handleStorageChange = (e) => {
+      if (e.key === 'userLanguage' && e.newValue !== language) {
+        setLanguage(e.newValue || 'en'); // ✅ Fallback
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, [language]);
 
   const handleNameKeyDown = useCallback((event, field) => {
     if (event.key === 'Enter') {
@@ -107,7 +128,6 @@ export default function SettingsPage() {
 
       apiRequest('/api/v1/users/me', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updateData),
         credentials: 'include'
       }).then(() => {
@@ -122,6 +142,7 @@ export default function SettingsPage() {
           [field]: user[field]
         });
         
+        // ✅ Always provide fallback values
         if (field === 'firstName') {
           setFirstName(user.first_name || user.firstName || '');
         } else {
@@ -143,7 +164,6 @@ export default function SettingsPage() {
 
       await apiRequest('/api/v1/users/me', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           preferences: { 
             notifications: newNotifications 
@@ -159,32 +179,22 @@ export default function SettingsPage() {
     }
   }, [notifications]);
 
-  const handleChangeLanguage = useCallback(async (newLanguage) => {
+  const handleChangeLanguage = useCallback((newLanguage) => {
     const oldLanguage = language;
     setLanguage(newLanguage);
-
+    
     try {
-      await apiRequest('/api/v1/users/me', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          preferences: { 
-            language: newLanguage 
-          } 
-        }),
-        credentials: 'include'
-      });
-
-      await refreshUser();
+      localStorage.setItem('userLanguage', newLanguage);
       setSuccessMessage('Language updated successfully');
-
     } catch (error) {
-      setErrorMessage('Failed to update language');
+      console.error('Failed to save language preference:', error);
+      setErrorMessage('Failed to update language preference');
       setLanguage(oldLanguage);
     }
-  }, [language, refreshUser]);
+  }, [language]);
 
   const handleOpenCurrentPasswordModal = useCallback(() => {
+    // ✅ Reset to empty strings, not undefined
     setCurrentPassword('');
     setNewPassword('');
     setConfirmPassword('');
@@ -253,6 +263,7 @@ export default function SettingsPage() {
       setShowNewPasswordModal(false);
       setSuccessMessage('Password changed successfully');
 
+      // ✅ Reset to empty strings
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
@@ -268,7 +279,7 @@ export default function SettingsPage() {
       
       if (userMessage.includes('password') && !userMessage.includes('new_password')) {
         userMessage = 'Current password is incorrect.';
-        setCurrentPassword('');
+        setCurrentPassword(''); // ✅ Empty string
         setShowNewPasswordModal(false);
         setShowCurrentPasswordModal(true);
       } else if (userMessage.includes('new_password') || userMessage.includes('Password validation')) {
@@ -293,13 +304,12 @@ export default function SettingsPage() {
     try {
       await apiRequest('/api/v1/users/me/request-delete', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         credentials: 'include'
       });
 
       setShowDeleteModal(false);
       setShowDeletionEmailSentModal(true);
-      setDeleteConfirmText('');
+      setDeleteConfirmText(''); // ✅ Empty string
 
     } catch (error) {
       setErrorMessage(error.message || 'Failed to send confirmation email. Please try again.');

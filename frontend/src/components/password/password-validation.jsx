@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { validatePassword, isPasswordValid } from "./password-config";
 
 export function usePasswordValidation(password) {
   const [debouncedPassword, setDebouncedPassword] = useState("");

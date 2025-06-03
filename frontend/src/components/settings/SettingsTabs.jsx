@@ -65,7 +65,6 @@ const AccountTab = memo(function AccountTab({
   setLastName,
   handleSaveName
 }) {
-  // Console logs eliminați - datele sunt vizibile în UI
 
   return (
     <Card>

@@ -1,4 +1,4 @@
-import { memo, useCallback } from "react";
+import { memo, useCallback, createContext, useContext, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,17 +13,55 @@ import {
 import { PasswordRequirements } from "@/components/password/password-requirements";
 import { Eye, EyeOff, X } from "lucide-react";
 
+const PasswordContext = createContext();
+
+const usePasswordContext = () => {
+  const context = useContext(PasswordContext);
+  if (!context) {
+    throw new Error('usePasswordContext must be used within PasswordProvider');
+  }
+  return context;
+};
+
+const PasswordProvider = ({ children, value }) => {
+  return (
+    <PasswordContext.Provider value={value}>
+      {children}
+    </PasswordContext.Provider>
+  );
+};
+
 const PasswordInput = memo(function PasswordInput({
   id,
   label,
-  value,
-  onChange,
-  showPassword,
-  setShowPassword,
   placeholder,
-  inputRef,
-  onKeyDown
+  isConfirm = false,
+  inputRef
 }) {
+  const {
+    newPassword,
+    setNewPassword,
+    confirmPassword,
+    setConfirmPassword,
+    showNewPassword,
+    setShowNewPassword,
+    showConfirmPassword,
+    setShowConfirmPassword
+  } = usePasswordContext();
+
+  const value = isConfirm ? confirmPassword : newPassword;
+  const setValue = isConfirm ? setConfirmPassword : setNewPassword;
+  const showPassword = isConfirm ? showConfirmPassword : showNewPassword;
+  const setShowPassword = isConfirm ? setShowConfirmPassword : setShowNewPassword;
+
+  const handleChange = useCallback((e) => {
+    setValue(e.target.value);
+  }, [setValue]);
+
+  const toggleVisibility = useCallback(() => {
+    setShowPassword(!showPassword);
+  }, [showPassword, setShowPassword]);
+
   return (
     <div className="space-y-2">
       {label && <Label htmlFor={id}>{label}</Label>}
@@ -34,15 +72,13 @@ const PasswordInput = memo(function PasswordInput({
           type={showPassword ? "text" : "password"}
           placeholder={placeholder}
           value={value}
-          onChange={onChange}
-          onKeyDown={onKeyDown}
-          className="dark:bg-neutral-800 dark:border-neutral-700"
+          onChange={handleChange}
         />
         <Button
           size="icon"
           variant="ghost"
           className="absolute right-2 top-2/4 -translate-y-1/2"
-          onClick={() => setShowPassword(!showPassword)}
+          onClick={toggleVisibility}
           type="button"
         >
           {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -52,86 +88,95 @@ const PasswordInput = memo(function PasswordInput({
   );
 });
 
-const NewPasswordModal = memo(function NewPasswordModal({
-  open,
-  onOpenChange,
-  newPassword,
-  setNewPassword,
-  confirmPassword,
-  setConfirmPassword,
-  showNewPassword,
-  setShowNewPassword,
-  showConfirmPassword,
-  setShowConfirmPassword,
-  handlePasswordChange,
-  passwordErrors,
-  showRequirements,
-  isPasswordValid,
-  inputRef
-}) {
-  const handleNewPasswordChange = useCallback((e) => {
-    setNewPassword(e.target.value);
-    // Hook-ul usePasswordValidation gestionează automat showRequirements
-  }, [setNewPassword]);
+const PasswordValidation = memo(function PasswordValidation() {
+  const { newPassword, confirmPassword, passwordErrors, showRequirements } = usePasswordContext();
+
+  const passwordsMatch = newPassword && confirmPassword && newPassword === confirmPassword;
+  const showMismatch = newPassword && confirmPassword && !passwordsMatch;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md dark:bg-neutral-900">
-        <DialogHeader>
-          <DialogTitle>Set New Password</DialogTitle>
-          <DialogDescription>
-            Create a strong, unique password to protect your account.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="space-y-4 py-2">
-          <PasswordInput
-            id="new-password"
-            label="New Password"
-            value={newPassword}
-            onChange={handleNewPasswordChange}
-            showPassword={showNewPassword}
-            setShowPassword={setShowNewPassword}
-            placeholder="Enter new password"
-            inputRef={inputRef}
-          />
+    <>
+      {showMismatch && (
+        <p className="text-sm text-destructive flex items-center gap-1 mt-1">
+          <X size={14} className="text-destructive" />
+          <span>Passwords do not match</span>
+        </p>
+      )}
+      <PasswordRequirements 
+        passwordErrors={passwordErrors} 
+        showRequirements={showRequirements} 
+      />
+    </>
+  );
+});
 
-          <PasswordInput
-            id="confirm-password"
-            label="Confirm New Password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            showPassword={showConfirmPassword}
-            setShowPassword={setShowConfirmPassword}
-            placeholder="Confirm new password"
-          />
+const ModalFooter = memo(function ModalFooter() {
+  const { 
+    onOpenChange, 
+    handlePasswordChange, 
+    isPasswordValid, 
+    newPassword, 
+    confirmPassword 
+  } = usePasswordContext();
+
+  const isFormValid = isPasswordValid && newPassword === confirmPassword;
+
+  return (
+    <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
+      <Button
+        type="button"
+        variant="outline"
+        onClick={() => onOpenChange(false)}
+      >
+        Cancel
+      </Button>
+      <Button
+        type="button"
+        onClick={handlePasswordChange}
+        disabled={!isFormValid}
+      >
+        Save Password
+      </Button>
+    </DialogFooter>
+  );
+});
+
+const NewPasswordModal = memo(function NewPasswordModal(props) {
+  const inputRef = useRef(null);
+
+  return (
+    <PasswordProvider value={props}>
+      <Dialog open={props.open} onOpenChange={props.onOpenChange}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Set New Password</DialogTitle>
+            <DialogDescription>
+              Create a strong, unique password to protect your account.
+            </DialogDescription>
+          </DialogHeader>
           
-          {newPassword && confirmPassword && newPassword !== confirmPassword && (
-            <p className="text-sm text-destructive flex items-center gap-1 mt-1">
-              <X size={14} className="text-destructive" />
-              <span>Passwords do not match</span>
-            </p>
-          )}
+          <div className="space-y-4 py-2">
+            <PasswordInput
+              id="new-password"
+              label="New Password"
+              placeholder="Enter new password"
+              inputRef={inputRef}
+            />
 
-          <PasswordRequirements passwordErrors={passwordErrors} showRequirements={showRequirements} />
-        </div>
-        <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-          >
-            Cancel
-          </Button>
-          <Button
-            type="button"
-            onClick={handlePasswordChange}
-            disabled={!isPasswordValid || newPassword !== confirmPassword}
-          >
-            Save Password
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+            <PasswordInput
+              id="confirm-password"
+              label="Confirm New Password"
+              placeholder="Confirm new password"
+              isConfirm={true}
+            />
+            
+            <PasswordValidation />
+          </div>
+          
+          <ModalFooter />
+        </DialogContent>
+      </Dialog>
+    </PasswordProvider>
   );
 });
 

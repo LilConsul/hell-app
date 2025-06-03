@@ -1,4 +1,3 @@
-import { memo } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CheckCircle, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";

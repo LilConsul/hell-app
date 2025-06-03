@@ -1,4 +1,3 @@
-// SettingsModals.jsx
 import { useRef, useEffect, useState, memo } from "react";
 import { CurrentPasswordModal } from "@/components/settings/current-password-modal.jsx";
 import NewPasswordModal from "@/components/settings/new-password-modal.jsx";
@@ -39,20 +38,55 @@ export const SettingsModals = memo(function SettingsModals({
   errorMessage,
   user
 }) {
-  const [isDarkMode, setIsDarkMode] = useState(false);
   const currentPasswordRef = useRef(null);
   const newPasswordRef = useRef(null);
 
-  useEffect(() => {
-    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-    const applyTheme = (e) => setIsDarkMode(e.matches);
-    applyTheme(mediaQuery);
+  const currentPasswordProps = {
+    open: showCurrentPasswordModal,
+    onOpenChange: setShowCurrentPasswordModal,
+    currentPassword,
+    setCurrentPassword,
+    showCurrentPassword,
+    setShowCurrentPassword,
+    handleProceedCurrentPassword,
+    errorMessage,
+    inputRef: currentPasswordRef
+  };
 
-    // Use event listener properly
-    const handler = (e) => applyTheme(e);
-    mediaQuery.addEventListener("change", handler);
-    return () => mediaQuery.removeEventListener("change", handler);
-  }, []);
+  const newPasswordProps = {
+    open: showNewPasswordModal,
+    onOpenChange: setShowNewPasswordModal,
+    newPassword,
+    setNewPassword,
+    confirmPassword,
+    setConfirmPassword,
+    showNewPassword,
+    setShowNewPassword,
+    showConfirmPassword,
+    setShowConfirmPassword,
+    handlePasswordChange,
+    passwordErrors,
+    showRequirements,
+    isPasswordValid,
+    inputRef: newPasswordRef
+  };
+
+  const deleteAccountProps = {
+    open: showDeleteModal,
+    onOpenChange: setShowDeleteModal,
+    deleteConfirmText,
+    setDeleteConfirmText,
+    handleSendDeleteConfirmation,
+    isDeletionEmailSent,
+    errorMessage,
+    user
+  };
+
+  const emailSentProps = {
+    open: showDeletionEmailSentModal,
+    onOpenChange: setShowDeletionEmailSentModal,
+    user
+  };
 
   useEffect(() => {
     if (showCurrentPasswordModal && currentPasswordRef.current) {
@@ -68,52 +102,10 @@ export const SettingsModals = memo(function SettingsModals({
 
   return (
     <>
-      <CurrentPasswordModal
-        open={showCurrentPasswordModal}
-        onOpenChange={setShowCurrentPasswordModal}
-        currentPassword={currentPassword}
-        setCurrentPassword={setCurrentPassword}
-        showCurrentPassword={showCurrentPassword}
-        setShowCurrentPassword={setShowCurrentPassword}
-        handleProceedCurrentPassword={handleProceedCurrentPassword}
-        errorMessage={errorMessage}
-        inputRef={currentPasswordRef}
-      />
-
-      <NewPasswordModal
-        open={showNewPasswordModal}
-        onOpenChange={setShowNewPasswordModal}
-        newPassword={newPassword}
-        setNewPassword={setNewPassword}
-        confirmPassword={confirmPassword}
-        setConfirmPassword={setConfirmPassword}
-        showNewPassword={showNewPassword}
-        setShowNewPassword={setShowNewPassword}
-        showConfirmPassword={showConfirmPassword}
-        setShowConfirmPassword={setShowConfirmPassword}
-        handlePasswordChange={handlePasswordChange}
-        passwordErrors={passwordErrors}
-        showRequirements={showRequirements}
-        isPasswordValid={isPasswordValid}
-        inputRef={newPasswordRef}
-      />
-
-      <DeleteAccountModal
-        open={showDeleteModal}
-        onOpenChange={setShowDeleteModal}
-        deleteConfirmText={deleteConfirmText}
-        setDeleteConfirmText={setDeleteConfirmText}
-        handleSendDeleteConfirmation={handleSendDeleteConfirmation}
-        isDeletionEmailSent={isDeletionEmailSent}
-        errorMessage={errorMessage}
-        user={user}
-      />
-
-      <EmailSentModal
-        open={showDeletionEmailSentModal}
-        onOpenChange={setShowDeletionEmailSentModal}
-        user={user}
-      />
+      <CurrentPasswordModal {...currentPasswordProps} />
+      <NewPasswordModal {...newPasswordProps} />
+      <DeleteAccountModal {...deleteAccountProps} />
+      <EmailSentModal {...emailSentProps} />
     </>
   );
 });

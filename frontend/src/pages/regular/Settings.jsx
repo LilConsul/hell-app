@@ -1,362 +1,404 @@
-import { useState, useEffect } from "react";
-import { Navbar } from "@/components/navbar";
-import { Footer } from "@/components/footer";
-import { useAuth } from "@/contexts/auth-context";
-import { usePasswordValidation } from "@/components/password/password-validation";
-import { useNavigate } from "react-router-dom";
-import { apiRequest } from "@/lib/utils";
+import { useState, useCallback, useEffect } from 'react';
+import { useAuth } from '@/contexts/auth-context';
+import { SettingsTabs } from '@/components/settings/SettingsTabs';
+import { SettingsModals } from '@/components/settings/SettingsModals';
+import { FeedbackAlerts } from '@/components/settings/FeedbackAlerts';
+import { Navbar } from '@/components/navbar';
+import { Footer } from '@/components/footer';
+import { apiRequest } from '@/lib/utils';
+import { usePasswordValidation } from '@/components/password/password-validation';
 
-// Import refactored components
-import { SettingsTabs } from "@/components/settings/SettingsTabs";
-import { SettingsModals } from "@/components/settings/SettingsModals";
-import { FeedbackAlerts } from "@/components/settings/FeedbackAlerts";
+export default function SettingsPage() {
+  const { user, refreshUser, updateUser, logout } = useAuth();
 
+  const [activeTab, setActiveTab] = useState('account');
+  const [successMessage, setSuccessMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
 
-export default function Settings() {
-  // Auth context
-  const { user, refreshUser, logout } = useAuth();
-  const navigate = useNavigate();
-  
-  // User data state
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [language, setLanguage] = useState("en");
-  const [notifications, setNotifications] = useState({ email: true });
-  
-  // UI state
-  const [activeTab, setActiveTab] = useState("account");
-  const [editField, setEditField] = useState("");
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [editField, setEditField] = useState(null);
   const [isUpdating, setIsUpdating] = useState(false);
-  const [successMessage, setSuccessMessage] = useState("");
-  const [errorMsg, setErrorMsg] = useState("");
-  
-  // Password modal state
+
   const [showCurrentPasswordModal, setShowCurrentPasswordModal] = useState(false);
-  const [showNewPasswordModal, setShowNewPasswordModal] = useState(false);
-  const [currentPassword, setCurrentPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  const [currentPassword, setCurrentPassword] = useState('');
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPasswordModal, setShowNewPasswordModal] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [errorMessage, setErrorMessage] = useState("");
-  
-  // Delete account modal state
+
+  const { 
+    passwordErrors, 
+    showRequirements, 
+    isPasswordValid: isPasswordValidFromHook
+  } = usePasswordValidation(newPassword);
+
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [isDeletionEmailSent, setIsDeletionEmailSent] = useState(false);
   const [showDeletionEmailSentModal, setShowDeletionEmailSentModal] = useState(false);
-  const [accountDeleted, setAccountDeleted] = useState(false);
-  
-  // Password validation
-  const { passwordErrors, showRequirements, setShowRequirements, isPasswordValid } = usePasswordValidation(newPassword);
 
-  // Single effect to fetch user data on mount
-  useEffect(() => {
-    // Only fetch user data once on component mount
-    refreshUser();
-  }, []);
+  const [language, setLanguage] = useState('en');
+  const [notifications, setNotifications] = useState({ email: true });
 
-  // Update local state when user data changes
   useEffect(() => {
     if (user) {
-      setFirstName(user.first_name || "");
-      setLastName(user.last_name || "");
-      setLanguage(user.language || "en");
-      // Ensure we're setting the initial state correctly with proper fallback
-      setNotifications({ email: user.receive_notifications === false ? false : true });
+      setFirstName(user.first_name || user.firstName || '');
+      setLastName(user.last_name || user.lastName || '');
+      setLanguage(user.language || user.preferences?.language || 'en');
+
+      const savedNotifications = localStorage.getItem('notifications');
+      if (savedNotifications) {
+        try {
+          setNotifications(JSON.parse(savedNotifications));
+        } catch (error) {
+          setNotifications(user.notifications || user.preferences?.notifications || { email: true });
+        }
+      } else {
+        setNotifications(user.notifications || user.preferences?.notifications || { email: true });
+      }
     }
   }, [user]);
 
-  // Handle name updates
-  const handleSaveName = async (field) => {
-    // Prevent multiple submissions
-    if (isUpdating) return;
-    
-    try {
-      setIsUpdating(true);
-      const payload = {};
+  const handleNameKeyDown = useCallback((event, field) => {
+    if (event.key === 'Enter') {
+      event.preventDefault(); 
       
-      if (field === "firstName") {
-        payload.first_name = firstName;
-      } else if (field === "lastName") {
-        payload.last_name = lastName;
+      if (editField === field && !isUpdating) {
+        handleSaveName(field);
       }
-      
-      const response = await apiRequest("/api/v1/users/me", {
-        method: "PUT",
+    }
+  }, [editField, isUpdating]);
+
+  useEffect(() => {
+    if (successMessage || errorMessage) {
+      const timer = setTimeout(() => {
+        setSuccessMessage('');
+        setErrorMessage('');
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage, errorMessage]);
+
+  const handleSaveName = useCallback(async (field) => {
+    setIsUpdating(true);
+    setErrorMessage('');
+
+    const newValue = field === 'firstName' ? firstName : lastName;
+    const fieldName = field === 'firstName' ? 'first_name' : 'last_name';
+    
+    updateUser({
+      [fieldName]: newValue,
+      [field]: newValue 
+    });
+    
+    setSuccessMessage(`${field === 'firstName' ? 'First' : 'Last'} name updated successfully`);
+    setEditField(null);
+    setIsUpdating(false);
+
+    try {
+      const updateData = {
+        first_name: field === 'firstName' ? firstName : (user.first_name || user.firstName || ''),
+        last_name: field === 'lastName' ? lastName : (user.last_name || user.lastName || ''),
+        email: user.email
+      };
+
+      apiRequest('/api/v1/users/me', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updateData),
+        credentials: 'include'
+      }).then(() => {
+        setTimeout(() => {
+          refreshUser().catch(console.error);
+        }, 500);
+      }).catch(error => {
+        setErrorMessage('Failed to save changes. Please try again.');
+        
+        updateUser({
+          [fieldName]: user[fieldName],
+          [field]: user[field]
+        });
+        
+        if (field === 'firstName') {
+          setFirstName(user.first_name || user.firstName || '');
+        } else {
+          setLastName(user.last_name || user.lastName || '');
+        }
+      });
+
+    } catch (error) {
+      console.error('Unexpected error:', error);
+    }
+  }, [firstName, lastName, refreshUser, updateUser, user]);
+
+  const handleToggleNotifications = useCallback(async (checked) => {
+    const newNotifications = { ...notifications, email: checked };
+    setNotifications(newNotifications);
+
+    try {
+      localStorage.setItem('notifications', JSON.stringify(newNotifications));
+
+      await apiRequest('/api/v1/users/me', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          preferences: { 
+            notifications: newNotifications 
+          } 
+        }),
+        credentials: 'include'
+      });
+
+      setSuccessMessage('Notification preferences updated');
+    } catch (error) {
+      setErrorMessage('Failed to save notification preferences');
+      setNotifications(notifications);
+    }
+  }, [notifications]);
+
+  const handleChangeLanguage = useCallback(async (newLanguage) => {
+    const oldLanguage = language;
+    setLanguage(newLanguage);
+
+    try {
+      await apiRequest('/api/v1/users/me', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          preferences: { 
+            language: newLanguage 
+          } 
+        }),
+        credentials: 'include'
+      });
+
+      await refreshUser();
+      setSuccessMessage('Language updated successfully');
+
+    } catch (error) {
+      setErrorMessage('Failed to update language');
+      setLanguage(oldLanguage);
+    }
+  }, [language, refreshUser]);
+
+  const handleOpenCurrentPasswordModal = useCallback(() => {
+    setCurrentPassword('');
+    setNewPassword('');
+    setConfirmPassword('');
+    setErrorMessage('');
+    setShowCurrentPassword(false);
+    setShowNewPassword(false);
+    setShowConfirmPassword(false);
+    setShowCurrentPasswordModal(true);
+  }, []);
+
+  const handleProceedCurrentPassword = useCallback(() => {
+    if (!currentPassword.trim()) {
+      setErrorMessage('Please enter your current password');
+      return;
+    }
+
+    setErrorMessage('');
+    setShowCurrentPasswordModal(false);
+    setShowNewPasswordModal(true);
+  }, [currentPassword]);
+
+  const handlePasswordChange = useCallback(async () => {
+    if (!currentPassword.trim()) {
+      setErrorMessage('Current password is required');
+      return;
+    }
+
+    if (!newPassword.trim()) {
+      setErrorMessage('New password is required');
+      return;
+    }
+
+    if (!confirmPassword.trim()) {
+      setErrorMessage('Password confirmation is required');
+      return;
+    }
+
+    if (!isPasswordValidFromHook) {
+      setErrorMessage('Password does not meet all requirements');
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setErrorMessage('Passwords do not match');
+      return;
+    }
+
+    if (newPassword === currentPassword) {
+      setErrorMessage('New password must be different from current password');
+      return;
+    }
+
+    setErrorMessage('');
+
+    try {
+      const payload = {
+        password: currentPassword,
+        new_password: newPassword      
+      };
+
+      await apiRequest('/api/v1/users/me/change-password', {
+        method: 'PUT',
         body: JSON.stringify(payload),
       });
 
-      // Update both local state and auth context
-      // This helps maintain UI consistency without an extra API call
-      if (response && response.data) {
-        // Assuming refreshUser can accept direct data to avoid an API call
-        refreshUser(response.data);
-      }
-      
-      setEditField("");
-      showSuccess("Profile updated successfully!");
-    } catch (error) {
-      console.error("Error updating profile:", error);
-      showError(`Failed to update profile: ${error.message}`);
-    } finally {
-      setIsUpdating(false);
-    }
-  };
-
-  // Handle language change
-  const handleChangeLanguage = async (value) => {
-    try {
-      // Set loading state
-      setIsUpdating(true);
-      
-      // Update local state immediately for better UX
-      setLanguage(value);
-      
-      const response = await apiRequest("/api/v1/users/me", {
-        method: "PUT",
-        body: JSON.stringify({
-          language: value
-        }),
-      });
-      
-      // Update both the local state and the auth context
-      if (response && response.data) {
-        // Update the auth context with the new user data
-        refreshUser(response.data);
-      }
-      
-      showSuccess("Language updated successfully!");
-    } catch (error) {
-      // Revert on error
-      setLanguage(user?.language || "en");
-      console.error("Error updating language:", error);
-      showError(`Failed to update language: ${error.message}`);
-    } finally {
-      setIsUpdating(false);
-    }
-  };
-  
-  // FIXED toggle function that prevents immediate reversion
-  const handleToggleNotifications = async (value) => {
-    try {
-      // Prevent multiple submissions
-      if (isUpdating) return;
-      
-      // Set loading state
-      setIsUpdating(true);
-      
-      // Store the original value in case we need to revert
-      const originalValue = notifications.email;
-      
-      // Update local state immediately for better user experience
-      setNotifications({ ...notifications, email: value });
-      
-      const response = await apiRequest("/api/v1/users/me", {
-        method: "PUT",
-        body: JSON.stringify({
-          receive_notifications: value
-        }),
-      });
-      
-      // Success case
-      if (response && response.data) {
-        // Don't call refreshUser here as it might override our local state
-        // Just show success message
-        showSuccess("Notification preferences updated successfully!");
-      }
-    } catch (error) {
-      // Revert local state change if API call fails
-      setNotifications(prev => ({ ...prev, email: !value }));
-      console.error("Error updating notification preferences:", error);
-      showError(`Failed to update notification preferences: ${error.message}`);
-    } finally {
-      // Reset loading state
-      setIsUpdating(false);
-    }
-  };
-
-  // Password handling functions
-  const handleOpenCurrentPasswordModal = () => {
-    setErrorMessage("");
-    setCurrentPassword("");
-    setShowCurrentPasswordModal(true);
-  };
-
-  const handleProceedCurrentPassword = () => {
-    if (currentPassword.length < 6) {
-      setErrorMessage("Password must be at least 6 characters!");
-      return;
-    }
-    setErrorMessage("");
-    setShowCurrentPasswordModal(false);
-    setNewPassword("");
-    setConfirmPassword("");
-    setShowNewPasswordModal(true);
-  };
-
-  const handlePasswordChange = async () => {
-    if (newPassword !== confirmPassword) {
-      setErrorMessage("Passwords do not match. Please make sure your passwords match and try again.");
-      return;
-    }
-
-    if (!isPasswordValid) {
-      setErrorMessage("Please ensure your password meets all requirements.");
-      return;
-    }
-
-    try {
-      setIsUpdating(true);
-      
-      await apiRequest("/api/v1/users/me/change-password", {
-        method: "PUT",
-        body: JSON.stringify({
-          password: currentPassword,
-          new_password: newPassword,
-        }),
-      });
-
       setShowNewPasswordModal(false);
-      setCurrentPassword("");
-      setNewPassword("");
-      setConfirmPassword("");
-      showSuccess("Password changed successfully!");
-    } catch (error) {
-      setErrorMessage(`Password change failed: ${error.message}`);
-    } finally {
-      setIsUpdating(false);
-    }
-  };
+      setSuccessMessage('Password changed successfully');
 
-  // Account deletion handling
-  const handleSendDeleteConfirmation = async () => {
-    if (deleteConfirmText !== "DELETE") {
-      setErrorMessage("Please type DELETE to confirm sending the confirmation email");
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      setShowNewPassword(false);
+      setShowConfirmPassword(false);
+
+      setTimeout(() => {
+        refreshUser().catch(console.error);
+      }, 500);
+
+    } catch (error) {
+      let userMessage = error.message || 'An error occurred while changing your password. Please try again.';
+      
+      if (userMessage.includes('password') && !userMessage.includes('new_password')) {
+        userMessage = 'Current password is incorrect.';
+        setCurrentPassword('');
+        setShowNewPasswordModal(false);
+        setShowCurrentPasswordModal(true);
+      } else if (userMessage.includes('new_password') || userMessage.includes('Password validation')) {
+        userMessage = 'New password does not meet security requirements.';
+      } else if (userMessage.includes('same') || userMessage.includes('different')) {
+        userMessage = 'New password must be different from current password.';
+      }
+      
+      setErrorMessage(userMessage);
+    }
+  }, [currentPassword, newPassword, confirmPassword, isPasswordValidFromHook, refreshUser]);
+
+  const handleSendDeleteConfirmation = useCallback(async () => {
+    if (deleteConfirmText !== 'DELETE') {
+      setErrorMessage('Please type "DELETE" to confirm');
       return;
     }
-  
+
+    setIsDeletionEmailSent(true);
+    setErrorMessage('');
+
     try {
-      setIsDeletionEmailSent(true);
-  
-      await apiRequest("/api/v1/users/me/request-delete", {
-        method: "POST",
+      await apiRequest('/api/v1/users/me/request-delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include'
       });
-      
-      // Close the delete confirmation modal
+
       setShowDeleteModal(false);
-      setDeleteConfirmText("");
-      
-      // Show the confirmation email sent modal
       setShowDeletionEmailSentModal(true);
-      
+      setDeleteConfirmText('');
+
     } catch (error) {
-      console.error("Error sending confirmation email:", error);
-      setErrorMessage(`Failed to send confirmation email: ${error.message}`);
+      setErrorMessage(error.message || 'Failed to send confirmation email. Please try again.');
+    } finally {
       setIsDeletionEmailSent(false);
     }
-  };
-  
-  // Feedback handling
-  const showSuccess = (msg) => {
-    setSuccessMessage(msg);
-    setTimeout(() => setSuccessMessage(""), 3000);
-  };
-  
-  const showError = (msg) => {
-    setErrorMsg(msg);
-    setTimeout(() => setErrorMsg(""), 5000);
-  };
-  
-  return (
-    <div className="flex flex-col min-h-screen bg-muted/30">
-      <Navbar />
-      <main className="flex-1 container max-w-4xl mx-auto py-10 px-4 space-y-8">
-        <div className="space-y-1">
-          <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
-          <p className="text-muted-foreground">
-            Manage your account settings and preferences.
-          </p>
-        </div>
-        
-        {/* Success and error feedback */}
-        <FeedbackAlerts 
-          successMessage={successMessage} 
-          errorMsg={errorMsg} 
-        />
-  
-        {/* Main settings tabs */}
-        <SettingsTabs
-          activeTab={activeTab}
-          setActiveTab={setActiveTab}
-          user={user}
-          firstName={firstName}
-          lastName={lastName}
-          language={language}
-          notifications={notifications}
-          editField={editField}
-          setEditField={setEditField}
-          isUpdating={isUpdating}
-          setFirstName={setFirstName}
-          setLastName={setLastName}
-          handleSaveName={handleSaveName}
-          handleChangeLanguage={handleChangeLanguage}
-          handleToggleNotifications={handleToggleNotifications}
-          handleOpenCurrentPasswordModal={handleOpenCurrentPasswordModal}
-          setShowDeleteModal={setShowDeleteModal}
-        />
+  }, [deleteConfirmText]);
 
-        {/* Modal dialogs */}
-        <SettingsModals
-          // Current Password Modal props
-          showCurrentPasswordModal={showCurrentPasswordModal}
-          setShowCurrentPasswordModal={setShowCurrentPasswordModal}
-          currentPassword={currentPassword}
-          setCurrentPassword={setCurrentPassword}
-          showCurrentPassword={showCurrentPassword}
-          setShowCurrentPassword={setShowCurrentPassword}
-          handleProceedCurrentPassword={handleProceedCurrentPassword}
-          
-          // New Password Modal props
-          showNewPasswordModal={showNewPasswordModal}
-          setShowNewPasswordModal={setShowNewPasswordModal}
-          newPassword={newPassword}
-          setNewPassword={setNewPassword}
-          confirmPassword={confirmPassword}
-          setConfirmPassword={setConfirmPassword}
-          showNewPassword={showNewPassword}
-          setShowNewPassword={setShowNewPassword}
-          showConfirmPassword={showConfirmPassword}
-          setShowConfirmPassword={setShowConfirmPassword}
-          handlePasswordChange={handlePasswordChange}
-          
-          // Password validation props
-          passwordErrors={passwordErrors}
-          showRequirements={showRequirements}
-          setShowRequirements={setShowRequirements}
-          isPasswordValid={isPasswordValid}
-          
-          // Delete Account Modal props
-          showDeleteModal={showDeleteModal}
-          setShowDeleteModal={setShowDeleteModal}
-          deleteConfirmText={deleteConfirmText}
-          setDeleteConfirmText={setDeleteConfirmText}
-          handleSendDeleteConfirmation={handleSendDeleteConfirmation}
-          isDeletionEmailSent={isDeletionEmailSent}
-          
-          // Email Sent Confirmation Modal props
-          showDeletionEmailSentModal={showDeletionEmailSentModal}
-          setShowDeletionEmailSentModal={setShowDeletionEmailSentModal}
-          
-          // Auth props
-          logout={logout}
-          
-          // General props
-          errorMessage={errorMessage}
-          user={user}
-        />
+  if (!user) {
+    return (
+      <div className="flex flex-col min-h-screen">
+        <Navbar />
+        <main className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading settings...</p>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col min-h-screen">
+      <Navbar />
+
+      <main className="flex-1">
+        <div className="container px-4 sm:px-6 mx-auto max-w-6xl py-6 space-y-6">
+          <div>
+            <h1 className="text-3xl font-bold">Settings</h1>
+            <p className="text-muted-foreground">
+              Manage your account settings and preferences.
+            </p>
+          </div>
+
+          <FeedbackAlerts
+            successMessage={successMessage}
+            errorMsg={errorMessage}
+          />
+
+          <SettingsTabs
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
+            user={user}
+            firstName={firstName}
+            lastName={lastName}
+            language={language}
+            notifications={notifications}
+            editField={editField}
+            setEditField={setEditField}
+            isUpdating={isUpdating}
+            setFirstName={setFirstName}
+            setLastName={setLastName}
+            handleSaveName={handleSaveName}
+            handleChangeLanguage={handleChangeLanguage}
+            handleToggleNotifications={handleToggleNotifications}
+            handleOpenCurrentPasswordModal={handleOpenCurrentPasswordModal}
+            setShowDeleteModal={setShowDeleteModal}
+            handleNameKeyDown={handleNameKeyDown}
+          />
+
+          <SettingsModals
+            showCurrentPasswordModal={showCurrentPasswordModal}
+            setShowCurrentPasswordModal={setShowCurrentPasswordModal}
+            currentPassword={currentPassword}
+            setCurrentPassword={setCurrentPassword}
+            showCurrentPassword={showCurrentPassword}
+            setShowCurrentPassword={setShowCurrentPassword}
+            handleProceedCurrentPassword={handleProceedCurrentPassword}
+            showNewPasswordModal={showNewPasswordModal}
+            setShowNewPasswordModal={setShowNewPasswordModal}
+            newPassword={newPassword}
+            setNewPassword={setNewPassword}
+            confirmPassword={confirmPassword}
+            setConfirmPassword={setConfirmPassword}
+            showNewPassword={showNewPassword}
+            setShowNewPassword={setShowNewPassword}
+            showConfirmPassword={showConfirmPassword}
+            setShowConfirmPassword={setShowConfirmPassword}
+            handlePasswordChange={handlePasswordChange}
+            passwordErrors={passwordErrors}
+            showRequirements={showRequirements}
+            isPasswordValid={isPasswordValidFromHook}
+            showDeleteModal={showDeleteModal}
+            setShowDeleteModal={setShowDeleteModal}
+            deleteConfirmText={deleteConfirmText}
+            setDeleteConfirmText={setDeleteConfirmText}
+            handleSendDeleteConfirmation={handleSendDeleteConfirmation}
+            isDeletionEmailSent={isDeletionEmailSent}
+            showDeletionEmailSentModal={showDeletionEmailSentModal}
+            setShowDeletionEmailSentModal={setShowDeletionEmailSentModal}
+            logout={logout}
+            errorMessage={errorMessage}
+            user={user}
+          />
+        </div>
       </main>
+
       <Footer />
     </div>
   );

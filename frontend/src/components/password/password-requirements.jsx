@@ -1,4 +1,5 @@
 import { X } from "lucide-react";
+import { PASSWORD_CONFIG } from "./password-config";
 
 export function PasswordRequirements({ passwordErrors, showRequirements }) {
   if (!showRequirements || !Object.values(passwordErrors).some((error) => error)) {

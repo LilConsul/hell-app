@@ -126,6 +126,19 @@ services:
     networks:
       - app-network
 
+  backup:
+    image: mongodb/mongodb-community-server:7.0-ubi9
+    volumes:
+      - db_data:/data/db:ro
+      - ./backup:/backup
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_INITDB_ROOT_USERNAME}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD}
+    networks:
+      - app-network
+    tty: true
+    entrypoint: ["tail", "-f", "/dev/null"]
+
 
 volumes:
   db_data:

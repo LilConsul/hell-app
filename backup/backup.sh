@@ -3,53 +3,69 @@
 # MongoDB Backup and Restore Interactive Console
 # Enhanced UI/UX for database management
 
-# Don't use set -e as it causes the script to exit on any command error
-# We'll handle errors explicitly where needed
 
-# Colors for better UI
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-BLUE='\033[0;34m'
-YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
-BOLD='\033[1m'
+# Enhanced color palette for better UI
+RED='\033[0;31m'          # Error messages
+GREEN='\033[0;32m'        # Success messages
+BLUE='\033[0;34m'         # Headers
+YELLOW='\033[1;33m'       # Prompts & highlights
+CYAN='\033[0;36m'         # Secondary information
+MAGENTA='\033[0;35m'      # Special actions
+GRAY='\033[0;90m'         # Subtle information
+NC='\033[0m'              # No Color
+BOLD='\033[1m'            # Bold text
+UNDERLINE='\033[4m'       # Underlined text
 
-# Constants
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 BACKUP_DIR="/backup"
 ARCHIVE_NAME="mongodb_backup_$TIMESTAMP"
+VERSION="1.2.0"
 
-# Clear screen function
 clear_screen() {
     clear
 }
 
-# Print header
+divider() {
+    echo -e "${GRAY}${BOLD}────────────────────────────────────────────────────────${NC}"
+}
+
 print_header() {
-    echo -e "${BOLD}${BLUE}┌─────────────────────────────────────────────┐${NC}"
-    echo -e "${BOLD}${BLUE}│           Hell-App Backup Manager           │${NC}"
-    echo -e "${BOLD}${BOLD}│   Created by Shevchenko Denys @ LilConsul   │${NC}"
-    echo -e "${BOLD}${BLUE}└─────────────────────────────────────────────┘${NC}"
+    clear_screen
+    echo
+    echo -e "${BLUE}${BOLD}┌─────────────────────────────────────────────┐${NC}"
+    echo -e "${BLUE}${BOLD}│           Hell-App Backup Manager           │${NC}"
+    echo -e "${BLUE}${BOLD}└─────────────────────────────────────────────┘${NC}"
+    echo -e "        ${BOLD}Created by Shevchenko Denys @ LilConsul${NC}"
+    echo -e "                  ${GRAY}Version ${VERSION}${NC}"
     echo
 }
 
-# Display a menu and get user selection
 show_menu() {
     local title="$1"
     shift
     local options=("$@")
     local selection
 
-    echo -e "${YELLOW}${title}${NC}\n"
+    echo -e "${YELLOW}${BOLD}${title}${NC}\n"
 
-    # Display numbered menu options
     for i in "${!options[@]}"; do
-        echo -e "  ${BOLD}$((i+1)).${NC} ${options[$i]}"
+        if [[ "${options[$i]}" == *"Create"* ]] || [[ "${options[$i]}" == *"backup"* ]]; then
+            echo -e "  ${BOLD}$((i+1)).${NC} ${CYAN}${options[$i]}${NC}"
+        elif [[ "${options[$i]}" == *"Delete"* ]] || [[ "${options[$i]}" == *"Exit"* ]]; then
+            echo -e "  ${BOLD}$((i+1)).${NC} ${MAGENTA}${options[$i]}${NC}"
+        elif [[ "${options[$i]}" == *"Yes"* ]]; then
+            echo -e "  ${BOLD}$((i+1)).${NC} ${GREEN}${options[$i]}${NC}"
+        elif [[ "${options[$i]}" == *"No"* ]]; then
+            echo -e "  ${BOLD}$((i+1)).${NC} ${RED}${options[$i]}${NC}"
+        else
+            echo -e "  ${BOLD}$((i+1)).${NC} ${options[$i]}"
+        fi
     done
     echo
 
     while true; do
-        read -p "Select an option [1-${#options[@]}]: " selection
+        echo -ne "${YELLOW}Select an option [1-${#options[@]}]:${NC} "
+        read selection
 
         # Check if input is a number and in range
         if [[ "$selection" =~ ^[0-9]+$ ]] && [ "$selection" -ge 1 ] && [ "$selection" -le "${#options[@]}" ]; then
@@ -60,83 +76,98 @@ show_menu() {
     done
 }
 
-# Display progress
 show_spinner() {
-    local message=$1
+    local message="$1"
     local pid=$2
-    local spin='-\|/'
+    local spin='⣾⣽⣻⢿⡿⣟⣯⣷'
     local i=0
+    local start_time=$(date +%s)
 
-    echo -ne "${message} "
+    echo -ne "${CYAN}${message}${NC} "
     while kill -0 $pid 2>/dev/null; do
-        i=$(( (i+1) % 4 ))
-        echo -ne "\r${message} ${spin:$i:1}"
+        i=$(( (i+1) % 8 ))
+        elapsed=$(($(date +%s) - start_time))
+        echo -ne "\r${CYAN}${message}${NC} ${YELLOW}${spin:$i:1}${NC} ${GRAY}(${elapsed}s)${NC}"
         sleep .1
     done
-    echo -e "\r${message} ${GREEN}✓${NC}"
+    echo -e "\r${CYAN}${message}${NC} ${GREEN}✓${NC} ${GRAY}(${elapsed}s)${NC}"
 }
 
-# Backup function
+show_status() {
+    local type="$1"
+    local message="$2"
+
+    case "$type" in
+        success)
+            echo -e "\n${GREEN}✓ ${message}${NC}"
+            ;;
+        error)
+            echo -e "\n${RED}✗ ${message}${NC}"
+            ;;
+        warning)
+            echo -e "\n${YELLOW}⚠ ${message}${NC}"
+            ;;
+        info)
+            echo -e "\n${CYAN}ℹ ${message}${NC}"
+            ;;
+    esac
+}
+
 backup_mongodb() {
-    clear_screen
     print_header
 
-    echo -e "${YELLOW}Creating a new MongoDB backup...${NC}\n"
+    echo -e "${YELLOW}${BOLD}Creating a new MongoDB backup${NC}\n"
+    divider
 
-    # Run mongodump in the background
+    echo -e "${CYAN}Starting backup process...${NC}"
     (mongodump --host=mongodb --port=27017 \
         -u "$MONGO_INITDB_ROOT_USERNAME" \
         -p "$MONGO_INITDB_ROOT_PASSWORD" \
         --authenticationDatabase=admin \
         --out="${BACKUP_DIR:?}/${ARCHIVE_NAME:?}" > /dev/null 2>&1) &
 
-    # Show progress spinner
     show_spinner "Creating backup with mongodump" $!
 
-    # Compress the backup
-    cd ${BACKUP_DIR:?}
+    cd ${BACKUP_DIR:?} || {
+        show_status "error" "Failed to change directory to ${BACKUP_DIR:?}"
+    }
 
     (tar -czf "${ARCHIVE_NAME:?}.tar.gz" "${ARCHIVE_NAME:?}" > /dev/null 2>&1) &
     show_spinner "Compressing backup files" $!
 
-    # Cleanup
     (rm -rf "${BACKUP_DIR:?}/${ARCHIVE_NAME:?}" > /dev/null 2>&1) &
     show_spinner "Cleaning up temporary files" $!
 
-    echo
-    echo -e "${GREEN}Backup completed successfully!${NC}"
-    echo -e "${BOLD}Location:${NC} ${BACKUP_DIR}/${ARCHIVE_NAME}.tar.gz"
-    echo -e "${BOLD}Size:${NC} $(du -h ${ARCHIVE_NAME}.tar.gz | cut -f1)"
-    echo
-    echo -e "This backup file can be shared with others."
+    divider
+    show_status "success" "Backup completed successfully!"
+    echo -e "${BOLD}Location:${NC} ${UNDERLINE}${BACKUP_DIR}/${ARCHIVE_NAME}.tar.gz${NC}"
+    echo -e "${BOLD}Size:${NC}     $(du -h ${ARCHIVE_NAME}.tar.gz | cut -f1)"
+    echo -e "${BOLD}Date:${NC}     $(date '+%Y-%m-%d %H:%M:%S')"
+    divider
+    echo -e "\n${CYAN}This backup file can be shared with others.${NC}"
     echo
     read -p "Press Enter to continue..."
     main_menu
 }
 
-# List backups function
 list_backups() {
-    clear_screen
     print_header
 
-    echo -e "${YELLOW}Available Backups:${NC}\n"
+    echo -e "${YELLOW}${BOLD}Available Backups${NC}\n"
+    divider
 
-    # Safely check if backups exist without triggering script exit
     if find ${BACKUP_DIR} -name "*.tar.gz" -type f 2>/dev/null | grep -q .; then
-        echo -e "${BOLD}ID  | Date Created       | Size     | Filename${NC}"
-        echo -e "----------------------------------------------------"
+        echo -e "${BOLD}ID   | Date Created        | Size      | Filename${NC}"
+        echo -e "${BOLD}${GRAY}─────┼─────────────────────┼───────────┼──────────────────${NC}"
 
-        # Initialize counter and associative array for backup files
         counter=1
         declare -A BACKUPS
 
-        # Process each backup file
         while IFS= read -r file; do
             if [ -f "$file" ]; then
                 filename=$(basename "$file")
                 size=$(du -h "$file" 2>/dev/null | cut -f1)
 
-                # Extract date from filename
                 date_part=$(echo "$filename" | sed -n 's/mongodb_backup_\([0-9]\{8\}_[0-9]\{6\}\).*/\1/p')
                 if [[ ! -z "$date_part" ]]; then
                     formatted_date=$(echo "$date_part" | sed 's/\([0-9]\{4\}\)\([0-9]\{2\}\)\([0-9]\{2\}\)_\([0-9]\{2\}\)\([0-9]\{2\}\)\([0-9]\{2\}\)/\1-\2-\3 \4:\5:\6/')
@@ -144,24 +175,30 @@ list_backups() {
                     formatted_date="Unknown date"
                 fi
 
-                printf "%-4s| %-18s| %-9s| %s\n" "$counter" "$formatted_date" "$size" "$filename"
+                if [ $((counter % 2)) -eq 0 ]; then
+                    printf "%-4s | %-19s | %-9s | %s\n" "$counter" "$formatted_date" "$size" "$filename"
+                else
+                    # Odd rows
+                    printf "%-4s | %-19s | %-9s | %s\n" "$counter" "$formatted_date" "$size" "$filename"
+                fi
+
                 BACKUPS[$counter]="$filename"
                 ((counter++))
             fi
         done < <(find ${BACKUP_DIR} -name "*.tar.gz" -type f -print 2>/dev/null | sort -r)
 
-        echo
-        echo -e "Total backups: $((counter-1))"
-        echo
+        divider
+        echo -e "\n${CYAN}Total backups: $((counter-1))${NC}\n"
 
         # Add menu options for actions
-        echo -e "Options:"
-        echo -e "  ${BOLD}Enter a backup ID${NC} - View backup details"
-        echo -e "  ${BOLD}r${NC} - Return to main menu"
+        echo -e "${BOLD}Options:${NC}"
+        echo -e "  ${CYAN}Enter a backup ID${NC} - View backup details"
+        echo -e "  ${MAGENTA}r${NC}              - Return to main menu"
         echo
 
         while true; do
-            read -p "Enter your choice: " choice
+            echo -ne "${YELLOW}Enter your choice:${NC} "
+            read choice
 
             if [[ "$choice" =~ ^[0-9]+$ ]] && [ "$choice" -ge 1 ] && [ "$choice" -lt "$counter" ]; then
                 backup_details "${BACKUPS[$choice]}"
@@ -174,40 +211,46 @@ list_backups() {
             fi
         done
     else
-        echo -e "${RED}No backups found.${NC}"
+        show_status "info" "No backups found."
+        divider
+        echo -e "\n${CYAN}Create a backup first to see it listed here.${NC}"
         echo
         read -p "Press Enter to return to main menu..."
         main_menu
     fi
 }
 
-# Show backup details
 backup_details() {
     local filename="$1"
-    clear_screen
     print_header
 
-    echo -e "${YELLOW}Backup Details:${NC}\n"
-    echo -e "${BOLD}Filename:${NC} $filename"
+    echo -e "${YELLOW}${BOLD}Backup Details${NC}\n"
+    divider
+
+    echo -e "${BOLD}Filename: ${NC}${filename}"
 
     # Extract date from filename
     date_part=$(echo "$filename" | sed -n 's/mongodb_backup_\([0-9]\{8\}_[0-9]\{6\}\).*/\1/p')
     if [[ ! -z "$date_part" ]]; then
         formatted_date=$(echo "$date_part" | sed 's/\([0-9]\{4\}\)\([0-9]\{2\}\)\([0-9]\{2\}\)_\([0-9]\{2\}\)\([0-9]\{2\}\)\([0-9]\{2\}\)/\1-\2-\3 \4:\5:\6/')
-        echo -e "${BOLD}Created:${NC} $formatted_date"
+        echo -e "${BOLD}Created:  ${NC}${formatted_date}"
     fi
 
-    echo -e "${BOLD}Size:${NC} $(du -h ${BACKUP_DIR}/${filename} | cut -f1)"
-    echo
+    size=$(du -h ${BACKUP_DIR}/${filename} | cut -f1)
+    echo -e "${BOLD}Size:     ${NC}${size}"
 
-    # Options for this backup
+    file_info=$(file ${BACKUP_DIR}/${filename} 2>/dev/null || echo "Unknown file type")
+    echo -e "${BOLD}Type:     ${NC}${file_info#*: }"
+
+    divider
+
     local options=(
         "Restore this backup"
         "Delete this backup"
         "Back to backup list"
     )
 
-    show_menu "Select an action:" "${options[@]}"
+    show_menu "Available Actions:" "${options[@]}"
     local choice=$?
 
     case "$choice" in
@@ -223,69 +266,70 @@ backup_details() {
     esac
 }
 
-# Confirm restore
 confirm_restore() {
     local filename="$1"
-    clear_screen
     print_header
 
-    echo -e "${RED}${BOLD}WARNING: Database Restore${NC}"
-    echo -e "${RED}This will REPLACE all current data with backup data!${NC}"
+    echo -e "${RED}${BOLD} WARNING: Database Restore  ️${NC}\n"
+    divider
+    echo -e "${RED}${BOLD}This operation will REPLACE all current data with backup data!${NC}"
+    echo -e "${RED}This action cannot be undone.${NC}\n"
     echo -e "You are about to restore: ${BOLD}$filename${NC}"
-    echo
+    divider
 
-    # Yes/No options
+    # Yes/No options with clearer labeling
     local options=(
-        "Yes, restore this backup"
-        "No, cancel operation"
+        "Yes, restore this backup (overwrites current data)"
+        "No, cancel operation (return to backup details)"
     )
 
-    show_menu "Are you sure you want to proceed?" "${options[@]}"
+    show_menu "Please confirm:" "${options[@]}"
     local choice=$?
 
     if [ $choice -eq 0 ]; then
         restore_mongodb "$filename"
     else
-        list_backups
+        backup_details "$filename"
     fi
 }
 
-# Confirm delete
 confirm_delete() {
     local filename="$1"
-    clear_screen
     print_header
 
-    echo -e "${RED}${BOLD}WARNING: Delete Backup${NC}"
+    echo -e "${RED}${BOLD} WARNING: Delete Backup  ️${NC}\n"
+    divider
+    echo -e "${RED}${BOLD}This will permanently delete the backup file!${NC}"
+    echo -e "${RED}This action cannot be undone.${NC}\n"
     echo -e "You are about to delete: ${BOLD}$filename${NC}"
-    echo
+    divider
 
-    # Yes/No options
+    # Yes/No options with clearer labeling
     local options=(
-        "Yes, delete this backup"
-        "No, cancel operation"
+        "Yes, delete this backup permanently"
+        "No, cancel operation (return to backup details)"
     )
 
-    show_menu "Are you sure you want to delete this backup?" "${options[@]}"
+    show_menu "Please confirm:" "${options[@]}"
     local choice=$?
 
     if [ $choice -eq 0 ]; then
         rm "${BACKUP_DIR:?}/${filename:?}"
-        echo -e "${GREEN}Backup deleted successfully!${NC}"
-        sleep 2
+        show_status "success" "Backup deleted successfully!"
+        sleep 1
         list_backups
     else
-        list_backups
+        backup_details "$filename"
     fi
 }
 
-# Restore function
+# Restore function with improved progress feedback
 restore_mongodb() {
     local RESTORE_FILE="$1"
-    clear_screen
     print_header
 
-    echo -e "${YELLOW}Restoring database from backup...${NC}\n"
+    echo -e "${YELLOW}${BOLD}Restoring Database from Backup${NC}\n"
+    divider
 
     # Handle absolute path if provided
     if [[ "$RESTORE_FILE" == "/backup/"* ]]; then
@@ -295,40 +339,41 @@ restore_mongodb() {
     RESTORE_DIR="${RESTORE_FILE%.tar.gz}"
 
     if [ ! -f "$BACKUP_DIR/$RESTORE_FILE" ]; then
-        echo -e "${RED}Error: Backup file $BACKUP_DIR/$RESTORE_FILE not found${NC}"
+        show_status "error" "Backup file $BACKUP_DIR/$RESTORE_FILE not found"
+        echo -e "${RED}The requested backup file does not exist.${NC}"
         sleep 3
         main_menu
         exit 1
     fi
 
-    cd $BACKUP_DIR
+    cd $BACKUP_DIR || {
+        show_status "error" "Failed to change directory to ${BACKUP_DIR:?}"
+    }
 
+    echo -e "${CYAN}Starting restore process...${NC}"
     (tar -xzf "$RESTORE_FILE" > /dev/null 2>&1) &
     show_spinner "Extracting backup archive" $!
 
-    # Restore the database
     (mongorestore --host=mongodb --port=27017 \
         -u "$MONGO_INITDB_ROOT_USERNAME" \
         -p "$MONGO_INITDB_ROOT_PASSWORD" \
         --authenticationDatabase=admin \
         --drop \
         "$BACKUP_DIR/$RESTORE_DIR" > /dev/null 2>&1) &
-    show_spinner "Restoring database" $!
+    show_spinner "Restoring database from backup" $!
 
-    # Cleanup
     (rm -rf "${BACKUP_DIR:?}/${RESTORE_DIR:?}" > /dev/null 2>&1) &
     show_spinner "Cleaning up temporary files" $!
 
-    echo
-    echo -e "${GREEN}Database restored successfully!${NC}"
+    divider
+    show_status "success" "Database restored successfully!"
+    echo -e "${CYAN}All data has been restored from backup: ${BOLD}$RESTORE_FILE${NC}"
     echo
     read -p "Press Enter to continue..."
     main_menu
 }
 
-# Main menu
 main_menu() {
-    clear_screen
     print_header
 
     local options=(
@@ -349,7 +394,14 @@ main_menu() {
             ;;
         2)
             clear_screen
-            echo -e "${BLUE}Thank you for using MongoDB Backup Manager!${NC}"
+            echo
+            echo -e "${BLUE}┌─────────────────────────────────────────────┐${NC}"
+            echo -e "${BLUE}│                                             │${NC}"
+            echo -e "${BLUE}│       Thank you for using Hell-App          │${NC}"
+            echo -e "${BLUE}│            MongoDB Backup Manager           │${NC}"
+            echo -e "${BLUE}│                                             │${NC}"
+            echo -e "${BLUE}└─────────────────────────────────────────────┘${NC}"
+            echo
             exit 0
             ;;
     esac

@@ -10,28 +10,28 @@
   <a href="https://deepwiki.com/LilConsul/hell-app"><img src="https://img.shields.io/badge/DeepWiki-Ask-purple?style=for-the-badge&labelColor=black&logo=bookstack&logoColor=white" alt="DeepWiki" /></a>
 </div>
 
-<!-- Core Technologies -->
+<br/>
+
+<!-- Technologies -->
 <div>
   <img src="https://img.shields.io/badge/Python-3.13-3776AB?style=for-the-badge&labelColor=black&logo=python&logoColor=white" alt="Python" />
-  <img src="https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&labelColor=black&logo=react&logoColor=61DAFB" alt="React" />
-  <img src="https://img.shields.io/badge/FastAPI-0.115.0-009688?style=for-the-badge&labelColor=black&logo=fastapi&logoColor=white" alt="FastAPI" />
-</div>
-
-<!-- Databases & Infrastructure -->
-<div>
+  <img src="https://img.shields.io/badge/TailwindCSS-3.4-38B2AC?style=for-the-badge&labelColor=black&logo=tailwind-css&logoColor=38B2AC" alt="TailwindCSS" />
   <img src="https://img.shields.io/badge/MongoDB-7.0-47A248?style=for-the-badge&labelColor=black&logo=mongodb&logoColor=white" alt="MongoDB" />
-  <img src="https://img.shields.io/badge/Redis-Latest-DC382D?style=for-the-badge&labelColor=black&logo=redis&logoColor=white" alt="Redis" />
+  <img src="https://img.shields.io/badge/Redis-7.4-DC382D?style=for-the-badge&labelColor=black&logo=redis&logoColor=white" alt="Redis" />
   <img src="https://img.shields.io/badge/Docker-Latest-2496ED?style=for-the-badge&labelColor=black&logo=docker&logoColor=white" alt="Docker" />
-  <img src="https://img.shields.io/badge/Nginx-Latest-009639?style=for-the-badge&labelColor=black&logo=nginx&logoColor=white" alt="Nginx" />
+  <img src="https://img.shields.io/badge/Nginx-1.27-009639?style=for-the-badge&labelColor=black&logo=nginx&logoColor=white" alt="Nginx" />
 </div>
 
 </div>
+
+<br/>
 
 <p align="center">
   <img src="frontend/public/hell-app.svg" alt="Hell App Logo" width="200" height="auto" />
 </p>
 
 ## 📑 Table of Contents
+
 - [📚 Overview](#-overview)
 - [✨ Key Features](#-key-features)
 - [🛠️ Tech Stack](#-tech-stack)
@@ -144,7 +144,7 @@ existing functionality.
 | Email Testing UI  | https://localhost/dev/mailhog |
 | Celery Monitoring | https://localhost/dev/flower  |
 
-### Testing Database
+### 🗃️ Testing Database
 
 The project includes a test database backup located in the `backup` directory. To import this database:
 
@@ -165,7 +165,6 @@ docker compose exec backup /backup/backup.sh
    docker compose exec backup /backup/backup.sh restore <backup_name>
    ```
 
-For more details on managing database backups, refer to the documentation in the [/backup/README.md](/backup/README.md) file.
 
 ## 📊 Project Structure
 
@@ -225,7 +224,6 @@ but here are some key ones:
 
 #### Testing Users
 
-> [!WARNING]
 > These users are used for testing purposes only and should not be used in production. Just leave empty fields if you
 > don't need them.
 
@@ -305,13 +303,13 @@ The React frontend follows a modern component-based architecture:
 
 ## 👥 Contributors
 
-| Contributor                                                                                                                                                     | Role                                                   |
-|-----------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------|
-| <div align="center"><img src="https://github.com/LilConsul.png" width="60" height="60"><br/>[**Shevchenko Denys**](https://github.com/LilConsul)</div>          | Project Maintainer, DevOps Engineer, Backend Developer |
-| <div align="center"><img src="https://github.com/yehorkarabanov.png" width="60" height="60"><br/>[**Yehor Karabanov**](https://github.com/yehorkarabanov)</div> | Backend Developer                                      |
-| <div align="center"><img src="https://github.com/valmtv.png" width="60" height="60"><br/>[**Valerii Matviiv**](https://github.com/valmtv)</div>                 | Frontend Lead,<br/> Frontend Developer                 |
-| <div align="center"><img src="https://github.com/aleexmaaa.png" width="60" height="60"><br/>[**Marcu Andrei-Alexandru**](https://github.com/aleexmaaa)</div>    | Intern Frontend Developer                              |
-| <div align="center"><img src="https://github.com/ianaaians.png" width="60" height="60"><br/>[**Iana-Iuliana Nastasiu**](https://github.com/ianaaians)</div>     | Intern Frontend Developer                              |
+| Contributor                                                                                                                                                     |                                          Role                                          |
+|-----------------------------------------------------------------------------------------------------------------------------------------------------------------|:--------------------------------------------------------------------------------------:|
+| <div align="center"><img src="https://github.com/LilConsul.png" width="60" height="60"><br/>[**Shevchenko Denys**](https://github.com/LilConsul)</div>          | <div align="center">Project Maintainer<br/>DevOps Engineer<br/>Backend Developer</div> |
+| <div align="center"><img src="https://github.com/yehorkarabanov.png" width="60" height="60"><br/>[**Yehor Karabanov**](https://github.com/yehorkarabanov)</div> |                      <div align="center">Backend Developer</div>                       |
+| <div align="center"><img src="https://github.com/valmtv.png" width="60" height="60"><br/>[**Valerii Matviiv**](https://github.com/valmtv)</div>                 |             <div align="center">Frontend Lead<br/>Frontend Developer</div>             |
+| <div align="center"><img src="https://github.com/aleexmaaa.png" width="60" height="60"><br/>[**Marcu Andrei-Alexandru**](https://github.com/aleexmaaa)</div>    |                  <div align="center">Intern Frontend Developer</div>                   |
+| <div align="center"><img src="https://github.com/ianaaians.png" width="60" height="60"><br/>[**Iana-Iuliana Nastasiu**](https://github.com/ianaaians)</div>     |                  <div align="center">Intern Frontend Developer</div>                   |
 
 ## 📄 License
 

@@ -4,8 +4,13 @@
 
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/LilConsul/hell-app)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-1.0.0-green.svg)](https://github.com/LilConsul/hell-app/releases)
 [![Status](https://img.shields.io/badge/status-active-brightgreen.svg)](https://github.com/LilConsul/hell-app)
+<br>
+[![Python](https://img.shields.io/badge/Python-3.13-blue?style=flat&logo=python&logoColor=white)](https://www.python.org/)
+[![React](https://img.shields.io/badge/React-19-61DAFB?style=flat&logo=react&logoColor=black)](https://reactjs.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115.0-009688?style=flat&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![MongoDB](https://img.shields.io/badge/MongoDB-7.0-47A248?style=flat&logo=mongodb&logoColor=white)](https://www.mongodb.com/)
+[![Docker](https://img.shields.io/badge/Docker-Latest-2496ED?style=flat&logo=docker&logoColor=white)](https://www.docker.com/)
 
 </div>
 
@@ -15,7 +20,8 @@
 
 ## 📚 Overview
 
-A modern, comprehensive platform for managing student examinations with a robust microservices architecture. This application enables seamless exam creation, administration, and result management for educational institutions.
+A modern, comprehensive platform for managing student examinations with a robust microservices architecture. This
+application enables seamless exam creation, administration, and result management for educational institutions.
 
 ## ✨ Key Features
 
@@ -33,12 +39,14 @@ A modern, comprehensive platform for managing student examinations with a robust
 <div align="center">
 
 ### Frontend
+
 [![React](https://img.shields.io/badge/React-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://reactjs.org/)
 [![Vite](https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vitejs.dev/)
 [![TailwindCSS](https://img.shields.io/badge/TailwindCSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
 [![shadcn/ui](https://img.shields.io/badge/shadcn/ui-000000?style=for-the-badge&logo=shadcnui&logoColor=white)](https://ui.shadcn.com/)
 
 ### Backend
+
 [![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![Celery](https://img.shields.io/badge/Celery-37814A?style=for-the-badge&logo=celery&logoColor=white)](https://docs.celeryproject.org/)
 [![MongoDB](https://img.shields.io/badge/MongoDB-47A248?style=for-the-badge&logo=mongodb&logoColor=white)](https://www.mongodb.com/)
@@ -46,6 +54,7 @@ A modern, comprehensive platform for managing student examinations with a robust
 [![Pydantic](https://img.shields.io/badge/Pydantic-E92063?style=for-the-badge&logo=pydantic&logoColor=white)](https://pydantic-docs.helpmanual.io/)
 
 ### Infrastructure
+
 [![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
 [![Nginx](https://img.shields.io/badge/Nginx-009639?style=for-the-badge&logo=nginx&logoColor=white)](https://nginx.org/)
 
@@ -67,11 +76,13 @@ The backend is built with a clean, maintainable three-layer architecture:
 
 - **Dependency Injection**: Leveraging FastAPI's dependency system for loose coupling and easier testing
 - **Repository Pattern**: Abstracting database operations behind interfaces for flexibility in data sources
-- **Middleware Components**: Custom middleware for cross-cutting concerns like language localization and timezone handling
+- **Middleware Components**: Custom middleware for cross-cutting concerns like language localization and timezone
+  handling
 - **Asynchronous Processing**: Using Celery for handling background tasks and scheduled jobs
-- **OAuth Integration**: Secure authentication with support for multiple identity providers
+- **JWT Authentication**: Secure authentication using HTTP-only cookies with JWT tokens
 
-The modular design enables independent scaling of components and facilitates continuous development without disrupting existing functionality.
+The modular design enables independent scaling of components and facilitates continuous development without disrupting
+existing functionality.
 
 ## 🚀 Getting Started
 
@@ -131,10 +142,10 @@ hell-app/
 
 The application uses environment variables for configuration through a `.env` file.
 
-
 ### Key Environment Variables
 
 #### Application Settings
+
 | Variable                 | Description                          | Example Value               |
 |--------------------------|--------------------------------------|-----------------------------|
 | `APP_ENV`                | Application environment              | `development`, `production` |
@@ -144,6 +155,7 @@ The application uses environment variables for configuration through a `.env` fi
 | `PUBLIC_HOST`            | Public-facing hostname               | `example.com`               |
 
 #### Database Configuration
+
 | Variable         | Description           | Example Value     |
 |------------------|-----------------------|-------------------|
 | `MONGO_HOST`     | MongoDB host address  | `mongodb`         |
@@ -153,6 +165,7 @@ The application uses environment variables for configuration through a `.env` fi
 | `MONGO_DB`       | MongoDB database name | `hell_app`        |
 
 #### Redis Configuration
+
 | Variable         | Description           | Example Value    |
 |------------------|-----------------------|------------------|
 | `REDIS_HOST`     | Redis host address    | `redis`          |
@@ -160,16 +173,8 @@ The application uses environment variables for configuration through a `.env` fi
 | `REDIS_PASSWORD` | Redis password        | `redis_password` |
 | `REDIS_DB`       | Redis database number | `0`              |
 
-#### Email Configuration
-| Variable          | Description                   | Example Value               |
-|-------------------|-------------------------------|-----------------------------|
-| `SMTP_HOST`       | SMTP server host              | `smtp.gmail.com`            |
-| `SMTP_PORT`       | SMTP server port              | `587`                       |
-| `SMTP_USER`       | SMTP username/email           | `notifications@example.com` |
-| `SMTP_PASSWORD`   | SMTP password or app password | `email_password`            |
-| `EMAIL_FROM_NAME` | Sender name for emails        | `Hell-App Team`             |
-
 #### Security Settings
+
 | Variable                      | Description               | Example Value           |
 |-------------------------------|---------------------------|-------------------------|
 | `JWT_SECRET_KEY`              | Secret key for JWT tokens | `your_super_secret_key` |
@@ -185,7 +190,7 @@ This project includes comprehensive test coverage for backend functionality.
 ### Running Tests
 
 ```bash
-# Run all tests
+# Run all tests (command should be executed in the backend container)
 uv sync --extra "test" # Install test dependencies
 uv run pytest
 ```
@@ -229,7 +234,6 @@ The React frontend follows a modern component-based architecture:
 - Responsive layouts built with Tailwind CSS
 - Custom theme using shadcn/ui components
 - Date/time handling with timezone support
-
 
 ## 📄 License
 

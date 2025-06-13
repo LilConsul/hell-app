@@ -2,21 +2,48 @@
 
 <div align="center">
 
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/LilConsul/hell-app)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Status](https://img.shields.io/badge/status-active-brightgreen.svg)](https://github.com/LilConsul/hell-app)
-<br>
-[![Python](https://img.shields.io/badge/Python-3.13-blue?style=flat&logo=python&logoColor=white)](https://www.python.org/)
-[![React](https://img.shields.io/badge/React-19-61DAFB?style=flat&logo=react&logoColor=black)](https://reactjs.org/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.115.0-009688?style=flat&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
-[![MongoDB](https://img.shields.io/badge/MongoDB-7.0-47A248?style=flat&logo=mongodb&logoColor=white)](https://www.mongodb.com/)
-[![Docker](https://img.shields.io/badge/Docker-Latest-2496ED?style=flat&logo=docker&logoColor=white)](https://www.docker.com/)
+<!-- Project Status -->
+<div>
+  <a href="https://github.com/LilConsul/hell-app"><img src="https://img.shields.io/badge/Skill-Issue-red?style=for-the-badge&labelColor=black" alt="Skill:Issue" /></a>
+  <a href="https://github.com/LilConsul/hell-app"><img src="https://img.shields.io/badge/Status-Active-brightgreen?style=for-the-badge&labelColor=black" alt="Status" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue?style=for-the-badge&labelColor=black" alt="License" /></a>
+  <a href="https://deepwiki.com/LilConsul/hell-app"><img src="https://img.shields.io/badge/DeepWiki-Ask-purple?style=for-the-badge&labelColor=black&logo=bookstack&logoColor=white" alt="DeepWiki" /></a>
+</div>
+
+<!-- Core Technologies -->
+<div>
+  <img src="https://img.shields.io/badge/Python-3.13-3776AB?style=for-the-badge&labelColor=black&logo=python&logoColor=white" alt="Python" />
+  <img src="https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&labelColor=black&logo=react&logoColor=61DAFB" alt="React" />
+  <img src="https://img.shields.io/badge/FastAPI-0.115.0-009688?style=for-the-badge&labelColor=black&logo=fastapi&logoColor=white" alt="FastAPI" />
+</div>
+
+<!-- Databases & Infrastructure -->
+<div>
+  <img src="https://img.shields.io/badge/MongoDB-7.0-47A248?style=for-the-badge&labelColor=black&logo=mongodb&logoColor=white" alt="MongoDB" />
+  <img src="https://img.shields.io/badge/Redis-Latest-DC382D?style=for-the-badge&labelColor=black&logo=redis&logoColor=white" alt="Redis" />
+  <img src="https://img.shields.io/badge/Docker-Latest-2496ED?style=for-the-badge&labelColor=black&logo=docker&logoColor=white" alt="Docker" />
+  <img src="https://img.shields.io/badge/Nginx-Latest-009639?style=for-the-badge&labelColor=black&logo=nginx&logoColor=white" alt="Nginx" />
+</div>
 
 </div>
 
 <p align="center">
   <img src="frontend/public/hell-app.svg" alt="Hell App Logo" width="200" height="auto" />
 </p>
+
+## 📑 Table of Contents
+- [📚 Overview](#-overview)
+- [✨ Key Features](#-key-features)
+- [🛠️ Tech Stack](#-tech-stack)
+- [🔧 Backend Architecture](#-backend-architecture)
+- [🚀 Getting Started](#-getting-started)
+- [📊 Project Structure](#-project-structure)
+- [🔒 Environment Configuration](#-environment-configuration)
+- [🧪 Testing](#-testing)
+- [📝 API Documentation](#-api-documentation)
+- [🔧 Frontend Architecture](#-frontend-architecture)
+- [👥 Contributors](#-contributors)
+- [📄 License](#-license)
 
 ## 📚 Overview
 
@@ -90,7 +117,6 @@ existing functionality.
 
 ### Prerequisites
 
-- Docker and Docker Compose
 - [Docker and Docker Compose](https://docs.docker.com/get-docker/)
 
 ### Quick Start

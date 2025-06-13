@@ -1,15 +1,15 @@
 # 🎓 Student Examination Application
 
-<div align="center">
+<div style="text-align: center;">
 
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/LilConsul/hell-app)
-![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Version](https://img.shields.io/badge/version-1.0.0-green.svg)
-![Status](https://img.shields.io/badge/status-active-brightgreen.svg)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Version](https://img.shields.io/badge/version-1.0.0-green.svg)](https://github.com/LilConsul/hell-app/releases)
+[![Status](https://img.shields.io/badge/status-active-brightgreen.svg)](https://github.com/LilConsul/hell-app)
 
 </div>
 
-<p align="center">
+<p style="text-align: center;">
   <img src="frontend/public/hell-app.svg" alt="Hell App Logo" width="200" height="auto" />
 </p>
 
@@ -19,58 +19,59 @@ A modern, comprehensive platform for managing student examinations with a robust
 
 ## ✨ Key Features
 
-<table>
-  <tr>
-    <td><b>🔐 Secure Authentication</b></td>
-    <td>Complete user management with OAuth integration</td>
-  </tr>
-  <tr>
-    <td><b>👩‍🏫 Role-Based Access</b></td>
-    <td>Separate interfaces for students, teachers, and administrators</td>
-  </tr>
-  <tr>
-    <td><b>📝 Exam Management</b></td>
-    <td>Create, assign, take, and grade exams</td>
-  </tr>
-  <tr>
-    <td><b>🌐 Internationalization</b></td>
-    <td>Multi-language interface for global access</td>
-  </tr>
-  <tr>
-    <td><b>⏱️ Time Zone Handling</b></td>
-    <td>Accurate scheduling across different regions</td>
-  </tr>
-  <tr>
-    <td><b>📱 Responsive Design</b></td>
-    <td>Works on desktop and mobile devices</td>
-  </tr>
-  <tr>
-    <td><b>📧 Email Notifications</b></td>
-    <td>Automated alerts for exam schedules and results</td>
-  </tr>
-</table>
+| Feature                      | Description                                                    |
+|------------------------------|----------------------------------------------------------------|
+| **🔐 Secure Authentication** | Complete user management with JWT HTTP-Only cookies            |
+| **👩‍🏫 Role-Based Access**  | Separate interfaces for students, teachers, and administrators |
+| **📝 Exam Management**       | Create, assign, take, and grade exams                          |
+| **⏱️ Time Zone Handling**    | Accurate scheduling across different regions                   |
+| **📱 Responsive Design**     | Works on desktop and mobile devices                            |
+| **📧 Email Notifications**   | Automated alerts for exam schedules and results                |
 
 ## 🛠️ Tech Stack
 
-<div align="center">
+<div style="text-align: center;">
 
 ### Frontend
-![React](https://img.shields.io/badge/React-61DAFB?style=for-the-badge&logo=react&logoColor=black)
-![Vite](https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white)
-![TailwindCSS](https://img.shields.io/badge/TailwindCSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
+[![React](https://img.shields.io/badge/React-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://reactjs.org/)
+[![Vite](https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vitejs.dev/)
+[![TailwindCSS](https://img.shields.io/badge/TailwindCSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
+[![shadcn/ui](https://img.shields.io/badge/shadcn/ui-000000?style=for-the-badge&logo=shadcnui&logoColor=white)](https://ui.shadcn.com/)
 
 ### Backend
-![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)
-![Celery](https://img.shields.io/badge/Celery-37814A?style=for-the-badge&logo=celery&logoColor=white)
-![MongoDB](https://img.shields.io/badge/MongoDB-47A248?style=for-the-badge&logo=mongodb&logoColor=white)
-![Redis](https://img.shields.io/badge/Redis-DC382D?style=for-the-badge&logo=redis&logoColor=white)
-![Pydantic](https://img.shields.io/badge/Pydantic-E92063?style=for-the-badge&logo=pydantic&logoColor=white)
+[![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![Celery](https://img.shields.io/badge/Celery-37814A?style=for-the-badge&logo=celery&logoColor=white)](https://docs.celeryproject.org/)
+[![MongoDB](https://img.shields.io/badge/MongoDB-47A248?style=for-the-badge&logo=mongodb&logoColor=white)](https://www.mongodb.com/)
+[![Redis](https://img.shields.io/badge/Redis-DC382D?style=for-the-badge&logo=redis&logoColor=white)](https://redis.io/)
+[![Pydantic](https://img.shields.io/badge/Pydantic-E92063?style=for-the-badge&logo=pydantic&logoColor=white)](https://pydantic-docs.helpmanual.io/)
 
 ### Infrastructure
-![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
-![Nginx](https://img.shields.io/badge/Nginx-009639?style=for-the-badge&logo=nginx&logoColor=white)
+[![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
+[![Nginx](https://img.shields.io/badge/Nginx-009639?style=for-the-badge&logo=nginx&logoColor=white)](https://nginx.org/)
 
 </div>
+
+## 🔧 Backend Architecture
+
+The backend is built with a clean, maintainable three-layer architecture:
+
+### Three-Layer Architecture
+
+| Layer | Description |
+|-------|-------------|
+| **🔵 Presentation Layer** | FastAPI routers and endpoints that handle HTTP requests and responses. This layer validates input data, manages authentication, and serializes responses. |
+| **🟢 Business Logic Layer** | Service components that implement core application logic, business rules, and orchestrate workflows between different parts of the system. |
+| **🟡 Data Access Layer** | Repository pattern implementations that abstract database operations, providing a clean interface for data manipulation without exposing database specifics. |
+
+### Additional Design Patterns
+
+- **Dependency Injection**: Leveraging FastAPI's dependency system for loose coupling and easier testing
+- **Repository Pattern**: Abstracting database operations behind interfaces for flexibility in data sources
+- **Middleware Components**: Custom middleware for cross-cutting concerns like language localization and timezone handling
+- **Asynchronous Processing**: Using Celery for handling background tasks and scheduled jobs
+- **OAuth Integration**: Secure authentication with support for multiple identity providers
+
+The modular design enables independent scaling of components and facilitates continuous development without disrupting existing functionality.
 
 ## 🚀 Getting Started
 
@@ -83,7 +84,7 @@ A modern, comprehensive platform for managing student examinations with a robust
 
 1. **Clone the repository:**
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/LilConsul/hell-app.git
    cd hell-app
    ```
 
@@ -94,12 +95,12 @@ A modern, comprehensive platform for managing student examinations with a robust
 
 3. **Access the application:**
 
-   | Service | URL |
-   |---------|-----|
-   | Frontend | http://localhost |
-   | API Documentation | http://localhost/api/docs |
-   | Email Testing UI | http://localhost/dev/mailhog |
-   | Celery Monitoring | http://localhost/dev/flower |
+   | Service           | URL                          |
+   |-------------------|------------------------------|
+   | Frontend          | http://localhost             |
+   | API Documentation | http://localhost/api/docs    |
+   | Email Testing UI  | http://localhost/dev/mailhog |
+   | Celery Monitoring | http://localhost/dev/flower  |
 
 ## 📊 Project Structure
 
@@ -144,15 +145,10 @@ Key environment variables:
 
 ## 👥 Contributors
 
-<table>
-  <tr>
-    <td align="center"><a href="https://github.com/LilConsul"><img src="https://github.com/LilConsul.png" width="100px;" alt=""/><br /><sub><b>Shevchenko Denys</b></sub></a><br />Project Maintainer, DevOps Engineer, Backend Developer</td>
-    <td align="center"><a href="https://github.com/yehorkarabanov"><img src="https://github.com/yehorkarabanov.png" width="100px;" alt=""/><br /><sub><b>Yehor Karabanov</b></sub></a><br />Backend Developer</td>
-    <td align="center"><a href="https://github.com/valmtv"><img src="https://github.com/valmtv.png" width="100px;" alt=""/><br /><sub><b>Valerii Matviiv</b></sub></a><br />Frontend Developer</td>
-  </tr>
-  <tr>
-    <td align="center"><a href="https://github.com/aleexmaaa"><img src="https://github.com/aleexmaaa.png" width="100px;" alt=""/><br /><sub><b>Marcu Andrei-Alexandru</b></sub></a><br />Intern Frontend Developer</td>
-    <td align="center"><a href="https://github.com/ianaaians"><img src="https://github.com/ianaaians.png" width="100px;" alt=""/><br /><sub><b>Iana-Iuliana Nastasiu</b></sub></a><br />Intern Frontend Developer</td>
-    <td></td>
-  </tr>
-</table>
+| Profile                                                                                                                     | Role                                                   |
+|-----------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------|
+| [![Shevchenko Denys](https://github.com/LilConsul.png) <br> **Shevchenko Denys**](https://github.com/LilConsul)             | Project Maintainer, DevOps Engineer, Backend Developer |
+| [![Yehor Karabanov](https://github.com/yehorkarabanov.png) <br> **Yehor Karabanov**](https://github.com/yehorkarabanov)     | Backend Developer                                      |
+| [![Valerii Matviiv](https://github.com/valmtv.png) <br> **Valerii Matviiv**](https://github.com/valmtv)                     | Frontend Developer                                     |
+| [![Marcu Andrei-Alexandru](https://github.com/aleexmaaa.png) <br> **Marcu Andrei-Alexandru**](https://github.com/aleexmaaa) | Intern Frontend Developer                              |
+| [![Iana-Iuliana Nastasiu](https://github.com/ianaaians.png) <br> **Iana-Iuliana Nastasiu**](https://github.com/ianaaians)   | Intern Frontend Developer                              |

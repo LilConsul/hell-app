@@ -57,11 +57,11 @@ The backend is built with a clean, maintainable three-layer architecture:
 
 ### Three-Layer Architecture
 
-| Layer | Description |
-|-------|-------------|
-| **🔵 Presentation Layer** | FastAPI routers and endpoints that handle HTTP requests and responses. This layer validates input data, manages authentication, and serializes responses. |
-| **🟢 Business Logic Layer** | Service components that implement core application logic, business rules, and orchestrate workflows between different parts of the system. |
-| **🟡 Data Access Layer** | Repository pattern implementations that abstract database operations, providing a clean interface for data manipulation without exposing database specifics. |
+| Layer                       | Description                                                                                                                                                  |
+|-----------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **🔵 Presentation Layer**   | FastAPI routers and endpoints that handle HTTP requests and responses. This layer validates input data, manages authentication, and serializes responses.    |
+| **🟢 Business Logic Layer** | Service components that implement core application logic, business rules, and orchestrate workflows between different parts of the system.                   |
+| **🟡 Data Access Layer**    | Repository pattern implementations that abstract database operations, providing a clean interface for data manipulation without exposing database specifics. |
 
 ### Additional Design Patterns
 
@@ -95,12 +95,12 @@ The modular design enables independent scaling of components and facilitates con
 
 3. **Access the application:**
 
-   | Service           | URL                          |
-   |-------------------|------------------------------|
-   | Frontend          | http://localhost             |
-   | API Documentation | http://localhost/api/docs    |
-   | Email Testing UI  | http://localhost/dev/mailhog |
-   | Celery Monitoring | http://localhost/dev/flower  |
+| Service           | URL                          |
+|-------------------|------------------------------|
+| Frontend          | http://localhost             |
+| API Documentation | http://localhost/api/docs    |
+| Email Testing UI  | http://localhost/dev/mailhog |
+| Celery Monitoring | http://localhost/dev/flower  |
 
 ## 📊 Project Structure
 
@@ -129,57 +129,107 @@ hell-app/
 
 ## 🔒 Environment Configuration
 
-The application uses environment variables for configuration through a `.env` file. Copy the `.env.example` file to create your own configuration:
+The application uses environment variables for configuration through a `.env` file.
 
-```bash
-cp .env.example .env
-```
 
 ### Key Environment Variables
 
 #### Application Settings
-| Variable | Description | Example Value |
-|----------|-------------|---------------|
-| `APP_ENV` | Application environment | `development`, `production` |
-| `APP_DEBUG` | Enable debug mode | `true`, `false` |
-| `FRONTEND_PORT_INTERNAL` | Internal port for the React frontend | `3000` |
-| `BACKEND_PORT_INTERNAL` | Internal port for FastAPI backend | `8000` |
-| `PUBLIC_HOST` | Public-facing hostname | `example.com` |
+| Variable                 | Description                          | Example Value               |
+|--------------------------|--------------------------------------|-----------------------------|
+| `APP_ENV`                | Application environment              | `development`, `production` |
+| `APP_DEBUG`              | Enable debug mode                    | `true`, `false`             |
+| `FRONTEND_PORT_INTERNAL` | Internal port for the React frontend | `3000`                      |
+| `BACKEND_PORT_INTERNAL`  | Internal port for FastAPI backend    | `8000`                      |
+| `PUBLIC_HOST`            | Public-facing hostname               | `example.com`               |
 
 #### Database Configuration
-| Variable | Description | Example Value |
-|----------|-------------|---------------|
-| `MONGO_HOST` | MongoDB host address | `mongodb` |
-| `MONGO_PORT` | MongoDB port | `27017` |
-| `MONGO_USER` | MongoDB username | `admin` |
-| `MONGO_PASSWORD` | MongoDB password | `secure_password` |
-| `MONGO_DB` | MongoDB database name | `hell_app` |
+| Variable         | Description           | Example Value     |
+|------------------|-----------------------|-------------------|
+| `MONGO_HOST`     | MongoDB host address  | `mongodb`         |
+| `MONGO_PORT`     | MongoDB port          | `27017`           |
+| `MONGO_USER`     | MongoDB username      | `admin`           |
+| `MONGO_PASSWORD` | MongoDB password      | `secure_password` |
+| `MONGO_DB`       | MongoDB database name | `hell_app`        |
 
 #### Redis Configuration
-| Variable | Description | Example Value |
-|----------|-------------|---------------|
-| `REDIS_HOST` | Redis host address | `redis` |
-| `REDIS_PORT` | Redis port | `6379` |
-| `REDIS_PASSWORD` | Redis password | `redis_password` |
-| `REDIS_DB` | Redis database number | `0` |
+| Variable         | Description           | Example Value    |
+|------------------|-----------------------|------------------|
+| `REDIS_HOST`     | Redis host address    | `redis`          |
+| `REDIS_PORT`     | Redis port            | `6379`           |
+| `REDIS_PASSWORD` | Redis password        | `redis_password` |
+| `REDIS_DB`       | Redis database number | `0`              |
 
 #### Email Configuration
-| Variable | Description | Example Value |
-|----------|-------------|---------------|
-| `SMTP_HOST` | SMTP server host | `smtp.gmail.com` |
-| `SMTP_PORT` | SMTP server port | `587` |
-| `SMTP_USER` | SMTP username/email | `notifications@example.com` |
-| `SMTP_PASSWORD` | SMTP password or app password | `email_password` |
-| `EMAIL_FROM_NAME` | Sender name for emails | `Hell-App Team` |
+| Variable          | Description                   | Example Value               |
+|-------------------|-------------------------------|-----------------------------|
+| `SMTP_HOST`       | SMTP server host              | `smtp.gmail.com`            |
+| `SMTP_PORT`       | SMTP server port              | `587`                       |
+| `SMTP_USER`       | SMTP username/email           | `notifications@example.com` |
+| `SMTP_PASSWORD`   | SMTP password or app password | `email_password`            |
+| `EMAIL_FROM_NAME` | Sender name for emails        | `Hell-App Team`             |
 
 #### Security Settings
-| Variable | Description | Example Value |
-|----------|-------------|---------------|
-| `JWT_SECRET_KEY` | Secret key for JWT tokens | `your_super_secret_key` |
-| `JWT_ALGORITHM` | Algorithm used for JWT | `HS256` |
-| `ACCESS_TOKEN_EXPIRE_MINUTES` | JWT token expiration time | `30` |
+| Variable                      | Description               | Example Value           |
+|-------------------------------|---------------------------|-------------------------|
+| `JWT_SECRET_KEY`              | Secret key for JWT tokens | `your_super_secret_key` |
+| `JWT_ALGORITHM`               | Algorithm used for JWT    | `HS256`                 |
+| `ACCESS_TOKEN_EXPIRE_MINUTES` | JWT token expiration time | `30`                    |
 
 A complete example file is available in the repository as `.env.example`.
+
+## 🧪 Testing
+
+This project includes comprehensive test coverage for backend functionality.
+
+### Running Tests
+
+```bash
+# Run all tests
+uv sync --extra "test" # Install test dependencies
+uv run pytest
+```
+
+### Test Structure
+
+- Unit tests verify individual components in isolation
+- Integration tests ensure different modules work together correctly
+- End-to-end tests validate complete user flows
+
+## 📝 API Documentation
+
+The API documentation is auto-generated using FastAPI's built-in Swagger UI and ReDoc integration.
+
+| Documentation | URL                        |
+|---------------|----------------------------|
+| Swagger UI    | http://localhost/api/docs  |
+| ReDoc         | http://localhost/api/redoc |
+
+### API Endpoints Overview
+
+- **/api/auth** - Authentication and user management
+- **/api/exams** - Exam creation and management
+- **/api/students** - Student-specific endpoints
+- **/api/teachers** - Teacher-specific endpoints
+
+## 🔧 Frontend Architecture
+
+The React frontend follows a modern component-based architecture:
+
+- **Components**: Reusable UI elements (buttons, forms, cards)
+- **Contexts**: Global state management and theme providers
+- **Hooks**: Custom React hooks for shared functionality
+- **Lib**: Utility functions and third-party library integrations
+- **Pages**: Page-level components corresponding to routes
+
+### Key Frontend Features
+
+- State management with React Context API
+- Role-based component rendering for different user types
+- Responsive layouts built with Tailwind CSS
+- Custom theme using shadcn/ui components
+- Date/time handling with timezone support
+
 
 ## 📄 License
 

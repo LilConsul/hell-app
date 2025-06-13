@@ -13,7 +13,7 @@ import {
 import { StatusBadge } from "@/components/exams/status-badge";
 import { useExamStatus } from "@/hooks/use-student-exam-status";
 
-export function ExamDetailsAttempts({ exam, onViewAttempt }) {
+export function ExamDetailsAttempts({ exam }) {
   const navigate = useNavigate();
   const { 
     getAttemptStatusConfig,
@@ -67,7 +67,6 @@ export function ExamDetailsAttempts({ exam, onViewAttempt }) {
         attempt: attempt
       }
     });
-    onViewAttempt?.(attemptId);
   };
 
   const handleAttemptNumberClick = (attempt) => {

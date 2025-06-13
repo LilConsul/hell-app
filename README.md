@@ -106,12 +106,15 @@ existing functionality.
 
 3. **Access the application:**
 
-| Service           | URL                          |
-|-------------------|------------------------------|
-| Frontend          | http://localhost             |
-| API Documentation | http://localhost/api/docs    |
-| Email Testing UI  | http://localhost/dev/mailhog |
-| Celery Monitoring | http://localhost/dev/flower  |
+> [!IMPORTANT] 
+> The application runs on self-signed certificates, so you may need to accept the security warning in your browser.
+
+| Service           | URL                           |
+|-------------------|-------------------------------|
+| Frontend          | https://localhost             |
+| API Documentation | https://localhost/api/docs    |
+| Email Testing UI  | https://localhost/dev/mailhog |
+| Celery Monitoring | https://localhost/dev/flower  |
 
 ## 📊 Project Structure
 
@@ -140,48 +143,56 @@ hell-app/
 
 ## 🔒 Environment Configuration
 
-The application uses environment variables for configuration through a `.env` file.
+The application uses environment variables for configuration through a `.env` file. Most variables are self-explanatory, but here are some key ones:
 
-### Key Environment Variables
+<details> 
+<summary> Key Environment Variables </summary>
 
 #### Application Settings
 
-| Variable                 | Description                          | Example Value               |
-|--------------------------|--------------------------------------|-----------------------------|
-| `APP_ENV`                | Application environment              | `development`, `production` |
-| `APP_DEBUG`              | Enable debug mode                    | `true`, `false`             |
-| `FRONTEND_PORT_INTERNAL` | Internal port for the React frontend | `3000`                      |
-| `BACKEND_PORT_INTERNAL`  | Internal port for FastAPI backend    | `8000`                      |
-| `PUBLIC_HOST`            | Public-facing hostname               | `example.com`               |
-
-#### Database Configuration
-
-| Variable         | Description           | Example Value     |
-|------------------|-----------------------|-------------------|
-| `MONGO_HOST`     | MongoDB host address  | `mongodb`         |
-| `MONGO_PORT`     | MongoDB port          | `27017`           |
-| `MONGO_USER`     | MongoDB username      | `admin`           |
-| `MONGO_PASSWORD` | MongoDB password      | `secure_password` |
-| `MONGO_DB`       | MongoDB database name | `hell_app`        |
-
-#### Redis Configuration
-
-| Variable         | Description           | Example Value    |
-|------------------|-----------------------|------------------|
-| `REDIS_HOST`     | Redis host address    | `redis`          |
-| `REDIS_PORT`     | Redis port            | `6379`           |
-| `REDIS_PASSWORD` | Redis password        | `redis_password` |
-| `REDIS_DB`       | Redis database number | `0`              |
+| Variable        | Description                     | Example Value   |
+|-----------------|---------------------------------|-----------------|
+| `PROJECT_NAME`  | Name of the application         | `Hell App`      |
+| `DOMAIN`        | Domain name for the application | `localhost`     |
+| `BACKEND_DEBUG` | Enable debug mode for backend   | `true`, `false` |
 
 #### Security Settings
 
-| Variable                      | Description               | Example Value           |
-|-------------------------------|---------------------------|-------------------------|
-| `JWT_SECRET_KEY`              | Secret key for JWT tokens | `your_super_secret_key` |
-| `JWT_ALGORITHM`               | Algorithm used for JWT    | `HS256`                 |
-| `ACCESS_TOKEN_EXPIRE_MINUTES` | JWT token expiration time | `30`                    |
+| Variable                      | Description               | Example Value       |
+|-------------------------------|---------------------------|---------------------|
+| `SECRET_KEY`                  | Secret key for encryption | `InsanelySecretKey` |
+| `ALGORITHM`                   | Algorithm used for JWT    | `HS256`             |
+| `ACCESS_TOKEN_EXPIRE_SECONDS` | JWT token expiration time | `36000`             |
 
-A complete example file is available in the repository as `.env.example`.
+#### Admin Configuration
+
+| Variable         | Description         | Example Value        |
+|------------------|---------------------|----------------------|
+| `ADMIN_EMAIL`    | Admin user email    | `admin@hell-app.com` |
+| `ADMIN_PASSWORD` | Admin user password | `AdminSecret11`      |
+
+#### Testing Users
+
+> [!WARNING] 
+> These users are used for testing purposes only and should not be used in production.
+> Just leave empty fields if you don't need them.
+
+| Variable           | Description           | Example Value             |
+|--------------------|-----------------------|---------------------------|
+| `STUDENT_EMAIL`    | Test student email    | `Student123@hell-app.com` |
+| `STUDENT_PASSWORD` | Test student password | `StudentSecret11`         |
+| `TEACHER_EMAIL`    | Test teacher email    | `Teacher123@hell-app.com` |
+| `TEACHER_PASSWORD` | Test teacher password | `TeacherSecret11`         |
+
+#### Database Configuration (MongoDB)
+
+| Variable                     | Description           | Example Value |
+|------------------------------|-----------------------|---------------|
+| `MONGO_INITDB_ROOT_USERNAME` | MongoDB root username | `admin`       |
+| `MONGO_INITDB_ROOT_PASSWORD` | MongoDB root password | `admin`       |
+| `MONGO_INITDB_DATABASE`      | MongoDB database name | `app`         |
+
+</details> 
 
 ## 🧪 Testing
 
@@ -195,6 +206,11 @@ uv sync --extra "test" # Install test dependencies
 uv run pytest
 ```
 
+```bash
+docker exec hell-app-backend-1 uv sync --extra "test" # Install test, run only once
+docker exec hell-app-backend-1 uv run pytest
+```
+
 ### Test Structure
 
 - Unit tests verify individual components in isolation
@@ -205,10 +221,10 @@ uv run pytest
 
 The API documentation is auto-generated using FastAPI's built-in Swagger UI and ReDoc integration.
 
-| Documentation | URL                        |
-|---------------|----------------------------|
-| Swagger UI    | http://localhost/api/docs  |
-| ReDoc         | http://localhost/api/redoc |
+| Documentation | URL                         |
+|---------------|-----------------------------|
+| Swagger UI    | https://localhost/api/docs  |
+| ReDoc         | https://localhost/api/redoc |
 
 ### API Endpoints Overview
 

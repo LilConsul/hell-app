@@ -30,6 +30,8 @@ application enables seamless exam creation, administration, and result managemen
 | **🔐 Secure Authentication** | Complete user management with JWT HTTP-Only cookies            |
 | **👩‍🏫 Role-Based Access**  | Separate interfaces for students, teachers, and administrators |
 | **📝 Exam Management**       | Create, assign, take, and grade exams                          |
+| **🤖 Automatic Evaluation**  | AI-powered automatic grading of exams                          |
+| **🌓 Dark/Light Mode**       | Customizable UI theme for better user experience               |
 | **⏱️ Time Zone Handling**    | Accurate scheduling across different regions                   |
 | **📱 Responsive Design**     | Works on desktop and mobile devices                            |
 | **📧 Email Notifications**   | Automated alerts for exam schedules and results                |
@@ -89,7 +91,7 @@ existing functionality.
 ### Prerequisites
 
 - Docker and Docker Compose
-- Git
+- [Docker and Docker Compose](https://docs.docker.com/get-docker/)
 
 ### Quick Start
 
@@ -106,7 +108,7 @@ existing functionality.
 
 3. **Access the application:**
 
-> [!IMPORTANT] 
+> [!IMPORTANT]
 > The application runs on self-signed certificates, so you may need to accept the security warning in your browser.
 
 | Service           | URL                           |
@@ -115,6 +117,29 @@ existing functionality.
 | API Documentation | https://localhost/api/docs    |
 | Email Testing UI  | https://localhost/dev/mailhog |
 | Celery Monitoring | https://localhost/dev/flower  |
+
+### Testing Database
+
+The project includes a test database backup located in the `backup` directory. To import this database:
+
+```bash
+docker compose exec backup /backup/backup.sh
+```
+
+> [!NOTE]
+> Alternatively, you can use the cli to import the backup, but it is recommended to use the script for convenience.
+
+1. **List available backups:**
+   ```bash
+   docker compose exec backup /backup/backup.sh list
+   ```
+
+2. **Restore a specific backup:**
+   ```bash
+   docker compose exec backup /backup/backup.sh restore <backup_name>
+   ```
+
+For more details on managing database backups, refer to the documentation in the [/backup/README.md](/backup/README.md) file.
 
 ## 📊 Project Structure
 
@@ -143,7 +168,8 @@ hell-app/
 
 ## 🔒 Environment Configuration
 
-The application uses environment variables for configuration through a `.env` file. Most variables are self-explanatory, but here are some key ones:
+The application uses environment variables for configuration through a `.env` file. Most variables are self-explanatory,
+but here are some key ones:
 
 <details> 
 <summary> Key Environment Variables </summary>
@@ -173,9 +199,9 @@ The application uses environment variables for configuration through a `.env` fi
 
 #### Testing Users
 
-> [!WARNING] 
-> These users are used for testing purposes only and should not be used in production.
-> Just leave empty fields if you don't need them.
+> [!WARNING]
+> These users are used for testing purposes only and should not be used in production. Just leave empty fields if you
+> don't need them.
 
 | Variable           | Description           | Example Value             |
 |--------------------|-----------------------|---------------------------|
@@ -251,16 +277,16 @@ The React frontend follows a modern component-based architecture:
 - Custom theme using shadcn/ui components
 - Date/time handling with timezone support
 
-## 📄 License
-
-[MIT License](LICENSE)
-
 ## 👥 Contributors
 
 | Contributor                                                                                                                                                     | Role                                                   |
 |-----------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------|
 | <div align="center"><img src="https://github.com/LilConsul.png" width="60" height="60"><br/>[**Shevchenko Denys**](https://github.com/LilConsul)</div>          | Project Maintainer, DevOps Engineer, Backend Developer |
 | <div align="center"><img src="https://github.com/yehorkarabanov.png" width="60" height="60"><br/>[**Yehor Karabanov**](https://github.com/yehorkarabanov)</div> | Backend Developer                                      |
-| <div align="center"><img src="https://github.com/valmtv.png" width="60" height="60"><br/>[**Valerii Matviiv**](https://github.com/valmtv)</div>                 | Frontend Developer                                     |
+| <div align="center"><img src="https://github.com/valmtv.png" width="60" height="60"><br/>[**Valerii Matviiv**](https://github.com/valmtv)</div>                 | Frontend Lead,<br/> Frontend Developer                 |
 | <div align="center"><img src="https://github.com/aleexmaaa.png" width="60" height="60"><br/>[**Marcu Andrei-Alexandru**](https://github.com/aleexmaaa)</div>    | Intern Frontend Developer                              |
 | <div align="center"><img src="https://github.com/ianaaians.png" width="60" height="60"><br/>[**Iana-Iuliana Nastasiu**](https://github.com/ianaaians)</div>     | Intern Frontend Developer                              |
+
+## 📄 License
+
+[MIT License](LICENSE)

@@ -1,6 +1,6 @@
 # 🎓 Student Examination Application
 
-<div style="text-align: center;">
+<div align="center">
 
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/LilConsul/hell-app)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
@@ -9,7 +9,7 @@
 
 </div>
 
-<p style="text-align: center;">
+<p align="center">
   <img src="frontend/public/hell-app.svg" alt="Hell App Logo" width="200" height="auto" />
 </p>
 
@@ -30,7 +30,7 @@ A modern, comprehensive platform for managing student examinations with a robust
 
 ## 🛠️ Tech Stack
 
-<div style="text-align: center;">
+<div align="center">
 
 ### Frontend
 [![React](https://img.shields.io/badge/React-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://reactjs.org/)
@@ -129,15 +129,57 @@ hell-app/
 
 ## 🔒 Environment Configuration
 
-The application uses environment variables for configuration. 
+The application uses environment variables for configuration through a `.env` file. Copy the `.env.example` file to create your own configuration:
 
-Key environment variables:
+```bash
+cp .env.example .env
+```
 
-- `FRONTEND_PORT_INTERNAL`: Port for the React frontend
-- `BACKEND_PORT_INTERNAL`: Port for FastAPI backend
-- `MONGO_*`: MongoDB connection settings
-- `REDIS_*`: Redis settings
-- `SMTP_*`: Email configuration
+### Key Environment Variables
+
+#### Application Settings
+| Variable | Description | Example Value |
+|----------|-------------|---------------|
+| `APP_ENV` | Application environment | `development`, `production` |
+| `APP_DEBUG` | Enable debug mode | `true`, `false` |
+| `FRONTEND_PORT_INTERNAL` | Internal port for the React frontend | `3000` |
+| `BACKEND_PORT_INTERNAL` | Internal port for FastAPI backend | `8000` |
+| `PUBLIC_HOST` | Public-facing hostname | `example.com` |
+
+#### Database Configuration
+| Variable | Description | Example Value |
+|----------|-------------|---------------|
+| `MONGO_HOST` | MongoDB host address | `mongodb` |
+| `MONGO_PORT` | MongoDB port | `27017` |
+| `MONGO_USER` | MongoDB username | `admin` |
+| `MONGO_PASSWORD` | MongoDB password | `secure_password` |
+| `MONGO_DB` | MongoDB database name | `hell_app` |
+
+#### Redis Configuration
+| Variable | Description | Example Value |
+|----------|-------------|---------------|
+| `REDIS_HOST` | Redis host address | `redis` |
+| `REDIS_PORT` | Redis port | `6379` |
+| `REDIS_PASSWORD` | Redis password | `redis_password` |
+| `REDIS_DB` | Redis database number | `0` |
+
+#### Email Configuration
+| Variable | Description | Example Value |
+|----------|-------------|---------------|
+| `SMTP_HOST` | SMTP server host | `smtp.gmail.com` |
+| `SMTP_PORT` | SMTP server port | `587` |
+| `SMTP_USER` | SMTP username/email | `notifications@example.com` |
+| `SMTP_PASSWORD` | SMTP password or app password | `email_password` |
+| `EMAIL_FROM_NAME` | Sender name for emails | `Hell-App Team` |
+
+#### Security Settings
+| Variable | Description | Example Value |
+|----------|-------------|---------------|
+| `JWT_SECRET_KEY` | Secret key for JWT tokens | `your_super_secret_key` |
+| `JWT_ALGORITHM` | Algorithm used for JWT | `HS256` |
+| `ACCESS_TOKEN_EXPIRE_MINUTES` | JWT token expiration time | `30` |
+
+A complete example file is available in the repository as `.env.example`.
 
 ## 📄 License
 
@@ -145,10 +187,10 @@ Key environment variables:
 
 ## 👥 Contributors
 
-| Profile                                                                                                                     | Role                                                   |
-|-----------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------|
-| [![Shevchenko Denys](https://github.com/LilConsul.png) <br> **Shevchenko Denys**](https://github.com/LilConsul)             | Project Maintainer, DevOps Engineer, Backend Developer |
-| [![Yehor Karabanov](https://github.com/yehorkarabanov.png) <br> **Yehor Karabanov**](https://github.com/yehorkarabanov)     | Backend Developer                                      |
-| [![Valerii Matviiv](https://github.com/valmtv.png) <br> **Valerii Matviiv**](https://github.com/valmtv)                     | Frontend Developer                                     |
-| [![Marcu Andrei-Alexandru](https://github.com/aleexmaaa.png) <br> **Marcu Andrei-Alexandru**](https://github.com/aleexmaaa) | Intern Frontend Developer                              |
-| [![Iana-Iuliana Nastasiu](https://github.com/ianaaians.png) <br> **Iana-Iuliana Nastasiu**](https://github.com/ianaaians)   | Intern Frontend Developer                              |
+| Contributor                                                                                                                                                     | Role                                                   |
+|-----------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------|
+| <div align="center"><img src="https://github.com/LilConsul.png" width="60" height="60"><br/>[**Shevchenko Denys**](https://github.com/LilConsul)</div>          | Project Maintainer, DevOps Engineer, Backend Developer |
+| <div align="center"><img src="https://github.com/yehorkarabanov.png" width="60" height="60"><br/>[**Yehor Karabanov**](https://github.com/yehorkarabanov)</div> | Backend Developer                                      |
+| <div align="center"><img src="https://github.com/valmtv.png" width="60" height="60"><br/>[**Valerii Matviiv**](https://github.com/valmtv)</div>                 | Frontend Developer                                     |
+| <div align="center"><img src="https://github.com/aleexmaaa.png" width="60" height="60"><br/>[**Marcu Andrei-Alexandru**](https://github.com/aleexmaaa)</div>    | Intern Frontend Developer                              |
+| <div align="center"><img src="https://github.com/ianaaians.png" width="60" height="60"><br/>[**Iana-Iuliana Nastasiu**](https://github.com/ianaaians)</div>     | Intern Frontend Developer                              |

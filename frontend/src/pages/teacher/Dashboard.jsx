@@ -46,7 +46,7 @@ const fetchStats = async () => {
 
   const collections = collectionsData?.data || [];
   const exams = examsData?.data || [];
-  const activeExams = exams.filter((e) => e.status === "published");
+  const activeExams = exams;
 
   const reportPromises = activeExams.map((exam) =>
     exam._id
@@ -258,33 +258,23 @@ function TeacherDashboard() {
                 </p>
               ) : (
                 <ul className="space-y-2">
-                  {stats.upcomingExams.map((exam) => {
-                    const date = new Date(exam.start_date);
-                    const formattedDate = date.toLocaleDateString();
-                    const formattedTime = date.toLocaleTimeString([], {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    });
-                    return (
-                      <button
-                        key={exam._id}
-                        onClick={() => handleExamClick(exam)}
-                        className="flex flex-col border rounded-md p-2 bg-background hover:bg-muted/20 transition w-full text-left"
-                      >
-                        <div className="flex items-center gap-2">
-                          <CalendarClock
-                            className="h-4 w-4 text-muted-foreground"
-                          />
-                          <span className="font-medium truncate">
-                            {exam.title}
-                          </span>
-                        </div>
-                        <span className="text-xs text-muted-foreground truncate ml-6">
-                          {formattedDate}, {formattedTime}
+                  {stats.upcomingExams.map((exam) => (
+                    <button
+                      key={exam._id || exam.id}
+                      onClick={() => handleExamClick(exam)}
+                      className="flex flex-col border rounded-md p-2 bg-background hover:bg-muted/20 transition w-full text-left"
+                    >
+                      <div className="flex items-center gap-2">
+                        <CalendarClock className="h-4 w-4 text-muted-foreground" />
+                        <span className="font-medium truncate">
+                          {exam.title}
                         </span>
-                      </button>
-                    );
-                  })}
+                      </div>
+                      <span className="text-xs text-muted-foreground truncate ml-6">
+                        {formatDate(exam.start_date)}, {formatDateTime(exam.start_date)}
+                      </span>
+                    </button>
+                  ))}
                 </ul>
               )}
             </div>
@@ -303,33 +293,23 @@ function TeacherDashboard() {
                 </p>
               ) : (
                 <ul className="space-y-2">
-                  {stats.recentlyEndedExams.map((exam) => {
-                    const date = new Date(exam.end_date);
-                    const formattedDate = date.toLocaleDateString();
-                    const formattedTime = date.toLocaleTimeString([], {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    });
-                    return (
-                      <button
-                        key={exam._id}
-                        onClick={() => handleExamClick(exam)}
-                        className="flex flex-col border rounded-md p-2 bg-background hover:bg-muted/20 transition w-full text-left"
-                      >
-                        <div className="flex items-center gap-2">
-                          <CalendarCheck
-                            className="h-4 w-4 text-muted-foreground"
-                          />
-                          <span className="font-medium truncate">
-                            {exam.title}
-                          </span>
-                        </div>
-                        <span className="text-xs text-muted-foreground truncate ml-6">
-                          {formattedDate}, {formattedTime}
+                  {stats.recentlyEndedExams.map((exam) => (
+                    <button
+                      key={exam._id || exam.id}
+                      onClick={() => handleExamClick(exam)}
+                      className="flex flex-col border rounded-md p-2 bg-background hover:bg-muted/20 transition w-full text-left"
+                    >
+                      <div className="flex items-center gap-2">
+                        <CalendarCheck className="h-4 w-4 text-muted-foreground" />
+                        <span className="font-medium truncate">
+                          {exam.title}
                         </span>
-                      </button>
-                    );
-                  })}
+                      </div>
+                      <span className="text-xs text-muted-foreground truncate ml-6">
+                        Ended: {formatDate(exam.end_date)}, {formatDateTime(exam.end_date)}
+                      </span>
+                    </button>
+                  ))}
                 </ul>
               )}
             </div>
@@ -429,7 +409,7 @@ function TeacherDashboard() {
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Link to={`/exam/${selectedExam.id || selectedExam._id}`}>
+                      <Link to={`/exams/${selectedExam.id || selectedExam._id}`}>
                         <Button>
                           <FileText className="mr-2 h-4 w-4" /> View Details
                         </Button>

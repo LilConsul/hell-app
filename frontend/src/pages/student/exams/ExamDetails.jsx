@@ -54,10 +54,6 @@ function StudentExamDetails() {
     navigate(`/exams/${examId}/take`);
   };
 
-  const handleViewAttempt = (attemptId) => {
-    navigate(`/exams/${examId}/results/${attemptId}`);
-  };
-
   if (loading) {
     return (
       <div className="flex min-h-screen flex-col">
@@ -117,7 +113,6 @@ function StudentExamDetails() {
           />
           <ExamDetailsAttempts 
             exam={exam}
-            onViewAttempt={handleViewAttempt}
           />
         </div>
       </main>

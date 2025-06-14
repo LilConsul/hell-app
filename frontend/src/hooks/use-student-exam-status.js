@@ -122,6 +122,24 @@ export const useExamStatus = () => {
       review_not_allowed: {
         badge: { variant: "outline", text: "Review Not Allowed", className: colorSchemes.gray },
         icon: "EyeOff"
+      },
+
+      // Question statuses
+      correct_answer: {
+        badge: { variant: "outline", text: "Correct", className: colorSchemes.green },
+        icon: "CheckCircle"
+      },
+      incorrect_answer: {
+        badge: { variant: "outline", text: "Incorrect", className: colorSchemes.red },
+        icon: "XCircle"
+      },
+      unanswered: {
+        badge: { variant: "outline", text: "Unanswered", className: colorSchemes.gray },
+        icon: "AlertCircle"
+      },
+      flagged: {
+        badge: { variant: "outline", text: "Flagged", className: colorSchemes.amber },
+        icon: "Flag"
       }
     };
 

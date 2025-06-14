@@ -24,6 +24,9 @@ import Collections from './pages/teacher/collections/Collections';
 import CreateCollection from './pages/teacher/collections/CreateCollection';
 import AllExams from './pages/teacher/exams/AllExams';
 
+// Student pages
+import StudentExamResults from './pages/student/exams/Results.jsx';
+
 // Placeholders
 import Students from './pages/Students';
 import Reports from './pages/Reports';
@@ -63,6 +66,8 @@ export default function App() {
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/exams" element={<Exams/>} />
             <Route path="/exams/:examId" element={<ExamDetails />} />
+            <Route path="/exams/:examId/results" element={<StudentExamResults />} />
+
             <Route path="/settings" element={<Settings />} />
           </Route>
 

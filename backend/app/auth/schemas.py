@@ -59,22 +59,6 @@ class EmailRequest(BaseModel):
     email: EmailStr
 
 
-class OAuthRequest(BaseModel):
-    """Schema for OAuth authorization code flow"""
-
-    code: str
-    redirect_uri: str = None
-    state: str = None
-
-
-class SocialAccount(BaseModel):
-    """Schema for social account connection"""
-
-    provider: str
-    provider_user_id: str
-    email: str
-
-
 class AuthReturn(BaseReturn):
     """Schema for auth responses"""
 

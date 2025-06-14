@@ -66,15 +66,13 @@ class ReportService:
             )
 
         # Convert filter dates from user timezone to UTC
-        start_date = (
-            filters.start_date if filters.start_date else exam_instance.start_date
-        )
+        start_date = filters.start_date if filters.start_date else None
         if start_date and user_timezone:
             start_date = convert_user_timezone_to_utc(start_date, user_timezone)
         elif start_date and start_date.tzinfo is None:
             start_date = start_date.replace(tzinfo=timezone.utc)
 
-        end_date = filters.end_date if filters.end_date else datetime.now(timezone.utc)
+        end_date = filters.end_date if filters.end_date else None
         if end_date and user_timezone:
             end_date = convert_user_timezone_to_utc(end_date, user_timezone)
         elif end_date and end_date.tzinfo is None:
@@ -170,7 +168,15 @@ class ReportService:
                         if submitted_at.tzinfo is None:
                             submitted_at = submitted_at.replace(tzinfo=timezone.utc)
 
-                        if start_date <= submitted_at <= end_date:
+                        # Check start_date and end_date separately
+                        # This allows flexibility when either start_date or end_date is not specified
+                        is_within_range = True
+                        if start_date and submitted_at < start_date:
+                            is_within_range = False
+                        if end_date and submitted_at > end_date:
+                            is_within_range = False
+
+                        if is_within_range:
                             filtered_attempts.append(attempt)
                 student_attempts = filtered_attempts
 

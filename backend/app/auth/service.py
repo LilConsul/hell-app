@@ -156,25 +156,58 @@ class AuthService:
 
         await delete_verification_token(token)
 
-    async def initialize_admin(self):
+    async def initialize_user(
+        self,
+        email: str,
+        password: str,
+        first_name: str = "",
+        last_name: str = "",
+        role: UserRole | None = None,
+        is_verified: bool = True,
+    ) -> None:
         """
-        Initialize the admin user if it doesn't exist.
+        Initialize a user with the provided arguments if it doesn't exist.
         """
-        admin_email = settings.ADMIN_EMAIL
-        admin_password = settings.ADMIN_PASSWORD
-
-        existing_admin = await self.user_repository.get_by_email(admin_email)
-        if existing_admin:
+        existing_user = await self.user_repository.get_by_email(email)
+        if existing_user:
             return
 
-        hashed_password = get_password_hash(admin_password)
-        admin_data = {
-            "email": admin_email,
+        hashed_password = get_password_hash(password)
+        user_data = {
+            "email": email,
             "hashed_password": hashed_password,
-            "role": UserRole.ADMIN,
-            "first_name": "Super",
-            "last_name": "Admin",
-            "is_verified": True,
+            "first_name": first_name or email,
+            "last_name": last_name or "",
+            "role": role or UserRole.STUDENT,
+            "is_verified": is_verified,
         }
 
-        await self.user_repository.create(admin_data)
+        await self.user_repository.create(user_data)
+
+    async def initialize_test_users(self) -> None:
+        """
+        Initialize test users if they don't exist.
+        """
+        await self.initialize_user(
+            email=settings.STUDENT_EMAIL,
+            password=settings.STUDENT_PASSWORD,
+            first_name="Test",
+            last_name="Student",
+            role=UserRole.STUDENT,
+        )
+
+        await self.initialize_user(
+            email=settings.TEACHER_EMAIL,
+            password=settings.TEACHER_PASSWORD,
+            first_name="Test",
+            last_name="Teacher",
+            role=UserRole.TEACHER,
+        )
+
+        await self.initialize_user(
+            email=settings.ADMIN_EMAIL,
+            password=settings.ADMIN_PASSWORD,
+            first_name="Super",
+            last_name="Admin",
+            role=UserRole.ADMIN,
+        )

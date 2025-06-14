@@ -169,17 +169,8 @@ export function LoginModal({ isOpen, onClose, onRegisterClick, onForgotPasswordC
           <Separator />
           
           <div className="space-y-4">
-            <Button 
-              variant="outline" 
-              className="w-full" 
-              onClick={() => {
-                // TODO // 
-              }}
-            >
-              Continue with Google
-            </Button>
             <div className="text-center text-sm">
-              Don&apos;t have an account?{" "}
+              Don't have an account?{" "}
               <Button 
                 variant="link" 
                 className="p-0 h-auto" 

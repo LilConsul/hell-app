@@ -57,13 +57,6 @@ class ReportService:
         if not exam_instance:
             raise NotFoundError(_("Exam instance not found"))
 
-        if filters.title and filters.title.lower() != exam_instance.title.lower():
-            return ExamReportResponse(
-                exam_title=exam_instance.title,
-                total_students=0,
-                attempts_count=0,
-                statistics=ExamStatistics(),
-            )
 
         # Convert filter dates from user timezone to UTC
         start_date = filters.start_date if filters.start_date else None
@@ -268,7 +261,7 @@ class ReportService:
         for attempt in attempts:
             if attempt.grade is not None:
                 student_exam = attempt.student_exam_id
-                student = student_exam.student_id
+                student = await student_exam.student_id.fetch()
 
                 student_data.append(
                     {

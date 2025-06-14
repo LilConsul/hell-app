@@ -29,7 +29,6 @@ async def get_exam_report(
     student_ids: Optional[str] = Query(
         None, description="Comma-separated list of student IDs"
     ),
-    title: Optional[str] = None,
     only_last_attempt: Optional[bool] = True,
     report_service: ReportService = Depends(get_report_service),
     request: Request = None,
@@ -47,7 +46,6 @@ async def get_exam_report(
         start_date=start_date,
         end_date=end_date,
         student_ids=student_ids,
-        title=title,
         only_last_attempt=only_last_attempt,
     )
 
@@ -70,7 +68,6 @@ async def export_exam_report_pdf(
     student_ids: Optional[str] = Query(
         None, description="Comma-separated list of student IDs"
     ),
-    title: Optional[str] = None,
     only_last_attempt: Optional[bool] = True,
     include_visualizations: bool = True,
     report_service: ReportService = Depends(get_report_service),
@@ -90,7 +87,6 @@ async def export_exam_report_pdf(
         start_date=start_date,
         end_date=end_date,
         student_ids=student_ids,
-        title=title,
         only_last_attempt=only_last_attempt,
     )
 

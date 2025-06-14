@@ -188,21 +188,23 @@ class AuthService:
         """
         Initialize test users if they don't exist.
         """
-        await self.initialize_user(
-            email=settings.STUDENT_EMAIL,
-            password=settings.STUDENT_PASSWORD,
-            first_name="Test",
-            last_name="Student",
-            role=UserRole.STUDENT,
-        )
+        if settings.STUDENT_EMAIL and settings.STUDENT_PASSWORD:
+            await self.initialize_user(
+                email=settings.STUDENT_EMAIL,
+                password=settings.STUDENT_PASSWORD,
+                first_name="Test",
+                last_name="Student",
+                role=UserRole.STUDENT,
+            )
 
-        await self.initialize_user(
-            email=settings.TEACHER_EMAIL,
-            password=settings.TEACHER_PASSWORD,
-            first_name="Test",
-            last_name="Teacher",
-            role=UserRole.TEACHER,
-        )
+        if settings.TEACHER_EMAIL and settings.TEACHER_PASSWORD:
+            await self.initialize_user(
+                email=settings.TEACHER_EMAIL,
+                password=settings.TEACHER_PASSWORD,
+                first_name="Test",
+                last_name="Teacher",
+                role=UserRole.TEACHER,
+            )
 
         await self.initialize_user(
             email=settings.ADMIN_EMAIL,

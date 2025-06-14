@@ -29,12 +29,12 @@ class Settings(BaseSettings):
     ADMIN_PASSWORD: str
 
     # Teacher
-    TEACHER_EMAIL: str
-    TEACHER_PASSWORD: str
+    TEACHER_EMAIL: str | None = None
+    TEACHER_PASSWORD: str | None = None
 
     # Student
-    STUDENT_EMAIL: str
-    STUDENT_PASSWORD: str
+    STUDENT_EMAIL: str | None = None
+    STUDENT_PASSWORD: str | None = None
 
     # Cookie settings
     COOKIE_SECURE: bool = True

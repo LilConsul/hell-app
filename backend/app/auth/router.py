@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Response
 
-from app.auth.dependencies import get_auth_service, get_oauth_service
-from app.auth.schemas import (AuthReturn, EmailRequest, OAuthRequest, Token,
+from app.auth.dependencies import get_auth_service
+from app.auth.schemas import (AuthReturn, EmailRequest, Token,
                               UserCreate, UserLogin, UserResetPassword)
 from app.auth.service import AuthService
 from app.i18n import _
@@ -81,20 +81,3 @@ async def reset_password(
     """
     await auth_service.reset_password(data.token, data.password)
     return {"message": _("Password reset successfully")}
-
-
-# OAuth endpoints
-@router.post("/google", response_model=AuthReturn, response_model_exclude_none=True)
-async def google_login(
-    response: Response,
-    oauth_data: OAuthRequest,
-    oauth_service=Depends(get_oauth_service),
-):
-    """
-    Process Google OAuth authentication
-
-    This endpoint receives the authorization code from the frontend
-    after the user authenticates with Google.
-    """
-    data = await oauth_service.google_login(oauth_data, response)
-    return {"message": _("Google login successful"), "data": data}

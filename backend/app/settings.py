@@ -25,8 +25,16 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_SECONDS: int
 
     # Admin
-    ADMIN_EMAIL: str = Field(..., alias="ADMIN_EMAIL")
-    ADMIN_PASSWORD: str = Field(..., alias="ADMIN_PASSWORD")
+    ADMIN_EMAIL: str
+    ADMIN_PASSWORD: str
+
+    # Teacher
+    TEACHER_EMAIL: str | None = None
+    TEACHER_PASSWORD: str | None = None
+
+    # Student
+    STUDENT_EMAIL: str | None = None
+    STUDENT_PASSWORD: str | None = None
 
     # Cookie settings
     COOKIE_SECURE: bool = True

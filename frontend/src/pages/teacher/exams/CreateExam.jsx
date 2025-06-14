@@ -60,17 +60,23 @@ function CreateExam() {
   const [collectionsError, setCollectionsError] = useState(null);
   const [examError, setExamError] = useState(null);
 
+  const [pendingStudentIds, setPendingStudentIds] = useState([]);
+
   useEffect(() => {
-    loadStudents();
-    loadCollections();
+    const loadData = async () => {
+      await Promise.all([
+        loadStudents(),
+        loadCollections()
+      ]);
+      
+      if (isEditMode) {
+        await loadExamData();
+      }
+    };
     
-    // Load exam data if in edit mode
-    if (isEditMode) {
-      loadExamData();
-    }
+    loadData();
   }, [isEditMode, examId]);
 
-  // Convert UTC string to local datetime string for DateTimePicker display
   const utcToLocalDateTimeString = (utcString) => {
     if (!utcString) return "";
     
@@ -79,7 +85,6 @@ function CreateExam() {
     
     const timezoneOffset = utcDate.getTimezoneOffset();
     const localDate = new Date(utcDate.getTime() - (timezoneOffset * 60000));
-    // Format to YYYY-MM-DDTHH:mm for datetime-local input
     return localDate.toISOString().slice(0, 16);
   };
  
@@ -90,30 +95,28 @@ function CreateExam() {
       const response = await examAPI.getExam(examId);
       const examData = response.data;
       
-      // Populate basic info
       setBasicInfo({
         examTitle: examData.title,
         selectedCollection: examData.collection_id,
         startDate: utcToLocalDateTimeString(examData.start_date),
-        duration: Math.round((new Date(examData.end_date) - new Date(examData.start_date)) / 60000).toString(), // Convert to minutes
+        duration: Math.round((new Date(examData.end_date) - new Date(examData.start_date)) / 60000).toString(),
         maxAttempts: examData.max_attempts,
         passingScore: examData.passing_score
       });
       
-      // Populate selected students
-      const assignedStudentIds = examData.assigned_students.map(s => s.student_id);
-      // We'll need to wait for students to load and then match them
+      const assignedStudentIds = examData.assigned_students?.map(s => 
+        typeof s === 'object' ? s.student_id : s
+      ) || [];
+      
       if (students.length > 0) {
         const assignedStudents = students.filter(student => 
           assignedStudentIds.includes(student.id)
         );
         setSelectedStudents(assignedStudents);
       } else {
-        // Store the IDs to match later when students load
-        setSelectedStudents(assignedStudentIds);
+        setPendingStudentIds(assignedStudentIds);
       }
       
-      // Populate exam settings
       setExamSettings({
         security_settings: {
           shuffle_questions: examData.security_settings.shuffle_questions,
@@ -174,21 +177,19 @@ function CreateExam() {
     }
   };
 
-  // Effect to match student ids when students load (for edit mode)
   useEffect(() => {
-    if (isEditMode && students.length > 0 && Array.isArray(selectedStudents) && selectedStudents.length > 0 && typeof selectedStudents[0] === 'string') {
-      // selectedStudents contains ids, need to convert to student objects
+    if (pendingStudentIds.length > 0 && students.length > 0) {
       const assignedStudents = students.filter(student => 
-        selectedStudents.includes(student.id)
+        pendingStudentIds.includes(student.id)
       );
       setSelectedStudents(assignedStudents);
+      setPendingStudentIds([]);
     }
-  }, [students, isEditMode]);
+  }, [students, pendingStudentIds]);
 
   const handleStudentsChange = useCallback((newSelectedStudents) => {
     setSelectedStudents(newSelectedStudents);
   }, []);
-
 
   const calculateEndDate = (startDate, durationInMinutes) => {
     const start = new Date(startDate);

@@ -1,4 +1,1 @@
-TODO: Remake unit tests to service testing rather than api testing
 TODO: Womp womp
-TODO: Add testing users (STUDENT, TEACHER) from .env file
-TODO: Remove Google Auth from api

@@ -150,7 +150,7 @@ class ReportService:
         """
         student_exams = await self.student_exam_repository.get_all(
             {"exam_instance_id.$id": exam_instance_id},
-            fetch_fields={"attempts": 2},
+            fetch_fields={"attempts": 2, "student_id": 1},
         )
         if student_ids:
             student_exams = [

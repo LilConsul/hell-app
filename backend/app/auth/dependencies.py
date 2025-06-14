@@ -2,7 +2,6 @@ from fastapi import Depends
 
 from app.auth.infrastructure import CookieTokenAuth
 from app.auth.models import User, UserRole
-from app.auth.oauth_service import OAuthService
 from app.auth.repository import UserRepository
 from app.auth.security import decode_token
 from app.auth.service import AuthService
@@ -20,12 +19,6 @@ def get_auth_service(
     user_repository: UserRepository = Depends(get_user_repository),
 ) -> AuthService:
     return AuthService(user_repository=user_repository)
-
-
-def get_oauth_service(
-    user_repository: UserRepository = Depends(get_user_repository),
-) -> OAuthService:
-    return OAuthService(user_repository=user_repository)
 
 
 # Authentication infrastructure

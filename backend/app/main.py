@@ -19,7 +19,7 @@ async def lifespan(app: FastAPI):
     # Initialize the admin user
     user_repository = get_user_repository()
     auth_service = AuthService(user_repository)
-    await auth_service.initialize_admin()
+    await auth_service.initialize_test_users()
 
     yield
 

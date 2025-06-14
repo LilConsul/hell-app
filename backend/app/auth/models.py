@@ -1,7 +1,7 @@
 import uuid
 from typing import Dict, List, Optional
 
-from beanie import Delete, Document, Indexed, Link, before_event
+from beanie import Delete, Document, Indexed, before_event
 from pydantic import ConfigDict, EmailStr, Field
 
 from app.auth.schemas import UserRole
@@ -19,21 +19,9 @@ class User(Document, TimestampMixin):
     receive_notifications: bool = True
     notifications_tasks_id: Dict[str, List[str]] = Field(default_factory=dict)
 
-    # Add a back-reference to social connections
-    # social_connections: List[BackLink["SocialConnection"]] = Field(
-    #     default_factory=list,
-    #     json_schema_extra={
-    #         "original_field": "user",
-    #     },
-    # )
-
     @before_event(Delete)
     async def before_delete(self):
         """Trigger cascade deletion of related exam data when a user is deleted"""
-        # FIXME: Uncomment this line when SocialConnection is defined
-        # from app.auth.models import SocialConnection
-        # await SocialConnection.find(SocialConnection.user.id == self.id).delete()
-
         from app.exam.models import cascade_delete_user
 
         await cascade_delete_user(self.id, self.role)
@@ -56,20 +44,3 @@ class User(Document, TimestampMixin):
             }
         }
     )
-
-
-class SocialConnection(Document, TimestampMixin):
-    """Model to track social login connections"""
-
-    provider: str  # "google", "github", etc.
-    provider_user_id: str
-    # Change from string to Link for proper relationship
-    user: Link[User]
-    email: str
-
-    class Settings:
-        name = "social_connections"
-        indexes = [
-            "provider_user_id",
-            ("provider", "provider_user_id"),  # Compound index
-        ]

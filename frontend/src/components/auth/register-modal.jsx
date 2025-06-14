@@ -330,15 +330,6 @@ export function RegisterModal({ isOpen, onClose, onLoginClick }) {
           <Separator />
           
           <div className="space-y-4">
-            <Button 
-              variant="outline" 
-              className="w-full"
-              onClick={() => {
-                // Implement Google auth here
-              }}
-            >
-              Continue with Google
-            </Button>
             <div className="text-center text-sm">
               Already have an account?{" "}
               <Button 

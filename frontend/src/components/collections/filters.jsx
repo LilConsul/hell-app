@@ -348,7 +348,7 @@ export function CollectionFilters({
                                     <User className="mr-2 h-4 w-4" />
                                     <span>{availableUser.isCurrentUser ? `Me (${availableUser.name})` : availableUser.name}</span>
                                     {tempFilters.specificUsers.some(u => u.id === availableUser.id) && (
-                                      <Check className="ml-auto h-4 w-4" />
+                                      <Check className="ml-auto h-4 w-4 color-red" />
                                     )}
                                   </CommandItem>
                                 ))}
@@ -400,14 +400,12 @@ export function CollectionFilters({
               onCheckedChange={() => setSortOption("updated-newest")}
             >
               Last Updated (Newest First)
-              {sortOption === "updated-newest" && <Check className="h-4 w-4 ml-auto" />}
             </DropdownMenuCheckboxItem>
             <DropdownMenuCheckboxItem
               checked={sortOption === "updated-oldest"}
               onCheckedChange={() => setSortOption("updated-oldest")}
             >
               Last Updated (Oldest First) 
-              {sortOption === "updated-oldest" && <Check className="h-4 w-4 ml-auto" />}
             </DropdownMenuCheckboxItem>
             <DropdownMenuSeparator />
             <DropdownMenuCheckboxItem
@@ -415,14 +413,12 @@ export function CollectionFilters({
               onCheckedChange={() => setSortOption("created-newest")}
             >
               Date Created (Newest First)
-              {sortOption === "created-newest" && <Check className="h-4 w-4 ml-auto" />}
             </DropdownMenuCheckboxItem>
             <DropdownMenuCheckboxItem
               checked={sortOption === "created-oldest"}
               onCheckedChange={() => setSortOption("created-oldest")}
             >
               Date Created (Oldest First)
-              {sortOption === "created-oldest" && <Check className="h-4 w-4 ml-auto" />}
             </DropdownMenuCheckboxItem>
             <DropdownMenuSeparator />
             <DropdownMenuCheckboxItem
@@ -430,14 +426,12 @@ export function CollectionFilters({
               onCheckedChange={() => setSortOption("questions-high")}
             >
               Question Count (High to Low)
-              {sortOption === "questions-high" && <Check className="h-4 w-4 ml-auto" />}
             </DropdownMenuCheckboxItem>
             <DropdownMenuCheckboxItem
               checked={sortOption === "questions-low"}
               onCheckedChange={() => setSortOption("questions-low")}
             >
               Question Count (Low to High)
-              {sortOption === "questions-low" && <Check className="h-4 w-4 ml-auto" />}
             </DropdownMenuCheckboxItem>
             {filters.specificUsers?.length > 0 && (
               <>

@@ -6,7 +6,6 @@ import {
   Eye, 
   Clock, 
   CheckCircle, 
-  XCircle, 
   Timer,
   TrendingUp
 } from "lucide-react";
@@ -24,6 +23,12 @@ export function ExamDetailsAttempts({ exam }) {
     calculateAverage,
     getHighestGrade
   } = useExamStatus();
+
+
+  const roundScore = (score) => {
+    if (score === null || score === undefined) return null;
+    return Math.round(score * 100) / 100;
+  };
 
   if (!exam.attempts || exam.attempts.length === 0) {
     return (
@@ -50,23 +55,11 @@ export function ExamDetailsAttempts({ exam }) {
   const allowReview = exam.exam_instance_id.security_settings?.allow_review;
   const sortedAttempts = [...exam.attempts].sort((a, b) => new Date(b.started_at) - new Date(a.started_at));
   const displayAttempts = sortedAttempts.slice(0, 3);
-  const averageGrade = calculateAverage(exam.attempts);
-  const highestGrade = getHighestGrade(exam.attempts);
+  const averageGrade = roundScore(calculateAverage(exam.attempts));
+  const highestGrade = roundScore(getHighestGrade(exam.attempts));
 
   const handleViewAttempt = (attemptId) => {
-    const attempt = exam.attempts.find(a => a.id === attemptId);
-    navigate(`/exams/${exam.id}/results?attemptId=${attemptId}`, {
-      state: {
-        examTitle: exam.exam_instance_id.title,
-        examId: exam.id,
-        attemptId: attemptId,
-        currentStatus: exam.current_status,
-        attemptsCount: exam.attempts_count,
-        latestAttemptId: exam.latest_attempt_id,
-        attempts: exam.attempts,
-        attempt: attempt
-      }
-    });
+    navigate(`/exams/${exam.id}/results?attemptId=${attemptId}`);
   };
 
   const handleAttemptNumberClick = (attempt) => {
@@ -129,6 +122,7 @@ export function ExamDetailsAttempts({ exam }) {
               : null;
             const attemptNumber = getAttemptNumber(attempt);
             const canViewResults = attempt.status === 'submitted' && allowReview;
+            const roundedGrade = roundScore(attempt.grade);
 
             return (
               <div key={attempt.id} className="border rounded-lg p-4 space-y-3">
@@ -137,7 +131,7 @@ export function ExamDetailsAttempts({ exam }) {
                     <span 
                       className={`font-medium ${
                         canViewResults 
-                          ? 'cursor-pointer hover:underline' 
+                          ? 'cursor-pointer hover:underline text-primary' 
                           : 'cursor-default'
                       }`}
                       onClick={() => handleAttemptNumberClick(attempt)}
@@ -175,10 +169,10 @@ export function ExamDetailsAttempts({ exam }) {
                     </div>
                   )}
                   
-                  {attempt.grade !== null && attempt.grade !== undefined && (
+                  {roundedGrade !== null && (
                     <div>
                       <div className="text-muted-foreground mb-1">Score</div>
-                      <div className="font-medium">{attempt.grade}%</div>
+                      <div className="font-medium">{roundedGrade}%</div>
                     </div>
                   )}
                   

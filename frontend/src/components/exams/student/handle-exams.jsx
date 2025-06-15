@@ -307,6 +307,7 @@ export function ExamConfirmationModal({
   isOpen,
   onClose,
   onConfirm,
+  examTitle,
   isResuming = false,
   attemptsRemaining
 }) {
@@ -318,7 +319,7 @@ export function ExamConfirmationModal({
             {isResuming ? "Resume Exam" : "Start Exam"}
           </AlertDialogTitle>
           <AlertDialogDescription>
-            Are you sure you want to {isResuming ? "resume" : "start"} this exam?
+            Are you sure you want to {isResuming ? "resume" : "start"} <strong>{examTitle}</strong> exam?
             <br />
             <span className="font-medium">
               You have {attemptsRemaining} attempt{attemptsRemaining !== 1 ? 's' : ''} remaining.

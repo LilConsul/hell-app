@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StudentsTab } from "@/components/exams/teacher/tabs/students";
@@ -22,12 +22,11 @@ function CreateExam() {
   const isEditMode = examId && examId !== 'new';
   const preselectedCollectionId = searchParams.get('collectionId');
   
-  // Centralized basic info state
   const [basicInfo, setBasicInfo] = useState({
     examTitle: "",
     selectedCollection: preselectedCollectionId || "",
     startDate: "",
-    duration: "120", // in minutes
+    duration: "120",
     maxAttempts: 1,
     passingScore: 60
   });
@@ -36,20 +35,24 @@ function CreateExam() {
   const [activeTab, setActiveTab] = useState("basic");
   const [pdfModalOpen, setPdfModalOpen] = useState(false);
   
-  // Centralized exam settings state
   const [examSettings, setExamSettings] = useState({
     security_settings: {
       shuffle_questions: false,
       allow_review: true,
       prevent_tab_switching: false,
       tab_switch_limit: 0,
-      gaze_tracking: false,
-      gaze_limit: 0
     },
     notification_settings: {
       reminder_enabled: true,
       reminders: ["2d", "1h", "20m"]
     }
+  });
+
+  // Store original data for comparison
+  const [originalData, setOriginalData] = useState({
+    basicInfo: null,
+    examSettings: null,
+    selectedStudentIds: null
   });
 
   const [loading, setLoading] = useState(false);
@@ -89,6 +92,25 @@ function CreateExam() {
     const localDate = new Date(utcDate.getTime() - (timezoneOffset * 60000));
     return localDate.toISOString().slice(0, 16);
   };
+
+  const deepEqual = (obj1, obj2) => {
+    if (obj1 === obj2) return true;
+    if (obj1 == null || obj2 == null) return false;
+    if (typeof obj1 !== typeof obj2) return false;
+    
+    if (typeof obj1 !== 'object') return obj1 === obj2;
+    
+    if (Array.isArray(obj1)) {
+      if (!Array.isArray(obj2) || obj1.length !== obj2.length) return false;
+      return obj1.every((item, index) => deepEqual(item, obj2[index]));
+    }
+    
+    const keys1 = Object.keys(obj1);
+    const keys2 = Object.keys(obj2);
+    if (keys1.length !== keys2.length) return false;
+    
+    return keys1.every(key => deepEqual(obj1[key], obj2[key]));
+  };
  
   const loadExamData = async () => {
     try {
@@ -97,18 +119,41 @@ function CreateExam() {
       const response = await examAPI.getExam(examId);
       const examData = response.data;
       
-      setBasicInfo({
+      const loadedBasicInfo = {
         examTitle: examData.title,
         selectedCollection: examData.collection_id,
         startDate: utcToLocalDateTimeString(examData.start_date),
         duration: Math.round((new Date(examData.end_date) - new Date(examData.start_date)) / 60000).toString(),
         maxAttempts: examData.max_attempts,
         passingScore: examData.passing_score
-      });
+      };
+      
+      const loadedExamSettings = {
+        security_settings: {
+          shuffle_questions: examData.security_settings.shuffle_questions,
+          allow_review: examData.security_settings.allow_review,
+          prevent_tab_switching: examData.security_settings.prevent_tab_switching,
+          tab_switch_limit: examData.security_settings.tab_switch_limit || 0,
+        },
+        notification_settings: {
+          reminder_enabled: examData.notification_settings.reminder_enabled,
+          reminders: examData.notification_settings.reminders
+        }
+      };
+      
+      setBasicInfo(loadedBasicInfo);
+      setExamSettings(loadedExamSettings);
       
       const assignedStudentIds = examData.assigned_students?.map(s => 
         typeof s === 'object' ? s.student_id : s
       ) || [];
+      
+      // Store original data immediately
+      setOriginalData({
+        basicInfo: { ...loadedBasicInfo },
+        examSettings: JSON.parse(JSON.stringify(loadedExamSettings)),
+        selectedStudentIds: [...assignedStudentIds]
+      });
       
       if (students.length > 0) {
         const assignedStudents = students.filter(student => 
@@ -118,21 +163,6 @@ function CreateExam() {
       } else {
         setPendingStudentIds(assignedStudentIds);
       }
-      
-      setExamSettings({
-        security_settings: {
-          shuffle_questions: examData.security_settings.shuffle_questions,
-          allow_review: examData.security_settings.allow_review,
-          prevent_tab_switching: examData.security_settings.prevent_tab_switching,
-          tab_switch_limit: examData.security_settings.tab_switch_limit || 0,
-          gaze_tracking: examData.security_settings.gaze_tracking,
-          gaze_limit: examData.security_settings.gaze_limit || 0
-        },
-        notification_settings: {
-          reminder_enabled: examData.notification_settings.reminder_enabled,
-          reminders: examData.notification_settings.reminders
-        }
-      });
       
     } catch (error) {
       console.error("Failed to load exam data:", error);
@@ -233,6 +263,70 @@ function CreateExam() {
     return true;
   };
 
+  const getChangedData = () => {
+    const changes = {};
+    const original = originalData;
+    
+    if (!original.basicInfo) return null;
+
+    // Check each basic info field individually
+    if (basicInfo.examTitle !== original.basicInfo.examTitle) {
+      changes.title = basicInfo.examTitle;
+    }
+    
+    if (basicInfo.selectedCollection !== original.basicInfo.selectedCollection) {
+      changes.collection_id = basicInfo.selectedCollection;
+    }
+    
+    if (basicInfo.startDate !== original.basicInfo.startDate) {
+      changes.start_date = basicInfo.startDate;
+    }
+    
+    if (basicInfo.duration !== original.basicInfo.duration) {
+      changes.end_date = utcToLocalDateTimeString(calculateEndDate(basicInfo.startDate, parseInt(basicInfo.duration)));
+    }
+    
+    if (basicInfo.maxAttempts !== original.basicInfo.maxAttempts) {
+      changes.max_attempts = basicInfo.maxAttempts;
+    }
+    
+    if (basicInfo.passingScore !== original.basicInfo.passingScore) {
+      changes.passing_score = basicInfo.passingScore;
+    }
+
+    // Check security settings
+    const currentSecurity = examSettings.security_settings;
+    const originalSecurity = original.examSettings.security_settings;
+    
+    if (currentSecurity.shuffle_questions !== originalSecurity.shuffle_questions ||
+        currentSecurity.allow_review !== originalSecurity.allow_review ||
+        currentSecurity.prevent_tab_switching !== originalSecurity.prevent_tab_switching ||
+        currentSecurity.tab_switch_limit !== originalSecurity.tab_switch_limit) {
+      changes.security_settings = currentSecurity;
+    }
+    
+    // Check notification settings
+    const currentNotifications = examSettings.notification_settings;
+    const originalNotifications = original.examSettings.notification_settings;
+    
+    if (currentNotifications.reminder_enabled !== originalNotifications.reminder_enabled ||
+        JSON.stringify(currentNotifications.reminders.sort()) !== JSON.stringify(originalNotifications.reminders.sort())) {
+      changes.notification_settings = currentNotifications;
+    }
+
+    // Check student assignments
+    const currentStudentIds = selectedStudents.map(s => s.id).sort();
+    const originalStudentIds = [...original.selectedStudentIds].sort();
+    
+    if (JSON.stringify(currentStudentIds) !== JSON.stringify(originalStudentIds)) {
+      changes.assigned_students = selectedStudents.map(student => ({
+        student_id: student.id
+      }));
+    }
+
+    return Object.keys(changes).length > 0 ? changes : null;
+  };
+
   const handleSubmit = async () => {
     if (!validateForm()) {
       return;
@@ -241,30 +335,41 @@ function CreateExam() {
     setLoading(true);
     
     try {
-      const startDate = basicInfo.startDate;
-      const endDate = calculateEndDate(basicInfo.startDate, parseInt(basicInfo.duration));
-
-      const examData = {
-        title: basicInfo.examTitle,
-        start_date: startDate,
-        end_date: utcToLocalDateTimeString(endDate), 
-        max_attempts: basicInfo.maxAttempts,
-        passing_score: basicInfo.passingScore,
-        security_settings: examSettings.security_settings,
-        notification_settings: examSettings.notification_settings,
-        collection_id: basicInfo.selectedCollection,
-        assigned_students: selectedStudents.map(student => ({
-          student_id: student.id
-        }))
-      };
-      
       let result;
+      
       if (isEditMode) {
-        result = await examAPI.updateExam(examId, examData);
+        const changedData = getChangedData();
+        
+        if (!changedData) {
+          toast.info("No changes detected", {
+            description: "The exam data is already up to date."
+          });
+          setLoading(false);
+          return;
+        }
+        
+        result = await examAPI.updateExam(examId, changedData);
         toast.success("Exam updated successfully!", {
           description: `${basicInfo.examTitle} has been updated.`
         });
       } else {
+        const startDate = basicInfo.startDate;
+        const endDate = calculateEndDate(basicInfo.startDate, parseInt(basicInfo.duration));
+
+        const examData = {
+          title: basicInfo.examTitle,
+          start_date: startDate,
+          end_date: utcToLocalDateTimeString(endDate), 
+          max_attempts: basicInfo.maxAttempts,
+          passing_score: basicInfo.passingScore,
+          security_settings: examSettings.security_settings,
+          notification_settings: examSettings.notification_settings,
+          collection_id: basicInfo.selectedCollection,
+          assigned_students: selectedStudents.map(student => ({
+            student_id: student.id
+          }))
+        };
+        
         result = await examAPI.createExam(examData);
         toast.success("Exam assigned successfully!", {
           description: `${basicInfo.examTitle} has been assigned to ${selectedStudents.length} student${selectedStudents.length > 1 ? 's' : ''}.`
@@ -289,7 +394,6 @@ function CreateExam() {
     setPdfModalOpen(true);
   };
 
-  // Check if form can be submitted
   const canSubmit = basicInfo.examTitle.trim() && 
     basicInfo.selectedCollection && 
     basicInfo.startDate && 
@@ -297,7 +401,6 @@ function CreateExam() {
     parseInt(basicInfo.duration) >= 5 && 
     selectedStudents.length > 0;
 
-  // Header props based on mode
   const headerProps = {
     title: isEditMode ? "Edit Exam" : "Assign New Exam",
     subtitle: isEditMode ? "Update exam details and settings" : "Create and assign an exam to students",
@@ -311,7 +414,6 @@ function CreateExam() {
     pdfReportDisabled: examLoading
   };
 
-  // Loading state while fetching exam data
   if (isEditMode && examLoading) {
     return (
       <div className="flex min-h-screen flex-col">
@@ -327,7 +429,6 @@ function CreateExam() {
     );
   }
 
-  // Error state if failed to load exam data
   if (isEditMode && examError) {
     return (
       <div className="flex min-h-screen flex-col">

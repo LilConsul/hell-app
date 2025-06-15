@@ -15,7 +15,7 @@
 <!-- Technologies -->
 <div>
   <img src="https://img.shields.io/badge/Python-3.13-3776AB?style=for-the-badge&labelColor=black&logo=python&logoColor=white" alt="Python" />
-  <img src="https://img.shields.io/badge/TailwindCSS-3.4-38B2AC?style=for-the-badge&labelColor=black&logo=tailwind-css&logoColor=38B2AC" alt="TailwindCSS" />
+  <img src="https://img.shields.io/badge/React-19.0-61DAFB?style=for-the-badge&labelColor=black&logo=react&logoColor=61DAFB" alt="React" />
   <img src="https://img.shields.io/badge/MongoDB-7.0-47A248?style=for-the-badge&labelColor=black&logo=mongodb&logoColor=white" alt="MongoDB" />
   <img src="https://img.shields.io/badge/Redis-7.4-DC382D?style=for-the-badge&labelColor=black&logo=redis&logoColor=white" alt="Redis" />
   <img src="https://img.shields.io/badge/Docker-Latest-2496ED?style=for-the-badge&labelColor=black&logo=docker&logoColor=white" alt="Docker" />
@@ -46,8 +46,25 @@
 
 ## 📚 Overview
 
-A modern, comprehensive platform for managing student examinations with a robust microservices architecture. This
-application enables seamless exam creation, administration, and result management for educational institutions.
+The Student Examination Application is a cutting-edge educational platform designed to revolutionize the way academic institutions handle examinations. Built with modern technologies and a microservices architecture, it offers:
+
+### 🎯 Purpose
+- **Streamlined Exam Management**: End-to-end solution from exam creation to result analysis
+- **Paperless Environment**: Reduce administrative overhead and environmental impact
+- **Enhanced Security**: Advanced measures to prevent cheating and ensure exam integrity
+
+### 💡 Core Benefits
+- **For Students**: Easy access to exams, instant results, and progress tracking
+- **For Teachers**: Simplified exam creation, automated grading, and detailed analytics
+- **For Administrators**: Comprehensive oversight, detailed reporting, and efficient management
+
+### 🌟 Why Choose This Solution?
+- **Modern Architecture**: Built with React 19 and FastAPI for optimal performance
+- **Scalable Design**: Microservices approach allows easy scaling and maintenance
+- **Real-time Updates**: Instant result processing and notification system
+- **Cross-platform**: Works seamlessly across desktop and mobile devices
+
+<img src="/img/main_page.png" alt="Main Page Screenshot" width="100%" height="auto">
 
 ## ✨ Key Features
 

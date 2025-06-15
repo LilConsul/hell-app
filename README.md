@@ -167,9 +167,9 @@ docker compose exec backup /backup/backup.sh
 
 
 ## 📊 Project Structure
-
+### This is only structure of the `./src` directory, which contains the main application code.
 ```
-hell-app/
+src/
 ├── backend/             # FastAPI application
 │   ├── app/
 │   │   ├── admin/       # Admin panel functionality

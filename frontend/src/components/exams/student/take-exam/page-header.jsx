@@ -25,7 +25,7 @@ function PageHeader({
     if (examData?.exam_instance_id?.end_date) {
       const endTime = new Date(examData.exam_instance_id.end_date);
       const now = new Date();
-      const timeLeftMs = endTime - now;
+      const timeLeftMs = endTime - now - 10000; // Subtract 10 seconds to handle auto-submit
       setTimeLeft(Math.max(0, Math.floor(timeLeftMs / 1000)));
     }
   }, [examData]);

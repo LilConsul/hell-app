@@ -165,14 +165,8 @@ function StudentExams() {
 
   // Event handlers
   const handleStartExam = async (studentExamId) => {
-    try {
-      await StudentExamsAPI.startExam(studentExamId);
-      toast.success("Exam started successfully");
-      navigate(`/exams/${studentExamId}/take`);
-    } catch (err) {
-      const errorMessage = err || "Failed to start exam. Please try again.";
-      setError(errorMessage);
-    }
+    navigate(`/exams/${studentExamId}/take`);
+
   };
 
   const handleResumeExam = (studentExamId) => {

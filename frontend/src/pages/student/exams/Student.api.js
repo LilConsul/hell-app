@@ -44,7 +44,7 @@ async function startExam(studentExamId) {
 async function saveAnswer(studentExamId, answerData) {
   try {
     return await apiRequest(`${STUDENT_EXAMS_URL}/exam/${studentExamId}/save_answer`, {
-      method: 'POST',
+      method: 'PUT',
       body: JSON.stringify(answerData),
     });
   } catch (err) {
@@ -56,7 +56,7 @@ async function saveAnswer(studentExamId, answerData) {
 async function toggleFlagQuestion(studentExamId, questionId) {
   try {
     return await apiRequest(`${STUDENT_EXAMS_URL}/exam/${studentExamId}/toggle_flag_question`, {
-      method: 'POST',
+      method: 'PUT',
       body: JSON.stringify({ question_id: questionId }),
     });
   } catch (err) {

@@ -9,7 +9,7 @@ const questionFilters = [
   { value: "all", label: "All Questions", icon: List },
   { value: "correct", label: "Correct", icon: CheckCircle },
   { value: "incorrect", label: "Incorrect", icon: XCircle },
-  { value: "unanswered", label: "Unanswered", icon: Circle },
+  { value: "not_answered", label: "Not Answered", icon: Circle },
   { value: "flagged", label: "Flagged", icon: Flag },
 ];
 
@@ -17,13 +17,11 @@ export function ResultsContent({ attemptData }) {
   const [activeFilter, setActiveFilter] = useState("all");
   const allowReview = attemptData.allow_review;
   
-  // Categorize responses and calculate counts
   const { filteredResponses, filterCounts } = useMemo(() => {
     if (!attemptData.responses || attemptData.responses.length === 0) {
       return { filteredResponses: [], filterCounts: {} };
     }
 
-    // Sort responses by question order if available
     const sortedResponses = [...attemptData.responses];
     
     if (attemptData.question_order && attemptData.question_order.length > 0) {
@@ -31,7 +29,6 @@ export function ResultsContent({ attemptData }) {
         const aIndex = attemptData.question_order.indexOf(a.question_id.id);
         const bIndex = attemptData.question_order.indexOf(b.question_id.id);
         
-        // If question not found in order, put it at the end
         if (aIndex === -1 && bIndex === -1) return 0;
         if (aIndex === -1) return 1;
         if (bIndex === -1) return -1;
@@ -40,12 +37,11 @@ export function ResultsContent({ attemptData }) {
       });
     }
 
-    // Categorize responses
     const counts = {
       all: sortedResponses.length,
       correct: 0,
       incorrect: 0,
-      unanswered: 0,
+      not_answered: 0,
       flagged: 0,
     };
 
@@ -63,11 +59,10 @@ export function ResultsContent({ attemptData }) {
       } else if (hasAnswer) {
         counts.incorrect++;
       } else {
-        counts.unanswered++;
+        counts.not_answered++;
       }
     });
 
-    // Filter responses based on active filter
     let filtered = sortedResponses;
     
     if (activeFilter !== "all") {
@@ -81,7 +76,7 @@ export function ResultsContent({ attemptData }) {
             return isCorrect;
           case "incorrect":
             return !isCorrect && hasAnswer;
-          case "unanswered":
+          case "not_answered":
             return !hasAnswer;
           case "flagged":
             return response.is_flagged;
@@ -154,7 +149,6 @@ export function ResultsContent({ attemptData }) {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Filter Buttons */}
         <div className="flex flex-wrap gap-2 pb-4 border-b">
           {questionFilters.map((filter) => {
             const Icon = filter.icon;
@@ -179,7 +173,6 @@ export function ResultsContent({ attemptData }) {
           })}
         </div>
 
-        {/* Filtered Results */}
         {filteredResponses.length === 0 ? (
           <div className="text-center py-8">
             <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
@@ -193,13 +186,15 @@ export function ResultsContent({ attemptData }) {
         ) : (
           <div className="space-y-6">
             {filteredResponses.map((response) => {
-              // Calculate the original question number
-              const originalIndex = attemptData.responses.findIndex(r => r.id === response.id);
+              const questionNumber = attemptData.question_order 
+                ? attemptData.question_order.indexOf(response.question_id.id) + 1
+                : attemptData.responses.findIndex(r => r.id === response.id) + 1;
+              
               return (
                 <QuestionResult
                   key={response.id}
                   response={response}
-                  questionNumber={originalIndex + 1}
+                  questionNumber={questionNumber}
                 />
               );
             })}

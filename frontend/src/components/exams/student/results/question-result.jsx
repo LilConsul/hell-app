@@ -37,7 +37,7 @@ export function QuestionResult({ response, questionNumber }) {
     if (response.is_flagged) return 'flagged';
     if (isCorrect) return 'correct_answer';
     if (hasAnswer) return 'incorrect_answer';
-    return 'unanswered';
+    return 'not_answered';
   };
 
   const MultipleChoiceOptions = () => {
@@ -179,13 +179,6 @@ export function QuestionResult({ response, questionNumber }) {
                 <Badge variant="secondary" className="text-xs">
                   {getQuestionTypeDisplay(question.type)}
                 </Badge>
-                {response.is_flagged && (
-                  <StatusBadge 
-                    config={getStatusConfig('flagged')}
-                    size="sm"
-                    showIcon={true}
-                  />
-                )}
               </div>
               <h3 className="text-base font-medium text-foreground leading-relaxed">
                 {question.question_text}

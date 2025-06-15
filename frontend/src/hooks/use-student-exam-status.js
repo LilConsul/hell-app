@@ -133,8 +133,12 @@ export const useExamStatus = () => {
         badge: { variant: "outline", text: "Incorrect", className: colorSchemes.red },
         icon: "XCircle"
       },
-      unanswered: {
-        badge: { variant: "outline", text: "Unanswered", className: colorSchemes.gray },
+      answered: {
+        badge: { variant: "outline", text: "Answered", className: colorSchemes.green },
+        icon: "CheckCircle"
+      },
+      not_answered: {
+        badge: { variant: "outline", text: "Not answered", className: colorSchemes.gray },
         icon: "AlertCircle"
       },
       flagged: {
@@ -142,6 +146,7 @@ export const useExamStatus = () => {
         icon: "Flag"
       }
     };
+    
 
     return allConfigs[status] || allConfigs.not_started;
   }, []);

@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { toast } from "sonner";
+import { useParams } from "react-router-dom";
 import { Toaster } from "@/components/ui/sonner";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
@@ -13,7 +12,6 @@ import { LoadingExamDetails, ErrorExamDetails } from "@/components/exams/student
 
 function StudentExamDetails() {
   const { examId } = useParams();
-  const navigate = useNavigate();
   const [exam, setExam] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -37,22 +35,6 @@ function StudentExamDetails() {
       loadExam();
     }
   }, [examId]);
-
-  const handleStartExam = async () => {
-    try {
-      await StudentExamsAPI.startExam(examId);
-      toast.success("Exam started successfully");
-      navigate(`/exams/${examId}/take`);
-    } catch (err) {
-      const errorMessage = err?.message || err || "Failed to start exam. Please try again.";
-      toast.error(errorMessage);
-      setError(errorMessage);
-    }
-  };
-
-  const handleResumeExam = () => {
-    navigate(`/exams/${examId}/take`);
-  };
 
   if (loading) {
     return (
@@ -106,14 +88,8 @@ function StudentExamDetails() {
       <ExamDetailsHeader exam={exam} />
         <div className="max-w-5xl mx-auto space-y-6">
           <ExamDetailsInfo exam={exam} />
-          <ExamDetailsActions 
-            exam={exam}
-            onStartExam={handleStartExam}
-            onResumeExam={handleResumeExam}
-          />
-          <ExamDetailsAttempts 
-            exam={exam}
-          />
+          <ExamDetailsActions exam={exam} />
+          <ExamDetailsAttempts exam={exam} />
         </div>
       </main>
       <Footer />

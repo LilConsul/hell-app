@@ -15,7 +15,7 @@
 <!-- Technologies -->
 <div>
   <img src="https://img.shields.io/badge/Python-3.13-3776AB?style=for-the-badge&labelColor=black&logo=python&logoColor=white" alt="Python" />
-  <img src="https://img.shields.io/badge/TailwindCSS-3.4-38B2AC?style=for-the-badge&labelColor=black&logo=tailwind-css&logoColor=38B2AC" alt="TailwindCSS" />
+  <img src="https://img.shields.io/badge/React-19.0-61DAFB?style=for-the-badge&labelColor=black&logo=react&logoColor=61DAFB" alt="React" />
   <img src="https://img.shields.io/badge/MongoDB-7.0-47A248?style=for-the-badge&labelColor=black&logo=mongodb&logoColor=white" alt="MongoDB" />
   <img src="https://img.shields.io/badge/Redis-7.4-DC382D?style=for-the-badge&labelColor=black&logo=redis&logoColor=white" alt="Redis" />
   <img src="https://img.shields.io/badge/Docker-Latest-2496ED?style=for-the-badge&labelColor=black&logo=docker&logoColor=white" alt="Docker" />
@@ -27,28 +27,44 @@
 <br/>
 
 <p align="center">
-  <img src="frontend/public/hell-app.svg" alt="Hell App Logo" width="200" height="auto" />
+  <img src="/src/frontend/public/hell-app.svg" alt="Hell App Logo" width="200" height="auto" />
 </p>
 
 ## 📑 Table of Contents
 
 - [📚 Overview](#-overview)
 - [✨ Key Features](#-key-features)
-- [🛠️ Tech Stack](#-tech-stack)
-- [🔧 Backend Architecture](#-backend-architecture)
 - [🚀 Getting Started](#-getting-started)
+- [🛠️ Tech Stack](#-tech-stack)
 - [📊 Project Structure](#-project-structure)
+- [🔧 Backend Architecture](#-backend-architecture)
 - [🔒 Environment Configuration](#-environment-configuration)
 - [🧪 Testing](#-testing)
 - [📝 API Documentation](#-api-documentation)
-- [🔧 Frontend Architecture](#-frontend-architecture)
 - [👥 Contributors](#-contributors)
 - [📄 License](#-license)
 
 ## 📚 Overview
 
-A modern, comprehensive platform for managing student examinations with a robust microservices architecture. This
-application enables seamless exam creation, administration, and result management for educational institutions.
+The Student Examination Application is a cutting-edge educational platform designed to revolutionize the way academic institutions handle examinations. Built with modern technologies and a microservices architecture, it offers:
+
+### 🎯 Purpose
+- **Streamlined Exam Management**: End-to-end solution from exam creation to result analysis
+- **Paperless Environment**: Reduce administrative overhead and environmental impact
+- **Enhanced Security**: Advanced measures to prevent cheating and ensure exam integrity
+
+### 💡 Core Benefits
+- **For Students**: Easy access to exams, instant results, and progress tracking
+- **For Teachers**: Simplified exam creation, automated grading, and detailed analytics
+- **For Administrators**: Comprehensive oversight, detailed reporting, and efficient management
+
+### 🌟 Why Choose This Solution?
+- **Modern Architecture**: Built with React 19 and FastAPI for optimal performance
+- **Scalable Design**: Microservices approach allows easy scaling and maintenance
+- **Real-time Updates**: Instant result processing and notification system
+- **Cross-platform**: Works seamlessly across desktop and mobile devices
+
+<img src="/img/main_page.png" alt="Main Page Screenshot" width="100%" height="auto">
 
 ## ✨ Key Features
 
@@ -62,56 +78,6 @@ application enables seamless exam creation, administration, and result managemen
 | **⏱️ Time Zone Handling**    | Accurate scheduling across different regions                   |
 | **📱 Responsive Design**     | Works on desktop and mobile devices                            |
 | **📧 Email Notifications**   | Automated alerts for exam schedules and results                |
-
-## 🛠️ Tech Stack
-
-<div align="center">
-
-### Frontend
-
-[![React](https://img.shields.io/badge/React-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://reactjs.org/)
-[![Vite](https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vitejs.dev/)
-[![TailwindCSS](https://img.shields.io/badge/TailwindCSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
-[![shadcn/ui](https://img.shields.io/badge/shadcn/ui-000000?style=for-the-badge&logo=shadcnui&logoColor=white)](https://ui.shadcn.com/)
-
-### Backend
-
-[![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
-[![Celery](https://img.shields.io/badge/Celery-37814A?style=for-the-badge&logo=celery&logoColor=white)](https://docs.celeryproject.org/)
-[![MongoDB](https://img.shields.io/badge/MongoDB-47A248?style=for-the-badge&logo=mongodb&logoColor=white)](https://www.mongodb.com/)
-[![Redis](https://img.shields.io/badge/Redis-DC382D?style=for-the-badge&logo=redis&logoColor=white)](https://redis.io/)
-[![Pydantic](https://img.shields.io/badge/Pydantic-E92063?style=for-the-badge&logo=pydantic&logoColor=white)](https://pydantic-docs.helpmanual.io/)
-
-### Infrastructure
-
-[![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
-[![Nginx](https://img.shields.io/badge/Nginx-009639?style=for-the-badge&logo=nginx&logoColor=white)](https://nginx.org/)
-
-</div>
-
-## 🔧 Backend Architecture
-
-The backend is built with a clean, maintainable three-layer architecture:
-
-### Three-Layer Architecture
-
-| Layer                       | Description                                                                                                                                                  |
-|-----------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **🔵 Presentation Layer**   | FastAPI routers and endpoints that handle HTTP requests and responses. This layer validates input data, manages authentication, and serializes responses.    |
-| **🟢 Business Logic Layer** | Service components that implement core application logic, business rules, and orchestrate workflows between different parts of the system.                   |
-| **🟡 Data Access Layer**    | Repository pattern implementations that abstract database operations, providing a clean interface for data manipulation without exposing database specifics. |
-
-### Additional Design Patterns
-
-- **Dependency Injection**: Leveraging FastAPI's dependency system for loose coupling and easier testing
-- **Repository Pattern**: Abstracting database operations behind interfaces for flexibility in data sources
-- **Middleware Components**: Custom middleware for cross-cutting concerns like language localization and timezone
-  handling
-- **Asynchronous Processing**: Using Celery for handling background tasks and scheduled jobs
-- **JWT Authentication**: Secure authentication using HTTP-only cookies with JWT tokens
-
-The modular design enables independent scaling of components and facilitates continuous development without disrupting
-existing functionality.
 
 ## 🚀 Getting Started
 
@@ -165,31 +131,84 @@ docker compose exec backup /backup/backup.sh
    docker compose exec backup /backup/backup.sh restore <backup_name>
    ```
 
+## 🛠️ Tech Stack
+
+<div align="center">
+
+### Frontend
+
+[![React](https://img.shields.io/badge/React-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://reactjs.org/)
+[![Vite](https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vitejs.dev/)
+[![TailwindCSS](https://img.shields.io/badge/TailwindCSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
+[![shadcn/ui](https://img.shields.io/badge/shadcn/ui-000000?style=for-the-badge&logo=shadcnui&logoColor=white)](https://ui.shadcn.com/)
+
+### Backend
+
+[![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![Celery](https://img.shields.io/badge/Celery-37814A?style=for-the-badge&logo=celery&logoColor=white)](https://docs.celeryproject.org/)
+[![MongoDB](https://img.shields.io/badge/MongoDB-47A248?style=for-the-badge&logo=mongodb&logoColor=white)](https://www.mongodb.com/)
+[![Redis](https://img.shields.io/badge/Redis-DC382D?style=for-the-badge&logo=redis&logoColor=white)](https://redis.io/)
+[![Pydantic](https://img.shields.io/badge/Pydantic-E92063?style=for-the-badge&logo=pydantic&logoColor=white)](https://pydantic-docs.helpmanual.io/)
+
+### Infrastructure
+
+[![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
+[![Nginx](https://img.shields.io/badge/Nginx-009639?style=for-the-badge&logo=nginx&logoColor=white)](https://nginx.org/)
+
+</div>
 
 ## 📊 Project Structure
 
+### Main Application Code Structure (`./src`)
+
 ```
-hell-app/
+src/
 ├── backend/             # FastAPI application
 │   ├── app/
 │   │   ├── admin/       # Admin panel functionality
 │   │   ├── auth/        # Authentication and authorization
 │   │   ├── celery/      # Background task processing
+│   │   ├── core/        # Core utilities and base classes
+│   │   ├── database/    # Database connections and utilities
 │   │   ├── exam/        # Exam management
-│   │   ├── i18n/        # Internationalization
+│   │   ├── middleware/  # Custom middleware components
 │   │   └── users/       # User management
 │   └── tests/           # Backend tests
 ├── frontend/            # React application
-│   ├── public/
+│   ├── public/          # Static assets
 │   └── src/
-│       ├── components/
-│       ├── contexts/
-│       ├── hooks/
-│       ├── lib/
-│       └── pages/
+│       ├── components/  # Reusable UI components
+│       ├── contexts/    # React contexts
+│       ├── hooks/       # Custom React hooks
+│       ├── lib/         # Utility functions
+│       └── pages/       # Page components
 ├── backup/              # Database backup utilities
-└── nginx/               # Nginx configuration
+└── nginx/              # Nginx configuration and SSL
 ```
+
+## 🔧 Backend Architecture
+
+The backend is built with a clean, maintainable three-layer architecture:
+
+### Three-Layer Architecture
+
+| Layer                       | Description                                                                                                                                                  |
+|-----------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **🔵 Presentation Layer**   | FastAPI routers and endpoints that handle HTTP requests and responses. This layer validates input data, manages authentication, and serializes responses.    |
+| **🟢 Business Logic Layer** | Service components that implement core application logic, business rules, and orchestrate workflows between different parts of the system.                   |
+| **🟡 Data Access Layer**    | Repository pattern implementations that abstract database operations, providing a clean interface for data manipulation without exposing database specifics. |
+
+### Additional Design Patterns
+
+- **Dependency Injection**: Leveraging FastAPI's dependency system for loose coupling and easier testing
+- **Repository Pattern**: Abstracting database operations behind interfaces for flexibility in data sources
+- **Middleware Components**: Custom middleware for cross-cutting concerns like language localization and timezone
+  handling
+- **Asynchronous Processing**: Using Celery for handling background tasks and scheduled jobs
+- **JWT Authentication**: Secure authentication using HTTP-only cookies with JWT tokens
+
+The modular design enables independent scaling of components and facilitates continuous development without disrupting
+existing functionality.
 
 ## 🔒 Environment Configuration
 
@@ -283,30 +302,12 @@ The API documentation is auto-generated using FastAPI's built-in Swagger UI and 
 - **/api/students** - Student-specific endpoints
 - **/api/teachers** - Teacher-specific endpoints
 
-## 🔧 Frontend Architecture
-
-The React frontend follows a modern component-based architecture:
-
-- **Components**: Reusable UI elements (buttons, forms, cards)
-- **Contexts**: Global state management and theme providers
-- **Hooks**: Custom React hooks for shared functionality
-- **Lib**: Utility functions and third-party library integrations
-- **Pages**: Page-level components corresponding to routes
-
-### Key Frontend Features
-
-- State management with React Context API
-- Role-based component rendering for different user types
-- Responsive layouts built with Tailwind CSS
-- Custom theme using shadcn/ui components
-- Date/time handling with timezone support
-
 ## 👥 Contributors
 
 | Contributor                                                                                                                                                     |                                          Role                                          |
 |-----------------------------------------------------------------------------------------------------------------------------------------------------------------|:--------------------------------------------------------------------------------------:|
 | <div align="center"><img src="https://github.com/LilConsul.png" width="60" height="60"><br/>[**Shevchenko Denys**](https://github.com/LilConsul)</div>          | <div align="center">Project Maintainer<br/>DevOps Engineer<br/>Backend Developer</div> |
-| <div align="center"><img src="https://github.com/yehorkarabanov.png" width="60" height="60"><br/>[**Yehor Karabanov**](https://github.com/yehorkarabanov)</div> |                      <div align="center">Lead Backend Developer</div>                  |
+| <div align="center"><img src="https://github.com/yehorkarabanov.png" width="60" height="60"><br/>[**Yehor Karabanov**](https://github.com/yehorkarabanov)</div> |                    <div align="center">Lead Backend Developer</div>                    |
 | <div align="center"><img src="https://github.com/valmtv.png" width="60" height="60"><br/>[**Valerii Matviiv**](https://github.com/valmtv)</div>                 |             <div align="center">Frontend Lead<br/>Frontend Developer</div>             |
 | <div align="center"><img src="https://github.com/aleexmaaa.png" width="60" height="60"><br/>[**Marcu Andrei-Alexandru**](https://github.com/aleexmaaa)</div>    |                  <div align="center">Intern Frontend Developer</div>                   |
 | <div align="center"><img src="https://github.com/ianaaians.png" width="60" height="60"><br/>[**Iana-Iuliana Nastasiu**](https://github.com/ianaaians)</div>     |                  <div align="center">Intern Frontend Developer</div>                   |

@@ -103,7 +103,9 @@ function QuestionCard({
         <div className="mb-4">
           <p className="text-base leading-relaxed">{question.question_text}</p>
           {question.weight && (
-            <Badge variant="secondary" className="mt-2">
+            <Badge variant="secondary"
+              className={`mt-2 text-base ${isUnsaved ? 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-900/70 dark:text-amber-200 dark:border-amber-700' : ''}`}
+            >
               {question.weight > 1 ? `${question.weight} points` : `${question.weight} point`}
             </Badge>
           )}

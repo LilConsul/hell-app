@@ -123,6 +123,14 @@ class ExamInstanceService:
                 reminder_times.append(timedelta(days=days))
 
         current_time = datetime.now(timezone.utc)
+
+        if exam_start_time.tzinfo is None:
+            exam_start_time = exam_start_time.replace(tzinfo=timezone.utc)
+
+        # Ensure exam_end_time has timezone info
+        if exam_end_time.tzinfo is None:
+            exam_end_time = exam_end_time.replace(tzinfo=timezone.utc)
+
         for user_id in users_id:
             user = await self.user_repository.get_by_id(user_id["student_id"])
             if user is None or not user.receive_notifications:

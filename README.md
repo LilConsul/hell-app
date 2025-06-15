@@ -154,7 +154,6 @@ src/
 │   │   ├── core/        # Core utilities and base classes
 │   │   ├── database/    # Database connections and utilities
 │   │   ├── exam/        # Exam management
-│   │   ├── i18n/        # Internationalization
 │   │   ├── middleware/  # Custom middleware components
 │   │   └── users/       # User management
 │   └── tests/           # Backend tests

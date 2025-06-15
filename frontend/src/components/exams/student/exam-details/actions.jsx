@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { ExamConfirmationModal } from "@/components/exams/student/handle-exams";
 
-export function ExamDetailsActions({ exam, onStartExam, onResumeExam }) {
+export function ExamDetailsActions({ exam }) {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [actionType, setActionType] = useState('start');
   const navigate = useNavigate();
@@ -137,26 +137,7 @@ export function ExamDetailsActions({ exam, onStartExam, onResumeExam }) {
 
   const handleConfirmAction = () => {
     setShowConfirmModal(false);
-    
-    if (actionType === 'resume') {
-      navigate(`/exams/${exam.id}/take`, {
-        state: {
-          attemptId: exam.latest_attempt_id,
-          examTitle: exam.exam_instance_id.title,
-          isResuming: true
-        }
-      });
-      onResumeExam?.();
-    } else {
-      navigate(`/exams/${exam.id}/take`, {
-        state: {
-          examTitle: exam.exam_instance_id.title,
-          isResuming: false,
-          attemptsRemaining: attemptsRemaining - 1
-        }
-      });
-      onStartExam?.();
-    }
+    navigate(`/exams/${exam.id}/take`);
   };
 
   return (

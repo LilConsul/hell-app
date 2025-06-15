@@ -37,7 +37,7 @@ export function QuestionResult({ response, questionNumber }) {
     if (response.is_flagged) return 'flagged';
     if (isCorrect) return 'correct_answer';
     if (hasAnswer) return 'incorrect_answer';
-    return 'unanswered';
+    return 'not_answered';
   };
 
   const MultipleChoiceOptions = () => {

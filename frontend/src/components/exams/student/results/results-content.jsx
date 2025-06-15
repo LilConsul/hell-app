@@ -9,7 +9,7 @@ const questionFilters = [
   { value: "all", label: "All Questions", icon: List },
   { value: "correct", label: "Correct", icon: CheckCircle },
   { value: "incorrect", label: "Incorrect", icon: XCircle },
-  { value: "unanswered", label: "Unanswered", icon: Circle },
+  { value: "not_answered", label: "Not Answered", icon: Circle },
   { value: "flagged", label: "Flagged", icon: Flag },
 ];
 
@@ -45,7 +45,7 @@ export function ResultsContent({ attemptData }) {
       all: sortedResponses.length,
       correct: 0,
       incorrect: 0,
-      unanswered: 0,
+      not_answered: 0,
       flagged: 0,
     };
 
@@ -63,7 +63,7 @@ export function ResultsContent({ attemptData }) {
       } else if (hasAnswer) {
         counts.incorrect++;
       } else {
-        counts.unanswered++;
+        counts.not_answered++;
       }
     });
 
@@ -81,7 +81,7 @@ export function ResultsContent({ attemptData }) {
             return isCorrect;
           case "incorrect":
             return !isCorrect && hasAnswer;
-          case "unanswered":
+          case "not_answered":
             return !hasAnswer;
           case "flagged":
             return response.is_flagged;

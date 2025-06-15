@@ -36,7 +36,7 @@ const formatTime = (dateString) => {
   });
 };
 
-export function ExamCard({ exam, onStartExam, onResumeExam }) {
+export function ExamCard({ exam }) {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const navigate = useNavigate();
   const { getExamStatus, getStatusConfig, getSecurityFeatureStatus } = useExamStatus();
@@ -76,11 +76,7 @@ export function ExamCard({ exam, onStartExam, onResumeExam }) {
 
   const handleConfirmStart = () => {
     setShowConfirmModal(false);
-    if (examMeta.status === "in_progress") {
-      onResumeExam?.(exam.id);
-    } else {
-      onStartExam?.(exam.id);
-    }
+    navigate(`/exams/${exam.id}/take`);
   };
 
   const handleContact = () => {

@@ -9,7 +9,7 @@ import StudentExamsAPI from "./Student.api";
 import { LoadingExamDetails, ErrorExamDetails } from "@/components/exams/student/handle-exams";
 import { ResultsHeader } from "@/components/exams/student/results/results-header";
 import { ResultsContent } from "@/components/exams/student/results/results-content";
-import { AttemptSelectorForExplorerUsers } from "@/components/exams/student/results/attempt-selector-for-explorer-users";
+import { AttemptSelectorForExplorerUsers } from "@/components/exams/student/results/attempt-selector";
 
 function StudentExamResults() {
   const { examId } = useParams();

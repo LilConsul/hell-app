@@ -78,7 +78,10 @@ export function ExamDetailsAttempts({ exam }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+        <CardTitle 
+          className="flex items-center gap-2 cursor-pointer hover:underline"
+          onClick={() => navigate(`/exams/${exam.id}/results`)}
+        >
           <Clock className="h-5 w-5" />
           Exam Attempts ({exam.attempts.length})
         </CardTitle>

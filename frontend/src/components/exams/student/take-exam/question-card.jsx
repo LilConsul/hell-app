@@ -125,8 +125,9 @@ function QuestionCard({
                       : currentAnswers.filter(a => a !== option.id);
                     onAnswerChange(question.id, newAnswers);
                   }}
+                  className="cursor-pointer"
                 />
-                <Label htmlFor={`${question.id}-${option.id}`} className="text-sm">
+                <Label htmlFor={`${question.id}-${option.id}`} className="text-sm cursor-pointer">
                   {option.text}
                 </Label>
               </div>

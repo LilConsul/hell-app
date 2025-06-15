@@ -139,8 +139,8 @@ function QuestionCard({
           >
             {question.options?.map((option) => (
               <div key={option.id} className="flex items-center space-x-2">
-                <RadioGroupItem value={option.id} id={`${question.id}-${option.id}`} />
-                <Label htmlFor={`${question.id}-${option.id}`} className="text-sm">
+                <RadioGroupItem value={option.id} id={`${question.id}-${option.id}`} className="cursor-pointer"/>
+                <Label htmlFor={`${question.id}-${option.id}`} className="text-sm cursor-pointer">
                   {option.text}
                 </Label>
               </div>

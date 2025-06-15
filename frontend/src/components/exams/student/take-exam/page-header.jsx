@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Clock, Save, Send, Maximize, Minimize} from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { Clock, Save, Send, Maximize, Minimize, Loader2 } from "lucide-react";
 
 function PageHeader({
   examData,
@@ -10,7 +12,8 @@ function PageHeader({
   flaggedQuestions,
   currentQuestionIndex,
   onSaveAnswers,
-  onSubmitExam
+  onSubmitExam,
+  onTimeUp
 }) {
   const [timeLeft, setTimeLeft] = useState(0);
   const [saving, setSaving] = useState(false);
@@ -20,17 +23,15 @@ function PageHeader({
   const examTimer = useRef(null);
   const autoSaveInterval = useRef(null);
 
-  // Initialize timer when examData is available
   useEffect(() => {
     if (examData?.exam_instance_id?.end_date) {
       const endTime = new Date(examData.exam_instance_id.end_date);
       const now = new Date();
-      const timeLeftMs = endTime - now - 10000; // Subtract 10 seconds to handle auto-submit
+      const timeLeftMs = endTime - now - 10000;
       setTimeLeft(Math.max(0, Math.floor(timeLeftMs / 1000)));
     }
   }, [examData]);
 
-  // Timer countdown effect
   useEffect(() => {
     if (timeLeft > 0) {
       examTimer.current = setInterval(() => {
@@ -45,37 +46,29 @@ function PageHeader({
     } else {
       clearInterval(examTimer.current);
     }
-
     return () => clearInterval(examTimer.current);
   }, [timeLeft]);
 
-  // Auto-save interval
   useEffect(() => {
     if (examData && answeredCount > 0) {
       autoSaveInterval.current = setInterval(() => {
         handleSaveAnswers();
-      }, 60000); // Auto-save every minute
+      }, 60000);
     }
-
     return () => clearInterval(autoSaveInterval.current);
   }, [examData, answeredCount]);
 
-  // Fullscreen detection
   useEffect(() => {
     const handleFullscreenChange = () => {
       setIsFullscreen(!!document.fullscreenElement);
     };
-
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
 
   const handleTimeUp = async () => {
-    try {
-      await handleSaveAnswers();
-      await onSubmitExam(true); // Pass autoSubmit flag
-    } catch (err) {
-      console.error('Error handling time up:', err);
+    if (onTimeUp) {
+      await onTimeUp();
     }
   };
 
@@ -93,8 +86,8 @@ function PageHeader({
 
   const handleSubmitExam = async () => {
     try {
-      await handleSaveAnswers(); // Save before submit
-      await onSubmitExam(false);
+      await handleSaveAnswers();
+      await onSubmitExam();
     } catch (err) {
       console.error('Error submitting exam:', err);
     }
@@ -120,24 +113,26 @@ function PageHeader({
   };
 
   const progress = totalQuestions > 0 ? (answeredCount / totalQuestions) * 100 : 0;
+  const isTimeRunningLow = timeLeft < 300;
 
   return (
-    <div className="sticky top-0 z-50 bg-background border-b">
+    <div className="sticky top-0 z-50 bg-background border-b shadow-sm">
       <div className="container mx-auto px-2 sm:px-4 py-2 sm:py-4">
-        {/* Mobile/Compact Layout for smaller screens or high zoom */}
         <div className="block xl:hidden">
           <div className="flex items-center justify-between mb-2">
             <div className="min-w-0 flex-1">
               <h1 className="text-lg sm:text-xl font-bold truncate">{examData?.exam_instance_id.title}</h1>
               <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground mt-1">
-                <span>Q{currentQuestionIndex + 1}/{totalQuestions}</span>
-                <span>•</span>
-                <span>{answeredCount} done</span>
+                <Badge variant="outline" className="text-xs">
+                  Q{currentQuestionIndex + 1}/{totalQuestions}
+                </Badge>
+                <Badge variant="outline" className="text-xs">
+                  {answeredCount} done
+                </Badge>
                 {flaggedQuestions.size > 0 && (
-                  <>
-                    <span>•</span>
-                    <span>{flaggedQuestions.size} flagged</span>
-                  </>
+                  <Badge variant="outline" className="text-xs ">
+                    {flaggedQuestions.size} flagged
+                  </Badge>
                 )}
               </div>
             </div>
@@ -145,7 +140,7 @@ function PageHeader({
             <div className="flex items-center gap-1 sm:gap-2 ml-2">
               <div className="flex items-center gap-1 text-sm sm:text-lg font-mono">
                 <Clock className="h-4 w-4 sm:h-5 sm:w-5" />
-                <span className={timeLeft < 300 ? 'text-red-500' : ''}>
+                <span className={isTimeRunningLow ? 'text-red-500' : ''}>
                   {formatTime(timeLeft)}
                 </span>
               </div>
@@ -161,7 +156,11 @@ function PageHeader({
                 disabled={saving}
                 className="gap-1 text-xs sm:text-sm"
               >
-                <Save className="h-3 w-3 sm:h-4 sm:w-4" />
+                {saving ? (
+                  <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin" />
+                ) : (
+                  <Save className="h-3 w-3 sm:h-4 sm:w-4" />
+                )}
                 <span className="hidden sm:inline">Save</span>
               </Button>
               <Button
@@ -176,15 +175,15 @@ function PageHeader({
 
             <div className="flex items-center gap-1">
               {saving && (
-                <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <Save className="h-3 w-3 animate-spin" />
+                <Badge variant="secondary" className="text-xs">
+                  <Loader2 className="h-3 w-3 animate-spin mr-1" />
                   <span className="hidden sm:inline">Saving...</span>
-                </div>
+                </Badge>
               )}
               {lastSaved && !saving && (
-                <div className="text-xs text-green-600 hidden sm:block">
-                  Auto Saved {lastSaved.toLocaleTimeString()}
-                </div>
+                <Badge variant="outline" className="text-xs text-green-600 hidden sm:flex">
+                  Saved {lastSaved.toLocaleTimeString()}
+                </Badge>
               )}
               
               <Button
@@ -198,19 +197,24 @@ function PageHeader({
           </div>
         </div>
 
-        {/* Desktop Layout for larger screens and normal zoom */}
         <div className="hidden xl:block">
           <div className="flex items-center justify-between">
             <div className="min-w-0 flex-1 mr-4">
               <h1 className="text-xl font-bold truncate">{examData?.exam_instance_id.title}</h1>
-              <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
-                <span>Question {currentQuestionIndex + 1} of {totalQuestions}</span>
-                <span>•</span>
-                <span>{answeredCount} answered</span>
+              <div className="flex items-center gap-3 mt-2">
+                <Badge variant="outline">
+                  Question {currentQuestionIndex + 1} of {totalQuestions}
+                </Badge>
+                <Separator orientation="vertical" className="h-4" />
+                <Badge variant="outline">
+                  {answeredCount} answered
+                </Badge>
                 {flaggedQuestions.size > 0 && (
                   <>
-                    <span>•</span>
-                    <span>{flaggedQuestions.size} flagged</span>
+                    <Separator orientation="vertical" className="h-4" />
+                    <Badge variant="outline">
+                      {flaggedQuestions.size} flagged
+                    </Badge>
                   </>
                 )}
               </div>
@@ -224,7 +228,11 @@ function PageHeader({
                   disabled={saving}
                   className="gap-2"
                 >
-                  <Save className="h-4 w-4" />
+                  {saving ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Save className="h-4 w-4" />
+                  )}
                   Save Progress
                 </Button>
                 <Button
@@ -238,21 +246,21 @@ function PageHeader({
 
               <div className="flex items-center gap-2 text-lg font-mono">
                 <Clock className="h-5 w-5" />
-                <span className={timeLeft < 300 ? 'text-red-500' : ''}>
+                <span className={isTimeRunningLow ? 'text-red-500' : ''}>
                   {formatTime(timeLeft)}
                 </span>
               </div>
               
               {saving && (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Save className="h-4 w-4 animate-spin" />
+                <Badge variant="secondary" className="flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
                   Saving...
-                </div>
+                </Badge>
               )}
               {lastSaved && !saving && (
-                <div className="text-sm text-green-600">
+                <Badge variant="outline" className="text-green-600">
                   Auto Saved {lastSaved.toLocaleTimeString()}
-                </div>
+                </Badge>
               )}
               
               <Button

@@ -6,6 +6,7 @@ import { BasicInfoTab } from "@/components/exams/teacher/tabs/basic-info";
 import { QuestionsTab } from "@/components/exams/teacher/tabs/questions/tab";
 import { ExamSettingsTab } from "@/components/exams/teacher/tabs/exam-settings";
 import { ExamHeader } from "@/components/exams/teacher/page-header";
+import { PDFReportModal } from "@/components/exams/teacher/pdf-report-modal";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { toast } from "sonner";
@@ -33,6 +34,7 @@ function CreateExam() {
 
   const [selectedStudents, setSelectedStudents] = useState([]);
   const [activeTab, setActiveTab] = useState("basic");
+  const [pdfModalOpen, setPdfModalOpen] = useState(false);
   
   // Centralized exam settings state
   const [examSettings, setExamSettings] = useState({
@@ -283,6 +285,10 @@ function CreateExam() {
     }
   };
 
+  const handlePDFReportClick = () => {
+    setPdfModalOpen(true);
+  };
+
   // Check if form can be submitted
   const canSubmit = basicInfo.examTitle.trim() && 
     basicInfo.selectedCollection && 
@@ -299,7 +305,10 @@ function CreateExam() {
     loading: loading,
     canSubmit: canSubmit,
     submitText: isEditMode ? "Update Exam" : "Assign Exam",
-    loadingText: isEditMode ? "Updating..." : "Assigning..."
+    loadingText: isEditMode ? "Updating..." : "Assigning...",
+    showPDFReport: isEditMode,
+    onPDFReportClick: handlePDFReportClick,
+    pdfReportDisabled: examLoading
   };
 
   // Loading state while fetching exam data
@@ -395,6 +404,14 @@ function CreateExam() {
           </Tabs>
         </div>
       </main>
+      
+      <PDFReportModal 
+        open={pdfModalOpen}
+        onOpenChange={setPdfModalOpen}
+        examId={examId}
+        selectedStudents={selectedStudents}
+      />
+      
       <Footer />
     </div>
   );

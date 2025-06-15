@@ -441,6 +441,16 @@ export const RecentExamsTabs = ({
 );
 
 export const UpcomingExamsSection = ({ upcomingExams, handleExamClick }) => {
+  // Definim funcțiile de formatare local în componentă
+  const formatDate = (iso) => {
+    const d = new Date(iso);
+    return format(d, "MMM d, yyyy");
+  };
+
+  const formatDateTime = (iso) => {
+    const d = new Date(iso);
+    return format(d, "h:mm a");
+  };
   const nextExams = upcomingExams
     .sort((a, b) => new Date(a.start_date) - new Date(b.start_date))
     .slice(0, 3);
@@ -464,7 +474,15 @@ export const UpcomingExamsSection = ({ upcomingExams, handleExamClick }) => {
                     onClick={() => handleExamClick(exam)}
                     className="w-full text-left p-3 rounded-lg border bg-card hover:bg-muted transition-colors"
                   >
-                    <h3 className="font-medium truncate">{exam.title}</h3>
+                    <div className="flex items-center">
+                      <div className="flex-1 pl-2 pr-4">
+                        <h3 className="font-medium truncate">{exam.title}</h3>
+                      </div>
+                      <div className="w-24 flex flex-col items-end text-sm text-muted-foreground whitespace-nowrap">
+                        <span>{formatDate(exam.start_date)}</span>
+                        <span>{formatDateTime(exam.start_date)}</span>
+                      </div>
+                    </div>
                   </button>
                 </li>
               ))}
@@ -480,7 +498,6 @@ export const UpcomingExamsSection = ({ upcomingExams, handleExamClick }) => {
     </Card>
   );
 };
-
 const ExamDetailsDialog = ({
   dialogOpen,
   setDialogOpen,

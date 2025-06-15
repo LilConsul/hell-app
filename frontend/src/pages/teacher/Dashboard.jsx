@@ -46,7 +46,7 @@ const fetchStats = async () => {
 
   const collections = collectionsData?.data || [];
   const exams = examsData?.data || [];
-  const activeExams = exams.filter((e) => e.status === "published");
+  const activeExams = exams;
 
   const reportPromises = activeExams.map((exam) =>
     exam._id
@@ -101,6 +101,90 @@ const fetchStats = async () => {
     upcomingExams,
     recentlyEndedExams,
   };
+};
+
+const ExamDetailsDialog = ({
+  dialogOpen,
+  setDialogOpen,
+  selectedExam,
+  formatDate,
+  formatDateTime,
+  calculateDuration,
+}) => {
+  if (!selectedExam) return null;
+
+  const assignedStudents = selectedExam.assigned_students || [];
+  const studentCount = assignedStudents.length;
+  const studentText = studentCount === 1 ? "student" : "students";
+
+  return (
+    <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      <DialogContent className="bg-background text-foreground max-w-md">
+        <DialogHeader>
+          <DialogTitle className="text-xl">{selectedExam.title}</DialogTitle>
+          <DialogDescription className="text-muted-foreground">Exam Details</DialogDescription>
+        </DialogHeader>
+
+        <div className="py-4">
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <div className="flex items-center text-sm text-muted-foreground">
+                  <Calendar className="mr-2 h-4 w-4" />
+                  <h3 className="font-medium">Start Date</h3>
+                </div>
+                <p>{formatDate(selectedExam.start_date)}</p>
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-center text-sm text-muted-foreground">
+                  <Clock className="mr-2 h-4 w-4" />
+                  <h3 className="font-medium">Start Time</h3>
+                </div>
+                <p>{formatDateTime(selectedExam.start_date)}</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <div className="flex items-center text-sm text-muted-foreground">
+                  <Users className="mr-2 h-4 w-4" />
+                  <h3 className="font-medium">Assigned Students</h3>
+                </div>
+                <p>{studentCount} {studentText}</p>
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-center text-sm text-muted-foreground">
+                  <Clock className="mr-2 h-4 w-4" />
+                  <h3 className="font-medium">Duration</h3>
+                </div>
+                <p>{calculateDuration(selectedExam.start_date, selectedExam.end_date)}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <DialogFooter className="flex flex-col sm:flex-row gap-2 sm:justify-between border-t pt-4">
+          <Button variant="outline" onClick={() => setDialogOpen(false)} className="w-full sm:w-auto order-2 sm:order-1">
+            Close
+          </Button>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Link to={`/exams/${selectedExam.id}`} className="w-full sm:w-auto order-1 sm:order-2">
+                  <Button className="w-full">
+                    <FileText className="mr-2 h-4 w-4" /> View Details
+                  </Button>
+                </Link>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>View full exam details</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
 };
 
 function TeacherDashboard() {
@@ -258,33 +342,23 @@ function TeacherDashboard() {
                 </p>
               ) : (
                 <ul className="space-y-2">
-                  {stats.upcomingExams.map((exam) => {
-                    const date = new Date(exam.start_date);
-                    const formattedDate = date.toLocaleDateString();
-                    const formattedTime = date.toLocaleTimeString([], {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    });
-                    return (
-                      <button
-                        key={exam._id}
-                        onClick={() => handleExamClick(exam)}
-                        className="flex flex-col border rounded-md p-2 bg-background hover:bg-muted/20 transition w-full text-left"
-                      >
-                        <div className="flex items-center gap-2">
-                          <CalendarClock
-                            className="h-4 w-4 text-muted-foreground"
-                          />
-                          <span className="font-medium truncate">
-                            {exam.title}
-                          </span>
-                        </div>
-                        <span className="text-xs text-muted-foreground truncate ml-6">
-                          {formattedDate}, {formattedTime}
+                  {stats.upcomingExams.map((exam) => (
+                    <button
+                      key={exam._id || exam.id}
+                      onClick={() => handleExamClick(exam)}
+                      className="flex flex-col border rounded-md p-2 bg-background hover:bg-muted/20 transition w-full text-left"
+                    >
+                      <div className="flex items-center gap-2">
+                        <CalendarClock className="h-4 w-4 text-muted-foreground" />
+                        <span className="font-medium truncate">
+                          {exam.title}
                         </span>
-                      </button>
-                    );
-                  })}
+                      </div>
+                      <span className="text-xs text-muted-foreground truncate ml-6">
+                        {formatDate(exam.start_date)}, {formatDateTime(exam.start_date)}
+                      </span>
+                    </button>
+                  ))}
                 </ul>
               )}
             </div>
@@ -303,33 +377,23 @@ function TeacherDashboard() {
                 </p>
               ) : (
                 <ul className="space-y-2">
-                  {stats.recentlyEndedExams.map((exam) => {
-                    const date = new Date(exam.end_date);
-                    const formattedDate = date.toLocaleDateString();
-                    const formattedTime = date.toLocaleTimeString([], {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    });
-                    return (
-                      <button
-                        key={exam._id}
-                        onClick={() => handleExamClick(exam)}
-                        className="flex flex-col border rounded-md p-2 bg-background hover:bg-muted/20 transition w-full text-left"
-                      >
-                        <div className="flex items-center gap-2">
-                          <CalendarCheck
-                            className="h-4 w-4 text-muted-foreground"
-                          />
-                          <span className="font-medium truncate">
-                            {exam.title}
-                          </span>
-                        </div>
-                        <span className="text-xs text-muted-foreground truncate ml-6">
-                          {formattedDate}, {formattedTime}
+                  {stats.recentlyEndedExams.map((exam) => (
+                    <button
+                      key={exam._id || exam.id}
+                      onClick={() => handleExamClick(exam)}
+                      className="flex flex-col border rounded-md p-2 bg-background hover:bg-muted/20 transition w-full text-left"
+                    >
+                      <div className="flex items-center gap-2">
+                        <CalendarCheck className="h-4 w-4 text-muted-foreground" />
+                        <span className="font-medium truncate">
+                          {exam.title}
                         </span>
-                      </button>
-                    );
-                  })}
+                      </div>
+                      <span className="text-xs text-muted-foreground truncate ml-6">
+                        Ended: {formatDate(exam.end_date)}, {formatDateTime(exam.end_date)}
+                      </span>
+                    </button>
+                  ))}
                 </ul>
               )}
             </div>
@@ -338,113 +402,14 @@ function TeacherDashboard() {
       </main>
 
       {/* Exam Details Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="bg-background text-foreground max-w-md">
-          {selectedExam && (
-            <>
-              <DialogHeader>
-                <DialogTitle className="text-xl">{selectedExam.title}</DialogTitle>
-                <DialogDescription className="text-muted-foreground">
-                  {selectedExam.status === 'draft' ? 'Draft Exam' : 'Published Exam'}
-                </DialogDescription>
-              </DialogHeader>
-              
-              <div className="py-4">
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1">
-                      <div className="flex items-center text-sm text-muted-foreground">
-                        <Calendar className="mr-2 h-4 w-4" />
-                        <h3 className="font-medium">Start Date</h3>
-                      </div>
-                      <p>{formatDate(selectedExam.start_date)}</p>
-                    </div>
-                    <div className="space-y-1">
-                      <div className="flex items-center text-sm text-muted-foreground">
-                        <Clock className="mr-2 h-4 w-4" />
-                        <h3 className="font-medium">Start Time</h3>
-                      </div>
-                      <p>{formatDateTime(selectedExam.start_date)}</p>
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1">
-                      <div className="flex items-center text-sm text-muted-foreground">
-                        <Clock className="mr-2 h-4 w-4" />
-                        <h3 className="font-medium">Duration</h3>
-                      </div>
-                      <p>{calculateDuration(selectedExam.start_date, selectedExam.end_date)}</p>
-                    </div>
-                    <div className="space-y-1">
-                      <div className="flex items-center text-sm text-muted-foreground">
-                        <AlertCircle className="mr-2 h-4 w-4" />
-                        <h3 className="font-medium">Status</h3>
-                      </div>
-                      <p>
-                        {selectedExam.status === 'draft' ? (
-                          <Badge variant="secondary">Draft</Badge>
-                        ) : now > new Date(selectedExam.end_date) ? (
-                          <Badge variant="destructive">Expired</Badge>
-                        ) : new Date(selectedExam.start_date) <= now && new Date(selectedExam.end_date) >= now ? (
-                          <Badge variant="warning">Ongoing</Badge>
-                        ) : (
-                          <Badge variant="default">Upcoming</Badge>
-                        )}
-                      </p>
-                    </div>
-                  </div>
-                  
-                  <Separator />
-                  
-                  <div className="space-y-2">
-                    <div className="flex items-center text-sm text-muted-foreground">
-                      <Users className="mr-2 h-4 w-4" />
-                      <h3 className="font-medium">Assigned Students</h3>
-                    </div>
-                    {selectedExam.assigned_students && selectedExam.assigned_students.length > 0 ? (
-                      <ScrollArea className="h-[120px] border rounded-md p-2">
-                        <ul className="space-y-1">
-                          {selectedExam.assigned_students.map((student, index) => (
-                            <li key={index} className="text-sm flex items-center">
-                              <span className="h-2 w-2 rounded-full bg-primary mr-2"></span>
-                              {student.name || student.email || `Student ${index + 1}`}
-                            </li>
-                          ))}
-                        </ul>
-                      </ScrollArea>
-                    ) : (
-                      <p className="text-sm text-muted-foreground border rounded-md p-3 bg-muted/10">
-                        No students assigned yet.
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
-              
-              <DialogFooter className="flex justify-between border-t pt-4">
-                <Button variant="outline" onClick={() => setDialogOpen(false)}>
-                  Close
-                </Button>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Link to={`/exam/${selectedExam.id || selectedExam._id}`}>
-                        <Button>
-                          <FileText className="mr-2 h-4 w-4" /> View Details
-                        </Button>
-                      </Link>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>View full exam details</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </DialogFooter>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
+      <ExamDetailsDialog
+        dialogOpen={dialogOpen}
+        setDialogOpen={setDialogOpen}
+        selectedExam={selectedExam}
+        formatDate={formatDate}
+        formatDateTime={formatDateTime}
+        calculateDuration={calculateDuration}
+      />
 
       <Footer />
     </div>

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2, FileDown } from "lucide-react";
 import { Link } from "react-router-dom";
 
 export function ExamHeader({ 
@@ -10,7 +10,10 @@ export function ExamHeader({
   loading = false,
   canSubmit = true,
   submitText = "Assign Exam",
-  loadingText = "Assigning..."
+  loadingText = "Assigning...",
+  showPDFReport = false,
+  onPDFReportClick,
+  pdfReportDisabled = false
 }) {
   const [isSticky, setIsSticky] = useState(false);
 
@@ -44,6 +47,17 @@ export function ExamHeader({
               </div>
             </div>
             <div className="flex items-center space-x-2">
+              {showPDFReport && (
+                <Button 
+                  type="button" 
+                  onClick={onPDFReportClick}
+                  disabled={pdfReportDisabled}
+                  className="mr-2"
+                >
+                  <FileDown className="mr-2 h-4 w-4" />
+                  PDF Report
+                </Button>
+              )}
               <Button 
                 type="button" 
                 onClick={onSubmit} 

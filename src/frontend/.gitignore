@@ -50,6 +50,7 @@ out/
 .rts2_cache_*/
 .parcel-cache/
 .vitepress/cache/
+.vite/
 
 # Environment variables
 .env*

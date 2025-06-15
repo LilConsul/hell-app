@@ -11,7 +11,7 @@ import {
 } from "@/components/exams/student/take-exam/alerts";
 import QuestionCard from "@/components/exams/student/take-exam/question-card";
 import QuestionNavigation from "@/components/exams/student/take-exam/question-navigation";
-import SubmitConfirmationModal from "@/components/exams/student/take-exam/submit-confirmation-modal";
+import { SubmitConfirmationModal, AutoSubmitModal } from "@/components/exams/student/take-exam/submit-modals";
 import ExamResultsOverlay from "@/components/exams/student/take-exam/exam-results";
 
 
@@ -27,6 +27,17 @@ function TakeExam() {
   const [tabSwitchCount, setTabSwitchCount] = useState(0);
   const [showResults, setShowResults] = useState(false);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
+  const [showAutoSubmitModal, setShowAutoSubmitModal] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitProgress, setSubmitProgress] = useState(0);
+  const [autoSubmitState, setAutoSubmitState] = useState({
+    saveProgress: 0,
+    submitProgress: 0,
+    currentlySaving: 0,
+    totalToSave: 0,
+    isSubmitting: false,
+    error: null
+  });
   const [results, setResults] = useState(null);
   const [questions, setQuestions] = useState([]);
   const [lastFlaggedQuestionId, setLastFlaggedQuestionId] = useState(null);
@@ -75,16 +86,41 @@ function TakeExam() {
     setUnsavedQuestions(newUnsavedQuestions);
   }, [answers, savedAnswers]);
 
-  const saveAllUnsavedQuestions = async () => {
+  const saveAllUnsavedQuestions = async (isAutoSubmit = false) => {
     if (unsavedQuestions.size === 0) return;
 
     const questionsToSave = Array.from(unsavedQuestions);
     const savedQuestionIds = [];
 
-    for (const questionId of questionsToSave) {
+    if (isAutoSubmit) {
+      setAutoSubmitState(prev => ({
+        ...prev,
+        totalToSave: questionsToSave.length,
+        saveProgress: 0
+      }));
+    }
+
+    for (let i = 0; i < questionsToSave.length; i++) {
+      const questionId = questionsToSave[i];
+      
+      if (isAutoSubmit) {
+        setAutoSubmitState(prev => ({
+          ...prev,
+          currentlySaving: i + 1
+        }));
+      }
+
       const success = await saveQuestionAnswer(questionId);
       if (success) {
         savedQuestionIds.push(questionId);
+      }
+
+      if (isAutoSubmit) {
+        const progress = Math.min(90, ((i + 1) / questionsToSave.length) * 90);
+        setAutoSubmitState(prev => ({
+          ...prev,
+          saveProgress: progress
+        }));
       }
     }
 
@@ -97,6 +133,88 @@ function TakeExam() {
         });
         return updated;
       });
+    }
+
+    if (isAutoSubmit) {
+      setAutoSubmitState(prev => ({
+        ...prev,
+        saveProgress: 100
+      }));
+    }
+  };
+
+  const handleSubmitExam = async (isAutoSubmit = false) => {
+    try {
+      setError(null);
+      
+      if (isAutoSubmit) {
+        setAutoSubmitState(prev => ({
+          ...prev,
+          isSubmitting: true,
+          submitProgress: 0
+        }));
+      } else {
+        setIsSubmitting(true);
+        setSubmitProgress(0);
+      }
+
+      // Simulate submit progress
+      const progressInterval = setInterval(() => {
+        if (isAutoSubmit) {
+          setAutoSubmitState(prev => ({
+            ...prev,
+            submitProgress: Math.min(90, prev.submitProgress + 10)
+          }));
+        } else {
+          setSubmitProgress(prev => Math.min(90, prev + 10));
+        }
+      }, 200);
+
+      const response = await StudentExamsAPI.submitExam(examId);
+      
+      clearInterval(progressInterval);
+      
+      if (isAutoSubmit) {
+        setAutoSubmitState(prev => ({
+          ...prev,
+          submitProgress: 100
+        }));
+      } else {
+        setSubmitProgress(100);
+      }
+
+      // Small delay to show completion
+      setTimeout(() => {
+        setResults(response.data);
+        setShowResults(true);
+        setShowSubmitModal(false);
+        setShowAutoSubmitModal(false);
+        setIsSubmitting(false);
+        setAutoSubmitState({
+          saveProgress: 0,
+          submitProgress: 0,
+          currentlySaving: 0,
+          totalToSave: 0,
+          isSubmitting: false,
+          error: null
+        });
+      }, 1000);
+
+    } catch (err) {
+      console.error('Error submitting exam:', err);
+      const errorMessage = err.message || 'Failed to submit exam';
+      
+      if (isAutoSubmit) {
+        setAutoSubmitState(prev => ({
+          ...prev,
+          error: errorMessage,
+          isSubmitting: false
+        }));
+      } else {
+        setError('Failed to submit exam: ' + errorMessage);
+        setIsSubmitting(false);
+        setSubmitProgress(0);
+      }
     }
   };
 
@@ -193,6 +311,29 @@ function TakeExam() {
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [examData]);
+
+  const handleTimeUp = async () => {
+    try {
+      setShowAutoSubmitModal(true);
+      setAutoSubmitState({
+        saveProgress: 0,
+        submitProgress: 0,
+        currentlySaving: 0,
+        totalToSave: 0,
+        isSubmitting: false,
+        error: null
+      });
+      
+      await saveAllUnsavedQuestions(true);
+      await handleSubmitExam(true);
+    } catch (err) {
+      console.error('Error handling time up:', err);
+      setAutoSubmitState(prev => ({
+        ...prev,
+        error: err.message || 'Failed to auto-submit exam'
+      }));
+    }
+  };
 
   const saveQuestionAnswer = async (questionId) => {
     const answer = answers[questionId];
@@ -291,18 +432,8 @@ function TakeExam() {
   };
 
   const handleSubmitConfirm = async () => {
-    setShowSubmitModal(false);
-    
-    try {
-      setError(null);
-      
-      const response = await StudentExamsAPI.submitExam(examId);
-      setResults(response.data);
-      setShowResults(true);
-    } catch (err) {
-      console.error('Error submitting exam:', err);
-      setError('Failed to submit exam: ' + (err.message || 'Unknown error'));
-    }
+    await saveAnswers();
+    await handleSubmitExam(false);
   };
 
   const handleSubmitCancel = () => {
@@ -334,6 +465,7 @@ function TakeExam() {
         flaggedQuestions={flaggedQuestions}
         onSaveAnswers={saveAnswers}
         onSubmitExam={handleSubmitRequest}
+        onTimeUp={handleTimeUp}
       />
 
       <ExamErrorAlert error={error} />
@@ -383,6 +515,19 @@ function TakeExam() {
         onCancel={handleSubmitCancel}
         answeredCount={answeredCount}
         totalQuestions={totalQuestions}
+        isSubmitting={isSubmitting}
+        submitProgress={submitProgress}
+      />
+
+      <AutoSubmitModal
+        isOpen={showAutoSubmitModal}
+        saveProgress={autoSubmitState.saveProgress}
+        submitProgress={autoSubmitState.submitProgress}
+        currentlySaving={autoSubmitState.currentlySaving}
+        totalToSave={autoSubmitState.totalToSave}
+        isSubmitting={autoSubmitState.isSubmitting}
+        error={autoSubmitState.error}
+        onGoToExamDetails={onNavigateBack}
       />
 
       {showResults && results && (

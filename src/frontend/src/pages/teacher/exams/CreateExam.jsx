@@ -43,8 +43,6 @@ function CreateExam() {
       allow_review: true,
       prevent_tab_switching: false,
       tab_switch_limit: 0,
-      gaze_tracking: false,
-      gaze_limit: 0
     },
     notification_settings: {
       reminder_enabled: true,
@@ -125,8 +123,6 @@ function CreateExam() {
           allow_review: examData.security_settings.allow_review,
           prevent_tab_switching: examData.security_settings.prevent_tab_switching,
           tab_switch_limit: examData.security_settings.tab_switch_limit || 0,
-          gaze_tracking: examData.security_settings.gaze_tracking,
-          gaze_limit: examData.security_settings.gaze_limit || 0
         },
         notification_settings: {
           reminder_enabled: examData.notification_settings.reminder_enabled,

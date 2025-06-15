@@ -103,32 +103,6 @@ export function ExamSettingsTab({
               Maximum number of tab switches allowed (0 for no limit)
             </p>
           </div>
-          
-          <div className="flex items-center space-x-2">
-            <Switch 
-              id="gaze-tracking"
-              checked={examSettings.security_settings.gaze_tracking}
-              onCheckedChange={(checked) => handleSecurityChange('gaze_tracking', checked)}
-            />
-            <Label htmlFor="gaze-tracking">Enable gaze tracking</Label>
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="gaze-limit">Gaze Tracking Limit</Label>
-            <Input
-              id="gaze-limit"
-              type="number"
-              min="0"
-              max="20"
-              value={examSettings.security_settings.gaze_limit}
-              onChange={(e) => handleSecurityChange('gaze_limit', parseInt(e.target.value) || 0)}
-              disabled={!examSettings.security_settings.gaze_tracking}
-              placeholder="0 = No limit"
-            />
-            <p className="text-sm text-muted-foreground">
-              Maximum number of times student can look away (0 for no limit)
-            </p>
-          </div>
         </CardContent>
       </Card>
 

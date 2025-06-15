@@ -26,6 +26,7 @@ import AllExams from './pages/teacher/exams/AllExams';
 
 // Student pages
 import StudentExamResults from './pages/student/exams/Results.jsx';
+import TakeExam from './pages/student/exams/TakeExam.jsx';
 
 // Placeholders
 import Students from './pages/Students';
@@ -67,6 +68,7 @@ export default function App() {
             <Route path="/exams" element={<Exams/>} />
             <Route path="/exams/:examId" element={<ExamDetails />} />
             <Route path="/exams/:examId/results" element={<StudentExamResults />} />
+            <Route path="/exams/:examId/take" element={<TakeExam />} />
 
             <Route path="/settings" element={<Settings />} />
           </Route>

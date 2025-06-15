@@ -140,7 +140,7 @@ const ExamDetailsDialog = ({
                   <Clock className="mr-2 h-4 w-4" />
                   <h3 className="font-medium">Start Time</h3>
                 </div>
-                <p>{formatDateTime(selectedExam.start_date)}</p>
+                <p>{DateTime(selectedExam.start_date)}</p>
               </div>
             </div>
 

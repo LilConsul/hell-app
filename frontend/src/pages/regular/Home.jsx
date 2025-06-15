@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button"
 import { Navbar } from "@/components/navbar"
 import { Footer } from "@/components/footer"
 import { Link } from "react-router-dom"
-import { ArrowRight, Book, Building, CheckCircle, Clock, Monitor, School, Shield, Users } from "lucide-react"
+import { ArrowRight, Book, Building, CheckCircle, Clock, Monitor, School, Shield, Users, FileText, BarChart3, Globe } from "lucide-react"
 import { useRef } from "react"
 import { SectionHeader } from "@/components/section-header"
 import { SectionContainer } from "@/components/section-container"
@@ -30,12 +30,11 @@ function Home() {
             <div className="grid md:grid-cols-2 gap-12 items-center">
               <div className="text-left md:pr-8">
                 <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tighter animate-fade-in">
-                  Secure Online Exams with Advanced Anti-Cheat Technology
+                  Modern Online Examination Platform
                 </h1>
                 <p className="mt-6 text-lg text-muted-foreground">
-                  Create, manage, and monitor online exams with confidence. Our platform ensures academic integrity
-                  through
-                  cutting-edge anti-cheat measures.
+                  Create, manage, and take online exams with ease. Our platform provides a seamless experience for
+                  educators and students with powerful features and reliable performance.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 mt-10 items-center sm:items-start">
                   <Button size="lg" className="w-full sm:w-auto px-8" onClick={() => window.openRegisterModal()}>
@@ -71,35 +70,35 @@ function Home() {
         {/* Scroll link :)*/}
         <div ref={featuresRef}/>
 
-        {/* Advanced Anti-Cheat Features */}
+        {/* Platform Features */}
         <SectionContainer withBackground>
           <SectionHeader
-            title="Advanced Anti-Cheat Features"
-            description="Our platform includes sophisticated anti-cheat measures to ensure exam integrity."
+            title="Empowering Educators, Supporting Students"
+            description="Everything you need for a complete online examination experience."
           />
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
             <FeatureCard
-              icon={Monitor}
-              title="Webcam Monitoring"
-              description="Tracks student focus and detects suspicious behavior during exams."
+              icon={FileText}
+              title="Easy Exam Creation"
+              description="Build comprehensive exams with multiple question types and customizable formats."
               centered
             />
             <FeatureCard
-              icon={Shield}
-              title="Tab Switching Detection"
-              description="Prevents students from searching for answers online during the exam."
+              icon={BarChart3}
+              title="Detailed Analytics"
+              description="Get insights into student performance with comprehensive reporting and statistics."
               centered
             />
             <FeatureCard
               icon={CheckCircle}
               title="Automatic Grading"
-              description="Evaluates answers instantly with customizable question weights."
+              description="Evaluates answers instantly with customizable question weights and instant feedback."
               centered
             />
             <FeatureCard
-              icon={Clock}
-              title="Time Management"
-              description="Automatic submission when time expires with warning notifications."
+              icon={Globe}
+              title="Accessible Anywhere"
+              description="Take exams from any device, anywhere with our responsive web platform."
               centered
             />
           </div>
@@ -109,7 +108,7 @@ function Home() {
         <SectionContainer >
           <SectionHeader
             title="How It Works"
-            description="The simple, step-by-step process to experience secure exams."
+            description="The simple, step-by-step process to get started with online exams."
           />
           <div className="relative">
             <div
@@ -117,9 +116,9 @@ function Home() {
             <div className="grid md:grid-cols-4 gap-6 relative z-10">
               {[
                 {title: "Register", description: "Create your account as a student, teacher or institution."},
-                {title: "Create/Join Exam", description: "Easily participate in or organize secure exams online."},
-                {title: "Take Exam", description: "Enjoy a streamlined, fair and monitored exam experience."},
-                {title: "Get Results", description: "Receive instant grading and detailed feedback."}
+                {title: "Create/Join Exam", description: "Easily participate in or organize online exams with our intuitive interface."},
+                {title: "Take Exam", description: "Enjoy a streamlined and user-friendly exam experience."},
+                {title: "Get Results", description: "Receive instant grading and detailed feedback on performance."}
               ].map((step, index) => (
                 <div key={index}
                      className="bg-background p-6 rounded-lg border text-center flex flex-col items-center hover:border-primary/50 hover:shadow-md transition-all">
@@ -147,25 +146,25 @@ function Home() {
             <FeatureCard
               icon={Users}
               title="Teachers"
-              description="Easily manage, create, and monitor exams."
+              description="Easily manage, create, and monitor exams with comprehensive tools."
               centered
             />
             <FeatureCard
               icon={Book}
               title="Students"
-              description="Participate in exams from anywhere with fairness."
+              description="Take exams from anywhere with a smooth and intuitive interface."
               centered
             />
             <FeatureCard
               icon={School}
               title="Universities"
-              description="Oversee exams at scale with robust analytics and security."
+              description="Manage exams at scale with robust analytics and administrative features."
               centered
             />
             <FeatureCard
               icon={Building}
               title="Institutions"
-              description="Integrate our system for your entire educational process."
+              description="Integrate our system seamlessly into your educational infrastructure."
               centered
             />
           </div>
@@ -179,31 +178,31 @@ function Home() {
           />
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             <TestimonialCard
-              quote="This platform made remote exams so much easier and safer for my class. I can focus on creating good questions instead of worrying about cheating."
-              name="Maria D."
+              quote="This platform made remote exams so much easier and more efficient for my class. I can focus on creating quality questions and get detailed insights into student performance."
+              name="Iana N."
               role="University Professor"
-              initial="M"
+              initial="I"
             />
             <TestimonialCard
-              quote="I loved how fast I got my grades and how fair the exams felt! Much better than traditional exams with all the waiting and uncertainty."
+              quote="I loved how fast I got my grades and how smooth the exam experience was! The interface is intuitive and much better than traditional paper-based exams."
               name="Alex M."
               role="Computer Science Student"
               initial="A"
             />
             <TestimonialCard
-              quote="As a school administrator, I've seen a 40% reduction in academic integrity cases since implementing this platform. The analytics help us identify potential issues before they become problems."
+              quote="As a school administrator, I've seen significant improvements in our examination process. The analytics help us understand student performance patterns and improve our curriculum."
               name="Yehor Karabanov"
               role="School Administrator"
               initial="Y"
             />
             <TestimonialCard
-              quote="The security features are impressive. From our IT department's perspective, this platform offers the perfect balance between robust protection and user-friendly interface."
+              quote="The platform is incredibly user-friendly from our IT department's perspective. It offers excellent performance and integrates well with our existing systems."
               name="Shevchenko Denys"
               role="IT Director at University"
               initial="D"
             />
             <TestimonialCard
-              quote="My high school students are more engaged with online assessments. The platform's anti-cheat features have actually motivated them to study properly rather than looking for shortcuts."
+              quote="My high school students are more engaged with online assessments. The platform's features have made the examination process more efficient and enjoyable for everyone."
               name="Valerii Matviiv"
               role="High School Teacher"
               initial="V"
@@ -221,16 +220,10 @@ function Home() {
               <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8">
                 Join thousands of educators and students who are already using our platform.
               </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <div className="flex justify-center">
                 <Button size="lg" className="px-8" onClick={() => window.openRegisterModal()}>
                   Get Started Free
                 </Button>
-                <Link to="/request">
-                  <Button size="lg" variant="outline" className="px-8">
-                    Request Demo
-                    <ArrowRight className="ml-2 h-4 w-4"/>
-                  </Button>
-                </Link>
               </div>
             </div>
           </div>

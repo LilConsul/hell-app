@@ -49,8 +49,6 @@ export function Navbar() {
       {path: "/dashboard", label: "Dashboard", roles: ["student", "teacher", "admin"]},
       {path: "/collections", label: "Test Collections", roles: ["teacher", "admin"]},
       {path: "/exams", label: "Exams", roles: ["student", "teacher", "admin"]},
-      {path: "/students", label: "Students", roles: ["teacher", "admin"]},
-      {path: "/reports", label: "Reports", roles: ["teacher", "admin"]},
     ];
 
     // Filter routes based on user role

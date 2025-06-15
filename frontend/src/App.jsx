@@ -28,10 +28,6 @@ import AllExams from './pages/teacher/exams/AllExams';
 import StudentExamResults from './pages/student/exams/Results.jsx';
 import TakeExam from './pages/student/exams/TakeExam.jsx';
 
-// Placeholders
-import Students from './pages/Students';
-import Reports from './pages/Reports';
-
 // Admin pages
 import AdminPanel from './pages/admin/Admin-Panel.jsx';
 
@@ -75,8 +71,6 @@ export default function App() {
 
           {/* Teacher & Admin */}
           <Route element={<ProtectedLayout allowedRoles={['teacher', 'admin']} />}>
-            <Route path="/students" element={<Students />} />
-            <Route path="/reports" element={<Reports />} />
             <Route path="/collections" element={<Collections />} />
             <Route path="/collections/:collectionId" element={<CreateCollection />} />
             <Route path="/all-exams" element={<AllExams />} />

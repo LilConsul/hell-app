@@ -191,7 +191,6 @@ class ExamInstanceService:
     ) -> None:
         """Add students to an exam instance, create StudentExam instances, and send notifications."""
         student_exam_ids = await self._create_student_exam(students, exam_instance_id)
-
         if (
             notification_settings["reminder_enabled"]
             and notification_settings["reminders"]
@@ -220,8 +219,7 @@ class ExamInstanceService:
                 await self.student_exam_repository.delete(student_exam.id)
 
             user = await self.user_repository.get_by_id(student["student_id"])
-            exam_id_str = str(exam_instance_id)
-            if user and exam_id_str in user.notifications_tasks_id:
+            if user and student_exam.id in user.notifications_tasks_id:
                 task_ids = user.notifications_tasks_id[student_exam.id]
                 for task_id in task_ids:
                     exam_reminder_notification.AsyncResult(task_id).revoke(

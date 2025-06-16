@@ -483,7 +483,8 @@ class TestExamInstanceService:
         exam_title = "Test Exam"
         start_time = datetime.now(timezone.utc) + timedelta(days=1)
         end_time = datetime.now(timezone.utc) + timedelta(days=1, hours=2)
-        exam_instance_id = "instance123"
+        # Create a dictionary mapping student IDs to exam instance IDs
+        student_exam_ids = {"user123": "instance123"}
 
         with patch(
             "app.exam.teacher.services.exam_instance_service.exam_reminder_notification"
@@ -492,7 +493,7 @@ class TestExamInstanceService:
 
             # Execute
             await service._send_notification(
-                users, reminders, exam_title, start_time, end_time, exam_instance_id
+                users, reminders, exam_title, start_time, end_time, student_exam_ids
             )
 
             # Assert

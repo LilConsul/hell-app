@@ -38,8 +38,26 @@ export function ExamSettingsTab({
     handleNotificationChange('reminders', newReminders);
   };
 
+  const handleTabSwitchLimitChange = (e) => {
+    const value = e.target.value;
+    // Allow empty string for clearing, otherwise parse as number
+    if (value === '') {
+      handleSecurityChange('tab_switch_limit', '');
+    } else {
+      const numValue = parseInt(value);
+      if (!isNaN(numValue) && numValue >= 0) {
+        handleSecurityChange('tab_switch_limit', numValue);
+      }
+    }
+  };
+
+  const handleTabSwitchLimitFocus = (e) => {
+    // Select all text when input is focused
+    e.target.select();
+  };
+
   return (
-    <div  className="max-w-5xl mx-auto space-y-4">
+    <div className="max-w-5xl mx-auto space-y-4">
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -91,42 +109,18 @@ export function ExamSettingsTab({
             <Label htmlFor="tab-switch-limit">Tab Switch Limit</Label>
             <Input
               id="tab-switch-limit"
-              type="number"
-              min="0"
-              max="10"
-              value={examSettings.security_settings.tab_switch_limit}
-              onChange={(e) => handleSecurityChange('tab_switch_limit', parseInt(e.target.value) || 0)}
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              value={examSettings.security_settings.tab_switch_limit === 0 ? '' : examSettings.security_settings.tab_switch_limit}
+              onChange={handleTabSwitchLimitChange}
+              onFocus={handleTabSwitchLimitFocus}
               disabled={!examSettings.security_settings.prevent_tab_switching}
-              placeholder="0 = No limit"
+              placeholder="Enter limit (0 = No limit)"
+              className="w-full [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
             />
             <p className="text-sm text-muted-foreground">
-              Maximum number of tab switches allowed (0 for no limit)
-            </p>
-          </div>
-          
-          <div className="flex items-center space-x-2">
-            <Switch 
-              id="gaze-tracking"
-              checked={examSettings.security_settings.gaze_tracking}
-              onCheckedChange={(checked) => handleSecurityChange('gaze_tracking', checked)}
-            />
-            <Label htmlFor="gaze-tracking">Enable gaze tracking</Label>
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="gaze-limit">Gaze Tracking Limit</Label>
-            <Input
-              id="gaze-limit"
-              type="number"
-              min="0"
-              max="20"
-              value={examSettings.security_settings.gaze_limit}
-              onChange={(e) => handleSecurityChange('gaze_limit', parseInt(e.target.value) || 0)}
-              disabled={!examSettings.security_settings.gaze_tracking}
-              placeholder="0 = No limit"
-            />
-            <p className="text-sm text-muted-foreground">
-              Maximum number of times student can look away (0 for no limit)
+              Maximum number of tab switches allowed (leave empty or 0 for no limit)
             </p>
           </div>
         </CardContent>

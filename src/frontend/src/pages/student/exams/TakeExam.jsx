@@ -432,8 +432,31 @@ function TakeExam() {
   };
 
   const handleSubmitConfirm = async () => {
-    await saveAnswers();
-    await handleSubmitExam(false);
+    try {
+      // Hide the confirmation modal and show the auto-submit modal
+      setShowSubmitModal(false);
+      setShowAutoSubmitModal(true);
+      
+      // Reset auto-submit state
+      setAutoSubmitState({
+        saveProgress: 0,
+        submitProgress: 0,
+        currentlySaving: 0,
+        totalToSave: 0,
+        isSubmitting: false,
+        error: null
+      });
+      
+      // Perform the same save and submit flow as time up
+      await saveAllUnsavedQuestions(true);
+      await handleSubmitExam(true);
+    } catch (err) {
+      console.error('Error handling submit confirmation:', err);
+      setAutoSubmitState(prev => ({
+        ...prev,
+        error: err.message || 'Failed to submit exam'
+      }));
+    }
   };
 
   const handleSubmitCancel = () => {

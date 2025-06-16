@@ -115,7 +115,10 @@ export function ExamCard({ exam }) {
               showIcon
               showBadge
             />
-            <h3 className="text-lg font-semibold text-foreground line-clamp-2">
+            <h3  
+              onClick={() => navigate(`/exams/${exam.id}`)}
+              className="text-lg font-semibold text-foreground line-clamp-2 cursor-pointer"
+            >
               {exam.exam_instance_id.title}
             </h3>
             <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">

@@ -263,9 +263,9 @@ function Collections() {
         description: `"${collections.find(c => c.id === collectionId)?.title}" has been removed.`,
       });
     } catch (err) {
-      const errorMessage = err || "Failed to delete collection. Please try again later.";
-      setError(errorMessage);
-
+      toast.error("Failed to delete collection", {
+        description: `${err.message || "Please try again later."}`,
+      });
     }
   };
 

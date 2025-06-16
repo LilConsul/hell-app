@@ -86,7 +86,6 @@ function PageHeader({
 
   const handleSubmitExam = async () => {
     try {
-      await handleSaveAnswers();
       await onSubmitExam();
     } catch (err) {
       console.error('Error submitting exam:', err);

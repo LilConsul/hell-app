@@ -10,7 +10,11 @@ from app.core.exceptions import (
     UnprocessableEntityError,
 )
 from app.exam.models import ExamStatus, QuestionType
-from app.exam.repository import CollectionRepository, QuestionRepository
+from app.exam.repository import (
+    CollectionRepository,
+    QuestionRepository,
+    ExamInstanceRepository,
+)
 from app.exam.teacher.schemas import (
     CollectionQuestionCount,
     CreateCollection,
@@ -28,9 +32,11 @@ class CollectionService:
         self,
         collection_repository: CollectionRepository,
         question_repository: QuestionRepository,
+        exam_instance_repository: ExamInstanceRepository,
     ):
         self.collection_repository = collection_repository
         self.question_repository = question_repository
+        self.exam_instance_repository = exam_instance_repository
 
     async def create_collection(
         self, collection_data: CreateCollection, user_id: str
@@ -83,6 +89,12 @@ class CollectionService:
             raise NotFoundError(_("Collection not found"))
         if collection.created_by.ref.id != user_id:
             raise ForbiddenError(_("You do not own this collection"))
+        if await self.exam_instance_repository.get_by_field(
+            "collection_id.$id", collection_id
+        ):
+            raise BadRequestError(
+                _("Cannot delete collection with active exam instances")
+            )
 
         await self.collection_repository.delete(collection_id)
 

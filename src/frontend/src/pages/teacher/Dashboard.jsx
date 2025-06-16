@@ -271,13 +271,13 @@ function TeacherDashboard() {
             </Card>
           </Link>
 
-          <Link to="/reports">
+          <Link to="/all-exams">
             <Card className="bg-card rounded-2xl shadow hover:shadow-lg transition-all p-4 flex flex-col items-start gap-10 h-full">
               <BarChart className="h-8 w-8 text-primary mt-2" />
               <div>
-                <CardTitle className="text-xl font-semibold">Reports & Statistics</CardTitle>
+                <CardTitle className="text-xl font-semibold">Full Exams Database</CardTitle>
                 <p className="text-sm text-muted-foreground">
-                  View exam performance and export PDF reports.
+                  See Exams Created by all Teacher around the world.
                 </p>
               </div>
             </Card>

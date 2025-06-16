@@ -159,8 +159,8 @@ export function QuestionResult({ response, questionNumber }) {
   };
 
   const getScoreDisplay = () => {
-    const maxScore = response.max_score || 1;
-    return `${response.score}/${maxScore}`;
+    const maxScore = response.question_id.weight || 1;
+    return `${response.score * maxScore}/${maxScore}`;
   };
 
   const statusConfig = getStatusConfig(getQuestionStatus());

@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta, timezone
-from typing import List
+from typing import List, Dict
 
 from app.auth.repository import UserRepository
 from app.celery.tasks.email_tasks.tasks import exam_reminder_notification
@@ -107,7 +107,7 @@ class ExamInstanceService:
         exam_title: str,
         exam_start_time: datetime,
         exam_end_time: datetime,
-        exam_instance_id: str,
+        student_exam_ids: Dict[str, str],
     ) -> None:
         # Convert reminder strings to time deltas (e.g. "24h" -> 24 hours before exam)
         reminder_times = []
@@ -139,7 +139,7 @@ class ExamInstanceService:
             # Assuming we have a link, which looks like this:
             # https://localhost/exam/{id}
             link = settings.EXAM_INSTANCE_URL
-            link = link.format(id=exam_instance_id)
+            link = link.format(id=student_exam_ids[user_id["student_id"]])
             data = {
                 "recipient": user.email,
                 "username": make_username(user),
@@ -151,9 +151,9 @@ class ExamInstanceService:
             # Send notification immediately
             exam_reminder_notification.apply_async(kwargs=data)
 
-            data["exam_instance_id"] = exam_instance_id
+            data["exam_instance_id"] = student_exam_ids[user_id["student_id"]]
 
-            exam_id_str = str(exam_instance_id)
+            exam_id_str = str(student_exam_ids[user_id["student_id"]])
             if exam_id_str not in user.notifications_tasks_id:
                 user.notifications_tasks_id[exam_id_str] = []
 
@@ -168,14 +168,17 @@ class ExamInstanceService:
 
     async def _create_student_exam(
         self, users_id: List[dict], exam_instance_id: str
-    ) -> None:
+    ) -> Dict[str, str]:
         """Create a new StudentExam instance."""
+        student_exam_ids = {}
         for user_id in users_id:
             student_exam_data = {
                 "student_id": user_id["student_id"],
                 "exam_instance_id": exam_instance_id,
             }
-            await self.student_exam_repository.create(student_exam_data)
+            data = await self.student_exam_repository.create(student_exam_data)
+            student_exam_ids[user_id["student_id"]] = data.id
+        return student_exam_ids
 
     async def _add_students_to_exam(
         self,
@@ -187,8 +190,7 @@ class ExamInstanceService:
         notification_settings: dict,
     ) -> None:
         """Add students to an exam instance, create StudentExam instances, and send notifications."""
-        await self._create_student_exam(students, exam_instance_id)
-
+        student_exam_ids = await self._create_student_exam(students, exam_instance_id)
         if (
             notification_settings["reminder_enabled"]
             and notification_settings["reminders"]
@@ -199,7 +201,7 @@ class ExamInstanceService:
                 exam_title,
                 start_date,
                 end_date,
-                exam_instance_id,
+                student_exam_ids,
             )
 
     async def _remove_students_from_exam(
@@ -217,15 +219,14 @@ class ExamInstanceService:
                 await self.student_exam_repository.delete(student_exam.id)
 
             user = await self.user_repository.get_by_id(student["student_id"])
-            exam_id_str = str(exam_instance_id)
-            if user and exam_id_str in user.notifications_tasks_id:
-                task_ids = user.notifications_tasks_id[exam_id_str]
+            if user and student_exam.id in user.notifications_tasks_id:
+                task_ids = user.notifications_tasks_id[student_exam.id]
                 for task_id in task_ids:
                     exam_reminder_notification.AsyncResult(task_id).revoke(
                         terminate=True
                     )
 
-                del user.notifications_tasks_id[exam_id_str]
+                del user.notifications_tasks_id[student_exam.id]
                 await self.user_repository.save(user)
 
     @staticmethod

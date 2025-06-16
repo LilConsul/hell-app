@@ -148,31 +148,6 @@ const PreferencesTab = memo(function PreferencesTab({
 }) {
   return (
     <>
-      <Card>
-        <CardHeader>
-          <CardTitle>Language</CardTitle>
-          <CardDescription>
-            Choose your preferred language for the application interface.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col gap-2 max-w-xs">
-            <Label htmlFor="language">Select Language</Label>
-            <Select value={language} onValueChange={handleChangeLanguage}>
-              <SelectTrigger id="language" className="w-full">
-                <SelectValue placeholder="Select Language" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="en">English</SelectItem>
-                <SelectItem value="ro">Română</SelectItem>
-                <SelectItem value="fr">Français</SelectItem>
-                <SelectItem value="de">Deutsch</SelectItem>
-                <SelectItem value="es">Español</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
 
       <Card>
         <CardHeader>

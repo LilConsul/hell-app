@@ -5,7 +5,9 @@ import {
   Clock,
   ArrowRight,
   Loader2,
+  Eye,
 } from "lucide-react";
+
 import { apiRequest } from "@/lib/utils";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
@@ -126,7 +128,6 @@ const UI_CONSTANTS = {
   CALENDAR_DAYS: 35,
   MAX_UPCOMING_EXAMS: 3,
   MAX_RECENT_RESULTS: 3,
-  DEFAULT_MAX_ATTEMPTS: 1,
   VIRTUAL_OVERSCAN: 5,
   VIRTUALIZATION_THRESHOLD: 10
 };
@@ -228,6 +229,7 @@ const STYLES = {
   EXAM_DAY: {
     ACTIVE: "bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700 text-amber-800 dark:text-amber-300 font-medium hover:bg-amber-200 dark:hover:bg-amber-800/50",
     UPCOMING: "bg-blue-50 dark:bg-blue-900/30 border border-blue-300 dark:border-blue-700 text-blue-800 dark:text-blue-300 font-medium hover:bg-blue-100 dark:hover:bg-blue-800/50",
+    PAST: "bg-slate-50 dark:bg-slate-900/30 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-300 font-medium hover:bg-slate-100 dark:hover:bg-slate-800/50",
     TODAY: "bg-accent/30 dark:bg-accent/40 border border-neutral-400 dark:border-neutral-500 text-accent-foreground font-semibold shadow-sm hover:bg-accent/40 dark:hover:bg-accent/50",
     HOVER: "hover:bg-accent/10 dark:hover:bg-accent/20 hover:text-accent-foreground",
   },
@@ -254,8 +256,10 @@ const STYLES = {
   LEGEND: {
     UPCOMING: "h-3 w-3 rounded mr-1 bg-blue-50 dark:bg-blue-900/30 border border-blue-300 dark:border-blue-700",
     ACTIVE: "h-3 w-3 rounded mr-1 bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700",
+    PAST: "h-3 w-3 rounded mr-1 bg-slate-50 dark:bg-slate-900/30 border border-slate-300 dark:border-slate-700",
     UPCOMING_TEXT: "text-xs text-blue-800 dark:text-blue-300 font-medium",
-    ACTIVE_TEXT: "text-xs text-amber-800 dark:text-amber-300 font-medium"
+    ACTIVE_TEXT: "text-xs text-amber-800 dark:text-amber-300 font-medium",
+    PAST_TEXT: "text-xs text-slate-800 dark:text-slate-300 font-medium"
   },
   CALENDAR: {
     months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0 w-full pr-10",
@@ -284,7 +288,7 @@ const STYLES = {
 const dateUtilities = {
   _currentDate: null,
   _currentDateCacheTime: 0,
-  _currentDateCacheExpiry: 60000, // 1 minute cache
+  _currentDateCacheExpiry: 60000,
 
   getCurrentDate: function () {
     const now = Date.now();
@@ -462,7 +466,7 @@ const dateUtilities = {
 const apiService = {
   _examDetailsCache: new Map(),
   _cacheTimestamps: new Map(),
-  _cacheExpiry: 5 * 60 * 1000, // 5 minutes
+  _cacheExpiry: 5 * 60 * 1000,
 
   _validateCacheEntry: function (examId) {
     const timestamp = this._cacheTimestamps.get(examId);
@@ -595,25 +599,6 @@ const apiService = {
     ).filter(result => result && result.data);
 
     return sortedResults.map(result => result.data);
-  },
-
-  async initiateExamStart(examId) {
-    try {
-      await apiRequest(
-        API_CONFIG.ENDPOINTS.START_EXAM(examId),
-        {
-          method: 'POST'
-        }
-      );
-      window.location.href = `/exam/${examId}`;
-    } catch (error) {
-      const enhancedError = new Error("Failed to start the exam");
-      enhancedError.originalError = error;
-      enhancedError.status = error.status || 500;
-      enhancedError.context = 'initiateExamStart';
-      enhancedError.examId = examId;
-      throw enhancedError;
-    }
   }
 };
 
@@ -621,10 +606,6 @@ const dataProcessor = {
   processStudentDashboardData(studentExams) {
     const now = dateUtilities.getCurrentDate();
     const nowTime = now.getTime();
-
-    const completedExams = studentExams.filter(exam =>
-      exam.status === EXAM_STATUS.COMPLETED || exam.status === EXAM_STATUS.GRADED
-    );
 
     const upcomingExamsList = studentExams
       .filter(exam => {
@@ -648,7 +629,12 @@ const dataProcessor = {
         return dateA.getTime() - dateB.getTime();
       });
 
-    const recentResultsList = completedExams
+    const pastExams = studentExams.filter(exam => {
+      const endDate = dateUtilities.parseDate(exam.end_date);
+      return endDate && endDate.getTime() < nowTime;
+    });
+
+    const recentResultsList = pastExams
       .sort((a, b) => {
         const dateA = dateUtilities.parseDate(a.submitted_at || a.end_date);
         const dateB = dateUtilities.parseDate(b.submitted_at || b.end_date);
@@ -660,7 +646,8 @@ const dataProcessor = {
         title: exam.title,
         score: exam.score || "N/A",
         passed: exam.passed !== undefined ? exam.passed : null,
-        submitted_at: exam.submitted_at || exam.end_date
+        submitted_at: exam.submitted_at || exam.end_date,
+        status: exam.status
       }));
 
     const calendarEventsList = studentExams
@@ -766,22 +753,25 @@ const renderUtilities = {
     ))
   ),
 
-  renderExamStatusBadge: (passed) => {
-    if (passed === null) {
+  renderExamStatusBadge: (passed, status) => {
+    if (passed !== null) {
+      return (
+        <span className={`text-sm px-2 py-0.5 rounded-sm ${passed
+          ? STYLES.BADGE.PASSED
+          : STYLES.BADGE.FAILED}`}>
+          {passed ? "Passed" : "Failed"}
+        </span>
+      );
+    }
+
+    if (status === EXAM_STATUS.COMPLETED || status === EXAM_STATUS.GRADED) {
       return (
         <span className={`text-sm px-2 py-0.5 rounded-sm ${STYLES.BADGE.PENDING}`}>
           Pending
         </span>
       );
     }
-
-    return (
-      <span className={`text-sm px-2 py-0.5 rounded-sm ${passed
-        ? STYLES.BADGE.PASSED
-        : STYLES.BADGE.FAILED}`}>
-        {passed ? "Passed" : "Failed"}
-      </span>
-    );
+    return null;
   },
 
   renderExamDetailsGrid: (details) => (
@@ -911,7 +901,7 @@ const CalendarDayWithRealTime = ({ date, dashboardData, onDayExamsClick, realTim
   }, [dashboardData.calendarEvents, date]);
 
   const dayStatus = useMemo(() => {
-    if (!date) return { isTodayDate: false, hasActiveExam: false, hasUpcomingExam: false };
+    if (!date) return { isTodayDate: false, hasActiveExam: false, hasUpcomingExam: false, hasPastExam: false };
 
     const isTodayDate = realTimeNow.getFullYear() === date.getFullYear() &&
       realTimeNow.getMonth() === date.getMonth() &&
@@ -935,7 +925,15 @@ const CalendarDayWithRealTime = ({ date, dashboardData, onDayExamsClick, realTim
       return examStart.getTime() > realTimeNow.getTime();
     });
 
-    return { isTodayDate, hasActiveExam, hasUpcomingExam };
+    const hasPastExam = !hasActiveExam && !hasUpcomingExam && examsOnThisDay.some(exam => {
+      const examEnd = exam.end_date instanceof Date ? exam.end_date : dateUtilities.parseDate(exam.end_date);
+
+      if (!examEnd) return false;
+
+      return examEnd.getTime() < realTimeNow.getTime();
+    });
+
+    return { isTodayDate, hasActiveExam, hasUpcomingExam, hasPastExam };
   }, [examsOnThisDay, date, realTimeNow]);
 
   const dayClasses = useMemo(() => {
@@ -945,6 +943,8 @@ const CalendarDayWithRealTime = ({ date, dashboardData, onDayExamsClick, realTim
       classes += STYLES.EXAM_DAY.ACTIVE;
     } else if (dayStatus.hasUpcomingExam) {
       classes += STYLES.EXAM_DAY.UPCOMING;
+    } else if (dayStatus.hasPastExam) {
+      classes += STYLES.EXAM_DAY.PAST;
     } else if (dayStatus.isTodayDate) {
       classes += STYLES.EXAM_DAY.TODAY;
     } else {
@@ -994,21 +994,44 @@ ExamItem.displayName = 'ExamItem';
 const ResultItem = ({ result, onExamSelect }) => {
   const handleClick = () => onExamSelect(result._id);
 
+  const handleViewResults = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    window.location.href = `/exams/${result._id}/results`;
+  };
+
   return (
     <div
-      className={STYLES.CARD.EXAM_ITEM}
+      className={STYLES.CARD.EXAM_ITEM + " py-2"} 
       onClick={handleClick}
     >
-      <div className="flex justify-between items-center">
-        <span className="text-base font-medium truncate pr-2">{result.title}</span>
-        {renderUtilities.renderExamStatusBadge(result.passed)}
-      </div>
-      <div className="text-sm text-muted-foreground mt-1.5">
-        Score: {result.score !== "N/A" ? `${result.score}%` : "Pending"}
+      <div className="flex items-center justify-between">
+        <div className="flex flex-col">
+          <span className="text-base font-medium truncate pr-2">{result.title}</span>
+          <span className="text-xs text-muted-foreground">
+            {result.status === "completed" || result.status === "graded"
+              ? `Completed: ${dateUtilities.formatDateTimeWithoutSeconds(result.submitted_at)}`
+              : `Ended: ${dateUtilities.formatDateTimeWithoutSeconds(result.submitted_at)}`}
+          </span>
+        </div>
+
+        <div className="flex flex-col items-end gap-2">
+          {renderUtilities.renderExamStatusBadge(result.passed, result.status)}
+          <Button
+            onClick={handleViewResults}
+            variant="outline"
+            size="sm"
+            className="inline-flex items-center gap-2"
+          >
+            <Eye className="h-4 w-4" />
+            View Results
+          </Button>
+        </div>
       </div>
     </div>
   );
 };
+
 
 ResultItem.displayName = 'ResultItem';
 
@@ -1164,13 +1187,17 @@ export function StudentDashboard() {
     setLoadingState(prev => ({ ...prev, startingExam: examId }));
 
     try {
-      await apiService.initiateExamStart(examId);
+      window.location.href = `/exams/${examId}/take`;
     } catch (error) {
       const errorDetails = errorHandler.getDetailedErrorMessage(error, 'Starting exam');
       setErrorState(errorDetails);
     } finally {
       setLoadingState(prev => ({ ...prev, startingExam: null }));
     }
+  }, []);
+
+  const handleViewResults = useCallback((examId) => {
+    window.location.href = `/exams/${examId}/results`;
   }, []);
 
   const handleDateSelect = useCallback((date) => {
@@ -1203,7 +1230,7 @@ export function StudentDashboard() {
       result={result}
       onExamSelect={handleExamSelect}
     />
-  ), [handleExamSelect]);
+  ), [handleExamSelect, handleViewResults]);
 
   const currentActiveExams = useMemo(() => {
     return dashboardData.activeExams.filter(exam => {
@@ -1351,11 +1378,14 @@ export function StudentDashboard() {
               </CardContent>
             </Card>
           ) : currentActiveExams && currentActiveExams.length > 0 ? (
-            <ActiveExamCardWithRealTime
-              activeExam={currentActiveExams[0]}
-              onExamSelect={handleExamSelect}
-              realTimeNow={realTimeNow}
-            />
+            currentActiveExams.map((activeExam) => (
+              <ActiveExamCardWithRealTime
+                key={`active-exam-${activeExam._id}`}
+                activeExam={activeExam}
+                onExamSelect={handleExamSelect}
+                realTimeNow={realTimeNow}
+              />
+            ))
           ) : null}
 
           <Dialog open={!!selectedExamId} onOpenChange={(open) => !open && handleCloseExamDetails()}>
@@ -1456,14 +1486,13 @@ export function StudentDashboard() {
                     renderUtilities.renderCalendarSkeletonGrid()
                   ) : (
                     <div className="w-full">
-                      <div className="mb-2">
+                      <div className="mb-2 p-0 w-full ml-6 ">
                         <Calendar
                           mode="single"
                           selected={currentDate}
                           onSelect={(date) => {
                             if (date) {
                               handleDateSelect(date);
-
                               const examsOnThisDay = dashboardData.calendarEvents.filter(event => {
                                 if (!event.start_date || !event.end_date) return false;
 
@@ -1498,9 +1527,13 @@ export function StudentDashboard() {
                           <div className={STYLES.LEGEND.UPCOMING}></div>
                           <span className={STYLES.LEGEND.UPCOMING_TEXT}>Upcoming</span>
                         </div>
-                        <div className="flex items-center mr-9">
+                        <div className="flex items-center mr-3">
                           <div className={STYLES.LEGEND.ACTIVE}></div>
                           <span className={STYLES.LEGEND.ACTIVE_TEXT}>Active</span>
+                        </div>
+                        <div className="flex items-center mr-9">
+                          <div className={STYLES.LEGEND.PAST}></div>
+                          <span className={STYLES.LEGEND.PAST_TEXT}>Past</span>
                         </div>
                       </div>
                     </div>

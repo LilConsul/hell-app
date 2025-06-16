@@ -233,7 +233,7 @@ export const SettingsTabs = memo(function SettingsTabs({
   };
 
   return (
-    <div className="w-full max-w-5xl mx-auto">
+    <div className="w-full max-w-6xl mx-auto">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList className="grid w-full grid-cols-4">
           {Object.keys(tabIcons).map((tab) => (

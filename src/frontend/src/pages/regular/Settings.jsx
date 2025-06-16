@@ -15,13 +15,15 @@ export default function SettingsPage() {
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
 
-  // ✅ Initialize with empty strings instead of undefined
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [editField, setEditField] = useState(null);
   const [isUpdating, setIsUpdating] = useState(false);
 
-  // ✅ Initialize password fields with empty strings
+  
+  const [firstNameError, setFirstNameError] = useState('');
+  const [lastNameError, setLastNameError] = useState('');
+
   const [showCurrentPasswordModal, setShowCurrentPasswordModal] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
@@ -38,24 +40,37 @@ export default function SettingsPage() {
   } = usePasswordValidation(newPassword);
 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [deleteConfirmText, setDeleteConfirmText] = useState(''); // ✅ Empty string
+  const [deleteConfirmText, setDeleteConfirmText] = useState(''); 
   const [isDeletionEmailSent, setIsDeletionEmailSent] = useState(false);
   const [showDeletionEmailSentModal, setShowDeletionEmailSentModal] = useState(false);
 
-  const [language, setLanguage] = useState('en'); // ✅ Default value
-  const [notifications, setNotifications] = useState({ email: true }); // ✅ Default object
+  const [language, setLanguage] = useState('en'); 
+  const [notifications, setNotifications] = useState({ email: true }); 
+
+
+  const validateName = useCallback((name) => {
+    if (!name.trim()) {
+      return '';
+    }
+    const nameRegex = /^[a-zA-Z\s]+$/;
+    if (!nameRegex.test(name)) {
+      return 'Numele poate conține doar litere alfabetice';
+    }
+    return '';
+  }, []);
+
+ 
+  const isFirstNameValid = firstName.trim() === '' || validateName(firstName) === '';
+  const isLastNameValid = lastName.trim() === '' || validateName(lastName) === '';
 
   useEffect(() => {
     if (user) {
-      // ✅ Always provide fallback empty strings
       setFirstName(user.first_name || user.firstName || '');
       setLastName(user.last_name || user.lastName || '');
       
-      // ✅ Provide fallback for language
       const savedLanguage = localStorage.getItem('userLanguage');
       setLanguage(savedLanguage || user.language || user.preferences?.language || 'en');
 
-      // ✅ Provide fallback for notifications
       const savedNotifications = localStorage.getItem('notifications');
       if (savedNotifications) {
         try {
@@ -72,7 +87,7 @@ export default function SettingsPage() {
   useEffect(() => {
     const handleStorageChange = (e) => {
       if (e.key === 'userLanguage' && e.newValue !== language) {
-        setLanguage(e.newValue || 'en'); // ✅ Fallback
+        setLanguage(e.newValue || 'en'); 
       }
     };
 
@@ -82,6 +97,20 @@ export default function SettingsPage() {
       window.removeEventListener('storage', handleStorageChange);
     };
   }, [language]);
+
+ 
+  useEffect(() => {
+    if (editField === 'firstName') {
+      setFirstNameError(validateName(firstName));
+    }
+  }, [firstName, editField, validateName]);
+
+
+  useEffect(() => {
+    if (editField === 'lastName') {
+      setLastNameError(validateName(lastName));
+    }
+  }, [lastName, editField, validateName]);
 
   const handleNameKeyDown = useCallback((event, field) => {
     if (event.key === 'Enter') {
@@ -104,8 +133,23 @@ export default function SettingsPage() {
   }, [successMessage, errorMessage]);
 
   const handleSaveName = useCallback(async (field) => {
+    
+    const currentName = field === 'firstName' ? firstName : lastName;
+    const nameError = validateName(currentName);
+    
+    if (nameError) {
+      if (field === 'firstName') {
+        setFirstNameError(nameError);
+      } else {
+        setLastNameError(nameError);
+      }
+      return;
+    }
+
     setIsUpdating(true);
     setErrorMessage('');
+    setFirstNameError('');
+    setLastNameError('');
 
     const newValue = field === 'firstName' ? firstName : lastName;
     const fieldName = field === 'firstName' ? 'first_name' : 'last_name';
@@ -142,7 +186,6 @@ export default function SettingsPage() {
           [field]: user[field]
         });
         
-        // ✅ Always provide fallback values
         if (field === 'firstName') {
           setFirstName(user.first_name || user.firstName || '');
         } else {
@@ -153,7 +196,7 @@ export default function SettingsPage() {
     } catch (error) {
       console.error('Unexpected error:', error);
     }
-  }, [firstName, lastName, refreshUser, updateUser, user]);
+  }, [firstName, lastName, refreshUser, updateUser, user, validateName]);
 
   const handleToggleNotifications = useCallback(async (checked) => {
     const newNotifications = { ...notifications, email: checked };
@@ -194,7 +237,6 @@ export default function SettingsPage() {
   }, [language]);
 
   const handleOpenCurrentPasswordModal = useCallback(() => {
-    // ✅ Reset to empty strings, not undefined
     setCurrentPassword('');
     setNewPassword('');
     setConfirmPassword('');
@@ -263,7 +305,6 @@ export default function SettingsPage() {
       setShowNewPasswordModal(false);
       setSuccessMessage('Password changed successfully');
 
-      // ✅ Reset to empty strings
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
@@ -279,7 +320,7 @@ export default function SettingsPage() {
       
       if (userMessage.includes('password') && !userMessage.includes('new_password')) {
         userMessage = 'Current password is incorrect.';
-        setCurrentPassword(''); // ✅ Empty string
+        setCurrentPassword(''); 
         setShowNewPasswordModal(false);
         setShowCurrentPasswordModal(true);
       } else if (userMessage.includes('new_password') || userMessage.includes('Password validation')) {
@@ -309,7 +350,7 @@ export default function SettingsPage() {
 
       setShowDeleteModal(false);
       setShowDeletionEmailSentModal(true);
-      setDeleteConfirmText(''); // ✅ Empty string
+      setDeleteConfirmText(''); 
 
     } catch (error) {
       setErrorMessage(error.message || 'Failed to send confirmation email. Please try again.');
@@ -339,7 +380,7 @@ export default function SettingsPage() {
 
       <main className="flex-1">
         <div className="container px-4 sm:px-6 mx-auto max-w-6xl py-6 space-y-6">
-          <div>
+          <div className="bg-card text-card-foreground rounded-lg border p-6">
             <h1 className="text-3xl font-bold">Settings</h1>
             <p className="text-muted-foreground">
               Manage your account settings and preferences.
@@ -370,6 +411,11 @@ export default function SettingsPage() {
             handleOpenCurrentPasswordModal={handleOpenCurrentPasswordModal}
             setShowDeleteModal={setShowDeleteModal}
             handleNameKeyDown={handleNameKeyDown}
+            
+            firstNameError={firstNameError}
+            lastNameError={lastNameError}
+            isFirstNameValid={isFirstNameValid}
+            isLastNameValid={isLastNameValid}
           />
 
           <SettingsModals

@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo, useCallback, memo, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   CalendarIcon,
   Award,
@@ -277,11 +278,7 @@ const STYLES = {
     cell: "text-center text-sm p-0 relative flex-1 first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
     day: "h-8 w-full p-0 font-normal",
     day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
-    day_today: "bg-gray-200 dark:bg-gray-700 text-accent-foreground font-medium",
-    day_outside: "text-muted-foreground opacity-50",
-    day_disabled: "text-muted-foreground opacity-50",
-    day_range_middle: "aria-selected:bg-accent aria-selected:text-accent-foreground",
-    day_hidden: "invisible",
+    day_today: "bg-gray-200 dark:bg-gray-700 text-accent-foreground font-medium"
   }
 };
 
@@ -620,14 +617,16 @@ const dataProcessor = {
       .slice(0, UI_CONSTANTS.MAX_UPCOMING_EXAMS);
 
     const activeExamsList = studentExams
-      .filter(exam => {
-        return dateUtilities.checkIsExamActive(exam.start_date, exam.end_date);
-      })
-      .sort((a, b) => {
-        const dateA = dateUtilities.parseDate(a.end_date);
-        const dateB = dateUtilities.parseDate(b.end_date);
-        return dateA.getTime() - dateB.getTime();
-      });
+  .filter(exam => {
+    const isActive = dateUtilities.checkIsExamActive(exam.start_date, exam.end_date);
+    const hasSubmitted = !!exam.submitted_at;
+    return isActive && !hasSubmitted; 
+  })
+  .sort((a, b) => {
+    const dateA = dateUtilities.parseDate(a.end_date);
+    const dateB = dateUtilities.parseDate(b.end_date);
+    return dateA.getTime() - dateB.getTime();
+  });
 
     const pastExams = studentExams.filter(exam => {
       const endDate = dateUtilities.parseDate(exam.end_date);
@@ -992,12 +991,14 @@ const ExamItem = ({ exam, onExamSelect }) => {
 ExamItem.displayName = 'ExamItem';
 
 const ResultItem = ({ result, onExamSelect }) => {
+  const navigate = useNavigate();
+
   const handleClick = () => onExamSelect(result._id);
 
   const handleViewResults = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    window.location.href = `/exams/${result._id}/results`;
+    navigate(`/exams/${result._id}/results`);
   };
 
   return (
@@ -1031,7 +1032,6 @@ const ResultItem = ({ result, onExamSelect }) => {
     </div>
   );
 };
-
 
 ResultItem.displayName = 'ResultItem';
 
@@ -1088,6 +1088,8 @@ const ActiveExamCardWithRealTime = memo(({ activeExam, onExamSelect, realTimeNow
 ActiveExamCardWithRealTime.displayName = 'ActiveExamCardWithRealTime';
 
 export function StudentDashboard() {
+  const navigate = useNavigate();
+  
   const [dashboardData, setDashboardData] = useState({
     upcomingExams: [],
     activeExams: [],
@@ -1187,18 +1189,14 @@ export function StudentDashboard() {
     setLoadingState(prev => ({ ...prev, startingExam: examId }));
 
     try {
-      window.location.href = `/exams/${examId}/take`;
+      navigate(`/exams/${examId}/take`);
     } catch (error) {
       const errorDetails = errorHandler.getDetailedErrorMessage(error, 'Starting exam');
       setErrorState(errorDetails);
     } finally {
       setLoadingState(prev => ({ ...prev, startingExam: null }));
     }
-  }, []);
-
-  const handleViewResults = useCallback((examId) => {
-    window.location.href = `/exams/${examId}/results`;
-  }, []);
+  }, [navigate]);
 
   const handleDateSelect = useCallback((date) => {
     setCurrentDate(date);
@@ -1230,7 +1228,7 @@ export function StudentDashboard() {
       result={result}
       onExamSelect={handleExamSelect}
     />
-  ), [handleExamSelect, handleViewResults]);
+  ), [handleExamSelect]);
 
   const currentActiveExams = useMemo(() => {
     return dashboardData.activeExams.filter(exam => {

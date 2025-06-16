@@ -12,6 +12,7 @@ import {
 import { apiRequest } from "@/lib/utils";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
+import { useExamStatus } from "../../hooks/use-student-exam-status";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -64,8 +65,8 @@ const useExamAwareRealTimeNow = (exams = [], updateInterval = 60000) => {
     const bufferTime = updateInterval * 2;
 
     return exams.some(exam => {
-      const startDate = dateUtilities.parseDate(exam.start_date)?.getTime();
-      const endDate = dateUtilities.parseDate(exam.end_date)?.getTime();
+      const startDate = dateUtilities.parseDate(exam.exam_instance_id?.start_date || exam.start_date)?.getTime();
+      const endDate = dateUtilities.parseDate(exam.exam_instance_id?.end_date || exam.end_date)?.getTime();
 
       if (!startDate || !endDate) return false;
 
@@ -408,8 +409,8 @@ const dateUtilities = {
 
   deriveExamStatus: (exam, currentTime = dateUtilities.getCurrentDate()) => {
     if (exam.status && Object.values(EXAM_STATUS).includes(exam.status)) {
-      const startDate = dateUtilities.parseDate(exam.start_date);
-      const endDate = dateUtilities.parseDate(exam.end_date);
+      const startDate = dateUtilities.parseDate(exam.exam_instance_id?.start_date || exam.start_date);
+      const endDate = dateUtilities.parseDate(exam.exam_instance_id?.end_date || exam.end_date);
 
       if (startDate && endDate) {
         const currentTimestamp = currentTime.getTime();
@@ -432,9 +433,9 @@ const dateUtilities = {
       return exam.status;
     }
 
-    if (dateUtilities.checkIsExamUpcoming(exam.start_date)) {
+    if (dateUtilities.checkIsExamUpcoming(exam.exam_instance_id?.start_date || exam.start_date)) {
       return EXAM_STATUS.UPCOMING;
-    } else if (dateUtilities.checkIsExamActive(exam.start_date, exam.end_date)) {
+    } else if (dateUtilities.checkIsExamActive(exam.exam_instance_id?.start_date || exam.start_date, exam.exam_instance_id?.end_date || exam.end_date)) {
       return EXAM_STATUS.ACTIVE;
     } else {
       return "past";
@@ -504,7 +505,11 @@ const apiService = {
           max_attempts: examData.max_attempts,
           score: examData.score,
           passed: examData.passed !== undefined ? examData.passed : null,
-          submitted_at: examData.submitted_at
+          submitted_at: examData.submitted_at,
+          exam_instance_id: examData,
+          current_status: exam.current_status,
+          attempts_count: exam.attempts_count || 0,
+          remaining_attempts: exam.remaining_attempts !== undefined ? exam.remaining_attempts : (examData.max_attempts - (exam.attempts_count || 0))
         };
 
         processedExam.status = dateUtilities.deriveExamStatus(processedExam);
@@ -600,59 +605,70 @@ const apiService = {
 };
 
 const dataProcessor = {
-  processStudentDashboardData(studentExams) {
+  processStudentDashboardData(studentExams, getExamStatus) {
     const now = dateUtilities.getCurrentDate();
     const nowTime = now.getTime();
 
     const upcomingExamsList = studentExams
       .filter(exam => {
-        const startDate = dateUtilities.parseDate(exam.start_date);
+        const startDate = dateUtilities.parseDate(exam.exam_instance_id?.start_date || exam.start_date);
         return startDate && startDate.getTime() > nowTime;
       })
       .sort((a, b) => {
-        const dateA = dateUtilities.parseDate(a.start_date);
-        const dateB = dateUtilities.parseDate(b.start_date);
+        const dateA = dateUtilities.parseDate(a.exam_instance_id?.start_date || a.start_date);
+        const dateB = dateUtilities.parseDate(b.exam_instance_id?.start_date || b.start_date);
         return dateA.getTime() - dateB.getTime();
       })
       .slice(0, UI_CONSTANTS.MAX_UPCOMING_EXAMS);
-
     const activeExamsList = studentExams
-  .filter(exam => {
-    const isActive = dateUtilities.checkIsExamActive(exam.start_date, exam.end_date);
-    const hasSubmitted = !!exam.submitted_at;
-    return isActive && !hasSubmitted; 
-  })
-  .sort((a, b) => {
-    const dateA = dateUtilities.parseDate(a.end_date);
-    const dateB = dateUtilities.parseDate(b.end_date);
-    return dateA.getTime() - dateB.getTime();
-  });
+      .filter(exam => {
+        const examStatus = getExamStatus(exam);
+        const hasRemainingAttempts = exam.remaining_attempts > 0;
 
-    const pastExams = studentExams.filter(exam => {
-      const endDate = dateUtilities.parseDate(exam.end_date);
-      return endDate && endDate.getTime() < nowTime;
-    });
+        const endDate = dateUtilities.parseDate(exam.exam_instance_id?.end_date || exam.end_date);
+        const hasEndDatePassed = endDate && endDate.getTime() < nowTime;
 
-    const recentResultsList = pastExams
+        if (hasEndDatePassed) {
+          return false;
+        }
+        return (examStatus === "in_progress") ||
+          (examStatus === "active" && hasRemainingAttempts) ||
+          (examStatus === "submitted" && hasRemainingAttempts);
+      })
       .sort((a, b) => {
-        const dateA = dateUtilities.parseDate(a.submitted_at || a.end_date);
-        const dateB = dateUtilities.parseDate(b.submitted_at || b.end_date);
+        const dateA = dateUtilities.parseDate(a.exam_instance_id?.end_date || a.end_date);
+        const dateB = dateUtilities.parseDate(b.exam_instance_id?.end_date || b.end_date);
+        return dateA.getTime() - dateB.getTime();
+      });
+
+    const recentResultsList = studentExams
+      .filter(exam => {
+        const examStatus = getExamStatus(exam);
+        const hasNoRemainingAttempts = exam.remaining_attempts <= 0;
+
+        return examStatus === "completed" ||
+          examStatus === "overdue" ||
+          (examStatus === "submitted" && hasNoRemainingAttempts);
+      })
+      .sort((a, b) => {
+        const dateA = dateUtilities.parseDate(a.submitted_at || a.exam_instance_id?.end_date || a.end_date);
+        const dateB = dateUtilities.parseDate(b.submitted_at || b.exam_instance_id?.end_date || b.end_date);
         return dateB.getTime() - dateA.getTime();
       })
       .slice(0, UI_CONSTANTS.MAX_RECENT_RESULTS)
       .map(exam => ({
         _id: exam._id,
-        title: exam.title,
+        title: exam.exam_instance_id?.title || exam.title,
         score: exam.score || "N/A",
         passed: exam.passed !== undefined ? exam.passed : null,
-        submitted_at: exam.submitted_at || exam.end_date,
+        submitted_at: exam.submitted_at || exam.exam_instance_id?.end_date || exam.end_date,
         status: exam.status
       }));
 
     const calendarEventsList = studentExams
       .map(exam => {
-        const startDate = dateUtilities.parseDate(exam.start_date);
-        const endDate = dateUtilities.parseDate(exam.end_date);
+        const startDate = dateUtilities.parseDate(exam.exam_instance_id?.start_date || exam.start_date);
+        const endDate = dateUtilities.parseDate(exam.exam_instance_id?.end_date || exam.end_date);
 
         if (!startDate || !endDate) {
           console.warn(`Invalid dates for exam ${exam._id}:`, exam.start_date, exam.end_date);
@@ -661,7 +677,7 @@ const dataProcessor = {
 
         return {
           _id: exam._id,
-          title: exam.title,
+          title: exam.exam_instance_id?.title || exam.title,
           start_date: startDate,
           end_date: endDate,
           status: exam.status
@@ -975,14 +991,21 @@ CalendarDayWithRealTime.displayName = 'CalendarDayWithRealTime';
 
 const ExamItem = ({ exam, onExamSelect }) => {
   const handleClick = () => onExamSelect(exam._id);
+
   return (
     <div
-      className={STYLES.CARD.EXAM_ITEM}
+      className={STYLES.CARD.EXAM_ITEM + " py-2"}
       onClick={handleClick}
     >
-      <div className="text-base font-medium truncate">{exam.title}</div>
-      <div className="text-sm text-muted-foreground mt-1.5">
-        Starts: {dateUtilities.formatDateTimeWithoutSeconds(exam.start_date)}
+      <div className="flex items-center justify-between">
+        <div className="flex flex-col">
+          <span className="text-base font-medium truncate pr-2">
+            {exam.exam_instance_id?.title || exam.title}
+          </span>
+          <span className="text-xs text-muted-foreground">
+            Starts: {dateUtilities.formatDateTimeWithoutSeconds(exam.exam_instance_id?.start_date || exam.start_date)}
+          </span>
+        </div>
       </div>
     </div>
   );
@@ -1003,7 +1026,7 @@ const ResultItem = ({ result, onExamSelect }) => {
 
   return (
     <div
-      className={STYLES.CARD.EXAM_ITEM + " py-2"} 
+      className={STYLES.CARD.EXAM_ITEM + " py-2"}
       onClick={handleClick}
     >
       <div className="flex items-center justify-between">
@@ -1033,27 +1056,76 @@ const ResultItem = ({ result, onExamSelect }) => {
   );
 };
 
-
 ResultItem.displayName = 'ResultItem';
 
-const ActiveExamCardWithRealTime = memo(({ activeExam, onExamSelect, realTimeNow }) => {
-  const isStillActive = useMemo(() => {
-    const startDate = dateUtilities.parseDate(activeExam.start_date);
-    const endDate = dateUtilities.parseDate(activeExam.end_date);
+const ActiveExamCardWithRealTime = memo(({ activeExam, onExamSelect, realTimeNow, getExamStatus }) => {
+  const examStatus = useMemo(() => {
+    return getExamStatus(activeExam);
+  }, [activeExam, getExamStatus]);
 
-    if (!startDate || !endDate) return false;
+  const shouldShowCard = useMemo(() => {
+    const hasRemainingAttempts = activeExam.remaining_attempts > 0;
 
-    const nowTime = realTimeNow.getTime();
-    return startDate.getTime() <= nowTime && endDate.getTime() >= nowTime;
-  }, [activeExam.start_date, activeExam.end_date, realTimeNow]);
+    const endDate = dateUtilities.parseDate(activeExam.exam_instance_id?.end_date || activeExam.end_date);
+    const hasEndDatePassed = endDate && endDate.getTime() < realTimeNow.getTime();
+
+    if (hasEndDatePassed) {
+      return false;
+    }
+    return (examStatus === "in_progress") ||
+      (examStatus === "active" && hasRemainingAttempts) ||
+      (examStatus === "submitted" && hasRemainingAttempts);
+  }, [activeExam, examStatus, realTimeNow]);
 
   const handleClick = useCallback(() => {
     onExamSelect(activeExam._id);
   }, [activeExam._id, onExamSelect]);
 
-  if (!isStillActive) {
+  if (!shouldShowCard) {
     return null;
   }
+
+  const getStatusBadge = () => {
+    const statusConfig = {
+      in_progress: {
+        text: "In Progress",
+        className: "bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-700"
+      },
+      active: {
+        text: "Available Now",
+        className: "bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-green-300 dark:border-green-700"
+      },
+      submitted: {
+        text: "Can Retake",
+        className: "bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-700"
+      }
+    };
+
+    const config = statusConfig[examStatus] || statusConfig.active;
+
+    return (
+      <Badge variant="outline" className={`${config.className} shadow-sm font-medium`}>
+        {config.text}
+      </Badge>
+    );
+  };
+
+  const getStatusMessage = () => {
+    const messages = [];
+
+    if (activeExam.attempts_count > 0) {
+      messages.push(`Attempt ${activeExam.attempts_count + 1} of ${activeExam.exam_instance_id?.max_attempts || activeExam.max_attempts || 'unlimited'}`);
+    }
+
+    if (activeExam.remaining_attempts > 0) {
+      messages.push(`${activeExam.remaining_attempts} attempt${activeExam.remaining_attempts !== 1 ? 's' : ''} remaining`);
+    }
+
+    return messages;
+  };
+
+  const examTitle = activeExam.exam_instance_id?.title || activeExam.title;
+  const examEndDate = activeExam.exam_instance_id?.end_date || activeExam.end_date;
 
   return (
     <Card
@@ -1062,22 +1134,27 @@ const ActiveExamCardWithRealTime = memo(({ activeExam, onExamSelect, realTimeNow
     >
       <CardContent className={STYLES.CARD.CONTENT}>
         <div className="flex items-center gap-3 mb-3">
-          <Clock className="h-5 w-5 text-gray-500 dark:text-amber-500" />
-          <h3 className="text-base font-medium text-gray-700 dark:text-white">Active Exam</h3>
+          <Clock className="h-5 w-5 text-amber-500" />
+          <h3 className="text-base font-medium text-gray-700 dark:text-white">
+            {examStatus === "in_progress" ? "Continue Exam" : "Active Exam"}
+          </h3>
         </div>
 
         <div>
-          <div className="flex justify-between items-center">
-            <div>
-              <h4 className="font-medium text-gray-800 dark:text-gray-100">{activeExam.title}</h4>
+          <div className="flex justify-between items-start">
+            <div className="flex-1">
+              <h4 className="font-medium text-gray-800 dark:text-gray-100">{examTitle}</h4>
               <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                Ends: {dateUtilities.formatDateTimeWithoutSeconds(activeExam.end_date)}
+                Ends: {dateUtilities.formatDateTimeWithoutSeconds(examEndDate)}
               </p>
+              {getStatusMessage().map((message, index) => (
+                <p key={index} className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  {message}
+                </p>
+              ))}
             </div>
-            <div>
-              <Badge variant="outline" className={`${STYLES.BADGE.IN_PROGRESS} shadow-sm`}>
-                In Progress
-              </Badge>
+            <div className="ml-4">
+              {getStatusBadge()}
             </div>
           </div>
         </div>
@@ -1090,7 +1167,8 @@ ActiveExamCardWithRealTime.displayName = 'ActiveExamCardWithRealTime';
 
 export function StudentDashboard() {
   const navigate = useNavigate();
-  
+  const { getExamStatus } = useExamStatus();
+
   const [dashboardData, setDashboardData] = useState({
     upcomingExams: [],
     activeExams: [],
@@ -1127,7 +1205,7 @@ export function StudentDashboard() {
 
     try {
       const studentExams = await apiService.fetchStudentExamsData();
-      const processedData = dataProcessor.processStudentDashboardData(studentExams);
+      const processedData = dataProcessor.processStudentDashboardData(studentExams, getExamStatus);
       setDashboardData(processedData);
     } catch (error) {
       const errorDetails = errorHandler.getDetailedErrorMessage(error, 'Loading dashboard data');
@@ -1135,7 +1213,7 @@ export function StudentDashboard() {
     } finally {
       setLoadingState(prev => ({ ...prev, dashboard: false }));
     }
-  }, []);
+  }, [getExamStatus]);
 
   const handleFetchExamDetails = useCallback(async (examId) => {
     setLoadingState(prev => ({ ...prev, examDetails: true }));
@@ -1233,19 +1311,23 @@ export function StudentDashboard() {
       result={result}
       onExamSelect={handleExamSelect}
     />
-  ), [handleExamSelect, handleViewResults]);
+  ), [handleExamSelect]);
 
   const currentActiveExams = useMemo(() => {
     return dashboardData.activeExams.filter(exam => {
-      const startDate = dateUtilities.parseDate(exam.start_date);
-      const endDate = dateUtilities.parseDate(exam.end_date);
+      const examStatus = getExamStatus(exam);
+      const hasRemainingAttempts = exam.remaining_attempts > 0;
+      const endDate = dateUtilities.parseDate(exam.exam_instance_id?.end_date || exam.end_date);
+      const hasEndDatePassed = endDate && endDate.getTime() < realTimeNow.getTime();
 
-      if (!startDate || !endDate) return false;
-
-      const nowTime = realTimeNow.getTime();
-      return startDate.getTime() <= nowTime && endDate.getTime() >= nowTime;
+      if (hasEndDatePassed) {
+        return false;
+      }
+      return (examStatus === "in_progress") ||
+        (examStatus === "active" && hasRemainingAttempts) ||
+        (examStatus === "submitted" && hasRemainingAttempts);
     });
-  }, [dashboardData.activeExams, realTimeNow]);
+  }, [dashboardData.activeExams, getExamStatus, realTimeNow]);
 
   const renderUpcomingExamsContent = useMemo(() => {
     if (loadingState.dashboard) {
@@ -1369,6 +1451,7 @@ export function StudentDashboard() {
             </CardContent>
           </Card>
 
+          {/* Active Exam Cards - Show immediately after header */}
           {loadingState.dashboard ? (
             <Card className="shadow-sm mt-6">
               <CardContent className={STYLES.CARD.CONTENT}>
@@ -1387,10 +1470,12 @@ export function StudentDashboard() {
                 activeExam={activeExam}
                 onExamSelect={handleExamSelect}
                 realTimeNow={realTimeNow}
+                getExamStatus={getExamStatus}
               />
             ))
           ) : null}
 
+          {/* Exam Details Dialog */}
           <Dialog open={!!selectedExamId} onOpenChange={(open) => !open && handleCloseExamDetails()}>
             <DialogContent className={STYLES.DIALOG.CONTENT}>
               <div className={STYLES.DIALOG.HEADER}>
@@ -1436,6 +1521,7 @@ export function StudentDashboard() {
             </DialogContent>
           </Dialog>
 
+          {/* Multiple Exams Dialog */}
           <Dialog open={multipleExamDetails.length > 1} onOpenChange={(open) => !open && handleCloseMultipleExams()}>
             <DialogContent className={STYLES.DIALOG.CONTENT}>
               <div className={STYLES.DIALOG.HEADER}>
@@ -1477,6 +1563,7 @@ export function StudentDashboard() {
             </DialogContent>
           </Dialog>
 
+          {/* Main Dashboard Content */}
           <div className="max-w-6xl mx-auto mt-6">
             <div className="flex flex-col md:flex-row gap-6">
               <Card className="md:w-1/3 w-full">

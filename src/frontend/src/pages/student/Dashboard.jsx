@@ -633,14 +633,6 @@ const dataProcessor = {
       return endDate && endDate.getTime() < nowTime;
     });
 
-<<<<<<< studentdashboard
-=======
-    const pastExams = studentExams.filter(exam => {
-      const endDate = dateUtilities.parseDate(exam.end_date);
-      return endDate && endDate.getTime() < nowTime;
-    });
-
->>>>>>> frontend
     const recentResultsList = pastExams
       .sort((a, b) => {
         const dateA = dateUtilities.parseDate(a.submitted_at || a.end_date);
@@ -1006,11 +998,7 @@ const ResultItem = ({ result, onExamSelect }) => {
   const handleViewResults = (e) => {
     e.preventDefault();
     e.stopPropagation();
-<<<<<<< studentdashboard
     navigate(`/exams/${result._id}/results`);
-=======
-    window.location.href = `/exams/${result._id}/results`;
->>>>>>> frontend
   };
 
   return (
@@ -1202,11 +1190,7 @@ export function StudentDashboard() {
     setLoadingState(prev => ({ ...prev, startingExam: examId }));
 
     try {
-<<<<<<< studentdashboard
       navigate(`/exams/${examId}/take`);
-=======
-      window.location.href = `/exams/${examId}/take`;
->>>>>>> frontend
     } catch (error) {
       const errorDetails = errorHandler.getDetailedErrorMessage(error, 'Starting exam');
       setErrorState(errorDetails);

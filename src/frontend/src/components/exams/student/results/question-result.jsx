@@ -159,7 +159,7 @@ export function QuestionResult({ response, questionNumber }) {
   };
 
   const getScoreDisplay = () => {
-    const maxScore = response.max_score || 1;
+    const maxScore = response.question_id.weight|| 1;
     return `${response.score}/${maxScore}`;
   };
 

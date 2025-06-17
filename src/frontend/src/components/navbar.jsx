@@ -16,7 +16,7 @@ import HellAppLogo from "./hell-app-logo";
 
 export function Navbar() {
   const {user, isAuthenticated, logout} = useAuth();
-  const {theme, setTheme} = useTheme();
+  const { resolvedTheme, setTheme } = useTheme();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -93,14 +93,14 @@ export function Navbar() {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
             aria-label="Toggle theme"
             className="rounded-full"
           >
             {mounted && (
-              theme === "dark" ?
-                <Sun className="h-5 w-5"/> :
-                <Moon className="h-5 w-5"/>
+              resolvedTheme === "dark"
+                ? <Sun className="h-5 w-5" />
+                : <Moon className="h-5 w-5" />
             )}
           </Button>
 

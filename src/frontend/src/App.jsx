@@ -46,7 +46,7 @@ function HomeWithLoginModal() {
 
 export default function App() {
   return (
-    <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem={true} disableTransitionOnChange>
       <AuthProvider>
         <Routes>
           {/* Public pages */}

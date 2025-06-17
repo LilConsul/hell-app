@@ -60,7 +60,7 @@ export function ForgotPasswordModal({ isOpen, onClose, onBackToLogin }) {
       const result = await response.json()
 
       if (!response.ok) {
-        setServerError(result.detail || "An error occurred. Please try again.")
+        setServerError(result.detail[0].msg || "An error occurred. Please try again.")
       } else {
         setIsSubmitted(true)
       }

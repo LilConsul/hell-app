@@ -21,6 +21,7 @@ function CreateExam() {
   const [searchParams] = useSearchParams();
   const isEditMode = examId && examId !== 'new';
   const preselectedCollectionId = searchParams.get('collectionId');
+  const action = searchParams.get('action');
   
   const [basicInfo, setBasicInfo] = useState({
     examTitle: "",
@@ -66,6 +67,12 @@ function CreateExam() {
   const [examError, setExamError] = useState(null);
 
   const [pendingStudentIds, setPendingStudentIds] = useState([]);
+
+  useEffect(() => {
+    if (action === 'report') {
+      setPdfModalOpen(true);
+    }
+  }, [action]);
 
   useEffect(() => {
     const loadData = async () => {

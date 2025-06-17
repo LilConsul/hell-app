@@ -149,7 +149,7 @@ const ExamRow = ({ exam, onExamClick }) => {
             <Tooltip>
               <TooltipTrigger asChild>
                 <Link
-                  to={`/exams/${exam.id}/report`}
+                  to={`/exams/${exam.id}?action=report`}
                   onClick={(e) => e.stopPropagation()}
                 >
                   <Button variant="ghost" size="icon">

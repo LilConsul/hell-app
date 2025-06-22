@@ -1,8 +1,14 @@
 from fastapi import APIRouter, Depends, Response
 
 from app.auth.dependencies import get_auth_service
-from app.auth.schemas import (AuthReturn, EmailRequest, Token,
-                              UserCreate, UserLogin, UserResetPassword)
+from app.auth.schemas import (
+    AuthReturn,
+    EmailRequest,
+    Token,
+    UserCreate,
+    UserLogin,
+    UserResetPassword,
+)
 from app.auth.service import AuthService
 from app.i18n import _
 
@@ -81,3 +87,13 @@ async def reset_password(
     """
     await auth_service.reset_password(data.token, data.password)
     return {"message": _("Password reset successfully")}
+
+
+@router.post("/mobile/login", response_model=Token, response_model_exclude_none=True)
+async def mobile_login(
+    login_data: UserLogin,
+    auth_service: AuthService = Depends(get_auth_service),
+):
+    """Login for mobile clients and get access token directly in response body instead of a cookie"""
+    token_data = await auth_service.mobile_login(login_data)
+    return token_data

@@ -52,8 +52,9 @@ class AuthService:
         link = f"{settings.VERIFY_MAIL_URL}/{verification_token}"
         user_verify_mail_event.delay(user_data.email, link, make_username(user))
 
-    async def login(self, login_data: UserLogin, response: Response) -> UserResponse:
-        user = await self.user_repository.get_by_email(login_data.email)
+    async def _authenticate_user(self, login_data: UserLogin) -> tuple:
+        """Common authentication logic for both web and mobile login"""
+        user = await self.user_repository.get_by_email(str(login_data.email))
         if not user:
             raise AuthenticationError(_("Invalid username or password"))
 
@@ -69,6 +70,11 @@ class AuthService:
         access_token = create_access_token(
             subject=user.id, role=user.role, expires_delta=access_token_expires
         )
+
+        return user, access_token
+
+    async def login(self, login_data: UserLogin, response: Response) -> UserResponse:
+        user, access_token = await self._authenticate_user(login_data)
 
         response.set_cookie(
             key="access_token",
@@ -89,6 +95,16 @@ class AuthService:
             secure=settings.COOKIE_SECURE,
             domain=settings.COOKIE_DOMAIN,
         )
+
+    async def mobile_login(self, login_data: UserLogin) -> dict:
+        """Login method for mobile applications that returns the token directly"""
+        _, access_token = await self._authenticate_user(login_data)
+
+        return {
+            "token": access_token,
+            "token_type": "bearer",
+            "expires_in": settings.ACCESS_TOKEN_EXPIRE_SECONDS,
+        }
 
     async def verify_token(self, token: str) -> None:
         token_data = await decode_verification_token(token, use_redis=False)

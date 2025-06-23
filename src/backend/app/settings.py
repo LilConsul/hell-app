@@ -1,3 +1,4 @@
+from email.policy import default
 from functools import lru_cache
 from pathlib import Path
 from typing import List, Optional
@@ -14,6 +15,9 @@ class Settings(BaseSettings):
     @property
     def REDIS_URL(self) -> str:
         return f"redis://{self.REDIS_HOST}:{self.REDIS_PORT}/0"
+
+    # API root paths
+    ROOT_PATHS: List[str] = Field(alias="BACKEND_ROOT_PATHS", default=["/api", "/api-mobile"])
 
     # Security settings
     SECRET_KEY: str

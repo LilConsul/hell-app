@@ -5,7 +5,7 @@
 <!-- Project Status -->
 <div>
   <a href="https://github.com/LilConsul/hell-app"><img src="https://img.shields.io/badge/Skill-Issue-red?style=for-the-badge&labelColor=black" alt="Skill:Issue" /></a>
-  <a href="https://github.com/LilConsul/hell-app"><img src="https://img.shields.io/badge/Status-Active-brightgreen?style=for-the-badge&labelColor=black" alt="Status" /></a>
+  <a href="https://github.com/LilConsul/hell-app"><img src="https://img.shields.io/badge/Status-Completed-blue?style=for-the-badge&labelColor=black" alt="Status" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue?style=for-the-badge&labelColor=black" alt="License" /></a>
   <a href="https://deepwiki.com/LilConsul/hell-app"><img src="https://img.shields.io/badge/DeepWiki-Ask-purple?style=for-the-badge&labelColor=black&logo=bookstack&logoColor=white" alt="DeepWiki" /></a>
 </div>

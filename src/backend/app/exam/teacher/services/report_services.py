@@ -57,7 +57,6 @@ class ReportService:
         if not exam_instance:
             raise NotFoundError(_("Exam instance not found"))
 
-
         # Convert filter dates from user timezone to UTC
         start_date = filters.start_date if filters.start_date else None
         if start_date and user_timezone:
@@ -593,8 +592,8 @@ class ReportService:
             timeline_chart.xValueAxis.valueMin = 0
             timeline_chart.xValueAxis.valueMax = len(timeline_dates) - 1
             timeline_chart.xValueAxis.valueSteps = list(range(len(timeline_dates)))
-            timeline_chart.xValueAxis.labelTextFormat = (
-                lambda x: timeline_dates[int(x)] if x < len(timeline_dates) else ""
+            timeline_chart.xValueAxis.labelTextFormat = lambda x: (
+                timeline_dates[int(x)] if x < len(timeline_dates) else ""
             )
 
             timeline_drawing.add(timeline_chart)

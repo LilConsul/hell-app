@@ -414,4 +414,6 @@ class CollectionService:
         if question.created_by.ref.id != user_id:
             raise ForbiddenError(_("You do not own this question"))
 
-        await self.question_repository.delete(question_id, link_rule = DeleteRules.DELETE_LINKS)
+        await self.question_repository.delete(
+            question_id, link_rule=DeleteRules.DELETE_LINKS
+        )

@@ -45,6 +45,7 @@ class UserResponse(UserBase):
     last_name: Optional[str] = None
     role: UserRole
     receive_notifications: bool
+    profile_picture_url: Optional[str] = None
 
     model_config = ConfigDict(
         from_attributes=True,

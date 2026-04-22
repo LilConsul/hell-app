@@ -1,3 +1,16 @@
+x-minio-common: &minio-common
+  image: quay.io/minio/minio
+  command: server /data --console-address :${MINIO_CONSOLE_PORT_INTERNAL}
+  expose:
+    - ${MINIO_PORT_INTERNAL}
+    - ${MINIO_CONSOLE_PORT_INTERNAL}
+  environment:
+    MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+    MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    MINIO_BROWSER_REDIRECT_URL: https://${DOMAIN}/dev/minio
+  networks:
+    - app-network
+
 services:
   redis:
     image: redis:7.4.2-alpine
@@ -12,6 +25,7 @@ services:
     depends_on:
       - mongodb
       - redis
+      - minio1
     expose:
       - ${BACKEND_PORT_INTERNAL}
     build:
@@ -27,6 +41,15 @@ services:
     command: sh -c "\
       uv run pybabel compile -d /code/app/i18n/translations && \ 
       uv run fastapi dev --port ${BACKEND_PORT_INTERNAL} --host 0.0.0.0 --reload --proxy-headers"
+
+  minio1:
+    <<: *minio-common
+    hostname: minio1
+    ports:
+      - "${MINIO_PORT}:${MINIO_PORT_INTERNAL}"
+      - "${MINIO_CONSOLE_PORT}:${MINIO_CONSOLE_PORT_INTERNAL}"
+    volumes:
+      - minio-data:/data
 
   celery_worker:
     depends_on:
@@ -96,10 +119,13 @@ services:
       - app-network
 
   nginx:
-    image: nginx:1.27.3-alpine-slim
+    build:
+      context: ./src/nginx
+      dockerfile: Dockerfile
     depends_on:
       - frontend
       - backend
+      - minio1
     volumes:
       - ./src/nginx/conf/nginx.conf:/etc/nginx/nginx.conf.template
       - ./src/nginx/entrypoint.sh:/etc/nginx/entrypoint.sh
@@ -142,6 +168,7 @@ services:
 
 volumes:
   db_data:
+  minio-data:
   redis-data:
 
 networks:

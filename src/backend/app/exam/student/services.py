@@ -115,7 +115,7 @@ class StudentExamService:
         Otherwise returns StudentAttemptBasic with basic information.
         """
         attempt = await self.student_attempt_repository.get_by_id(
-            attempt_id, fetch_fields={"student_exam_id": 2, "responses":2 }
+            attempt_id, fetch_fields={"student_exam_id": 2, "responses": 2}
         )
         if not attempt:
             raise ForbiddenError(_("Attempt not found"))

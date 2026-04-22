@@ -18,6 +18,8 @@ class User(Document, TimestampMixin):
     role: UserRole = UserRole.STUDENT
     receive_notifications: bool = True
     notifications_tasks_id: Dict[str, List[str]] = Field(default_factory=dict)
+    mfa_secret: Optional[str] = None
+    mfa_enabled: bool = False
 
     @before_event(Delete)
     async def before_delete(self):

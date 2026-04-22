@@ -29,11 +29,13 @@ class UserResetPassword(BaseModel):
 
 class UserLogin(UserBase):
     password: str
+    mfa_code: Optional[str] = None
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
                 "email": "user@example.com",
                 "password": "stringst",
+                "mfa_code": "123456",
             }
         },
     )
@@ -45,6 +47,7 @@ class UserResponse(UserBase):
     last_name: Optional[str] = None
     role: UserRole
     receive_notifications: bool
+    mfa_enabled: bool = False
 
     model_config = ConfigDict(
         from_attributes=True,
@@ -57,6 +60,15 @@ class Token(BaseModel):
 
 class EmailRequest(BaseModel):
     email: EmailStr
+
+
+class MFASetupResponse(BaseModel):
+    secret: str
+    qr_code_url: str
+
+
+class MFAVerify(BaseModel):
+    code: str
 
 
 class AuthReturn(BaseReturn):

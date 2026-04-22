@@ -1,15 +1,23 @@
 from fastapi import APIRouter, Depends, Response
 
-from app.auth.dependencies import get_auth_service
+from app.auth.dependencies import (
+    get_auth_service,
+    get_current_user_id,
+    get_user_repository,
+)
+from app.auth.repository import UserRepository
 from app.auth.schemas import (
     AuthReturn,
     EmailRequest,
+    MFASetupResponse,
+    MFAVerify,
     Token,
     UserCreate,
     UserLogin,
     UserResetPassword,
 )
 from app.auth.service import AuthService
+from app.core.exceptions import NotFoundError
 from app.i18n import _
 
 router = APIRouter(tags=["auth"], prefix="/auth")
@@ -97,3 +105,46 @@ async def mobile_login(
     """Login for mobile clients and get access token directly in response body instead of a cookie"""
     token_data = await auth_service.mobile_login(login_data)
     return token_data
+
+
+@router.post("/mfa/setup", response_model=MFASetupResponse)
+async def setup_mfa(
+    user_id: str = Depends(get_current_user_id),
+    user_repository: UserRepository = Depends(get_user_repository),
+    auth_service: AuthService = Depends(get_auth_service),
+):
+    """Setup MFA for the current user"""
+    user = await user_repository.get_by_id(user_id)
+    if not user:
+        raise NotFoundError(_("User not found"))
+    return await auth_service.setup_mfa(user)
+
+
+@router.post("/mfa/verify", response_model=AuthReturn)
+async def verify_mfa_setup(
+    mfa_verify: MFAVerify,
+    user_id: str = Depends(get_current_user_id),
+    user_repository: UserRepository = Depends(get_user_repository),
+    auth_service: AuthService = Depends(get_auth_service),
+):
+    """Verify and enable MFA setup"""
+    user = await user_repository.get_by_id(user_id)
+    if not user:
+        raise NotFoundError(_("User not found"))
+    await auth_service.verify_mfa_setup(user, mfa_verify.code)
+    return {"message": _("MFA enabled successfully")}
+
+
+@router.post("/mfa/disable", response_model=AuthReturn)
+async def disable_mfa(
+    mfa_verify: MFAVerify,
+    user_id: str = Depends(get_current_user_id),
+    user_repository: UserRepository = Depends(get_user_repository),
+    auth_service: AuthService = Depends(get_auth_service),
+):
+    """Disable MFA for the current user"""
+    user = await user_repository.get_by_id(user_id)
+    if not user:
+        raise NotFoundError(_("User not found"))
+    await auth_service.disable_mfa(user, mfa_verify.code)
+    return {"message": _("MFA disabled successfully")}

@@ -1,7 +1,17 @@
+import base64
 from datetime import timedelta
+from io import BytesIO
+
+import pyotp
+import qrcode
 
 from app.auth.repository import UserRepository
-from app.auth.schemas import UserCreate, UserLogin, UserResponse, UserRole
+from app.auth.schemas import (
+    UserCreate,
+    UserLogin,
+    UserResponse,
+    UserRole,
+)
 from app.auth.security import (
     TokenType,
     create_access_token,
@@ -65,6 +75,13 @@ class AuthService:
             raise AuthenticationError(
                 _("Email not verified. Please verify your email first.")
             )
+
+        if user.mfa_enabled:
+            if not login_data.mfa_code:
+                raise AuthenticationError(_("MFA code required"))
+            totp = pyotp.TOTP(user.mfa_secret)
+            if not totp.verify(login_data.mfa_code):
+                raise AuthenticationError(_("Invalid MFA code"))
 
         access_token_expires = timedelta(seconds=settings.ACCESS_TOKEN_EXPIRE_SECONDS)
         access_token = create_access_token(
@@ -171,6 +188,62 @@ class AuthService:
         await self.user_repository.save(user)
 
         await delete_verification_token(token)
+
+    async def setup_mfa(self, user) -> dict:
+        if user.mfa_enabled:
+            raise BadRequestError(_("MFA is already enabled"))
+
+        secret = pyotp.random_base32()
+        user.mfa_secret = secret
+        await self.user_repository.save(user)
+
+        totp = pyotp.TOTP(secret)
+        provisioning_uri = totp.provisioning_uri(
+            name=user.email, issuer_name="Hell App"
+        )
+
+        qr = qrcode.QRCode(
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_L,
+            box_size=10,
+            border=4,
+        )
+        qr.add_data(provisioning_uri)
+        qr.make(fit=True)
+        img = qr.make_image(fill_color="black", back_color="white")
+
+        buffered = BytesIO()
+        img.save(buffered, format="PNG")
+        img_str = base64.b64encode(buffered.getvalue()).decode("utf-8")
+        qr_code_url = f"data:image/png;base64,{img_str}"
+
+        return {"secret": secret, "qr_code_url": qr_code_url}
+
+    async def verify_mfa_setup(self, user, code: str) -> None:
+        if user.mfa_enabled:
+            raise BadRequestError(_("MFA is already enabled"))
+
+        if not user.mfa_secret:
+            raise BadRequestError(_("MFA setup not initiated"))
+
+        totp = pyotp.TOTP(user.mfa_secret)
+        if not totp.verify(code):
+            raise AuthenticationError(_("Invalid MFA code"))
+
+        user.mfa_enabled = True
+        await self.user_repository.save(user)
+
+    async def disable_mfa(self, user, code: str) -> None:
+        if not user.mfa_enabled:
+            raise BadRequestError(_("MFA is not enabled"))
+
+        totp = pyotp.TOTP(user.mfa_secret)
+        if not totp.verify(code):
+            raise AuthenticationError(_("Invalid MFA code"))
+
+        user.mfa_enabled = False
+        user.mfa_secret = None
+        await self.user_repository.save(user)
 
     async def initialize_user(
         self,

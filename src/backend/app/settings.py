@@ -109,6 +109,20 @@ class Settings(BaseSettings):
     # Backend settings
     BACKEND_PORT_INTERNAL: int
 
+    # MinIO settings
+    MINIO_ENDPOINT: str
+    MINIO_ROOT_USER: str
+    MINIO_ROOT_PASSWORD: str
+    MINIO_BUCKET_NAME: str
+    MINIO_SECURE: bool
+    MINIO_REGION: str = "us-east-1"
+    MINIO_EXTERNAL_ENDPOINT: str
+
+    # File upload settings
+    MAX_PROFILE_PICTURE_SIZE_MB: int
+    ALLOWED_IMAGE_EXTENSIONS: List[str]
+    ALLOWED_MIME_TYPES: List[str]
+
     BASE_DIR: Path = Path(__file__).resolve().parent
     ROOT_DIR: Path = Path(__file__).resolve().parent.parent
 

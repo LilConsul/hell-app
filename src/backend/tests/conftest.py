@@ -5,8 +5,14 @@ from httpx import ASGITransport, AsyncClient
 from mongomock_motor import AsyncMongoMockClient
 
 from app.auth.models import User
-from app.exam.models import (Collection, ExamInstance, Question,
-                             StudentAttempt, StudentExam, StudentResponse)
+from app.exam.models import (
+    Collection,
+    ExamInstance,
+    Question,
+    StudentAttempt,
+    StudentExam,
+    StudentResponse,
+)
 from app.main import app
 
 

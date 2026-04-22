@@ -20,6 +20,7 @@ class User(Document, TimestampMixin):
     notifications_tasks_id: Dict[str, List[str]] = Field(default_factory=dict)
     mfa_secret: Optional[str] = None
     mfa_enabled: bool = False
+    profile_picture_id: Optional[str] = None
 
     @before_event(Delete)
     async def before_delete(self):

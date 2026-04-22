@@ -4,9 +4,15 @@ from typing import Dict, List, Optional
 from pydantic import BaseModel, ConfigDict
 
 from app.auth.schemas import UserResponse
-from app.exam.models import (ExamStatus, NotificationSettings, PassFailStatus,
-                             QuestionType, SecurityEvent, SecuritySettings,
-                             StudentExamStatus)
+from app.exam.models import (
+    ExamStatus,
+    NotificationSettings,
+    PassFailStatus,
+    QuestionType,
+    SecurityEvent,
+    SecuritySettings,
+    StudentExamStatus,
+)
 
 
 # Option schemas

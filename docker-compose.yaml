@@ -24,6 +24,7 @@ services:
     depends_on:
       - mongodb
       - redis
+      - minio1
     expose:
       - ${BACKEND_PORT_INTERNAL}
     build:

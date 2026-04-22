@@ -6,9 +6,11 @@ from app.auth.dependencies import get_current_teacher_id
 from app.core.schemas import BaseReturn
 from app.core.utils import get_timezone
 from app.exam.teacher.dependencies import get_exam_instance_service
-from app.exam.teacher.schemas import (CreateExamInstanceSchema,
-                                      GetExamInstance,
-                                      UpdateExamInstanceSchema)
+from app.exam.teacher.schemas import (
+    CreateExamInstanceSchema,
+    GetExamInstance,
+    UpdateExamInstanceSchema,
+)
 from app.exam.teacher.services import ExamInstanceService
 from app.i18n import _
 

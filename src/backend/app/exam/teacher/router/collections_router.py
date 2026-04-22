@@ -5,10 +5,15 @@ from fastapi import APIRouter, Depends, status
 from app.auth.dependencies import get_current_teacher_id
 from app.core.schemas import BaseReturn
 from app.exam.teacher.dependencies import get_collection_service
-from app.exam.teacher.schemas import (CollectionQuestionCount,
-                                      CreateCollection, GetCollection,
-                                      QuestionOrderSchema, QuestionSchema,
-                                      UpdateCollection, UpdateQuestionSchema)
+from app.exam.teacher.schemas import (
+    CollectionQuestionCount,
+    CreateCollection,
+    GetCollection,
+    QuestionOrderSchema,
+    QuestionSchema,
+    UpdateCollection,
+    UpdateQuestionSchema,
+)
 from app.exam.teacher.services import CollectionService
 from app.i18n import _
 
@@ -117,6 +122,7 @@ async def add_question_to_collection(
         message=_("Question added successfully"),
         data={"question_id": question_id},
     )
+
 
 @router.post("/{collection_id}/questions/bulk")
 async def add_bulk_questions_to_collection(

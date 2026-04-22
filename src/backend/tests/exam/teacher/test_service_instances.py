@@ -502,5 +502,7 @@ class TestExamInstanceService:
             assert mock_task.apply_async.call_count > 0
             assert "instance123" in mock_user.notifications_tasks_id
             # Check that the lists are equal without assuming length
-            assert mock_user.notifications_tasks_id["instance123"] == ["task123"] * len(mock_user.notifications_tasks_id["instance123"])
+            assert mock_user.notifications_tasks_id["instance123"] == ["task123"] * len(
+                mock_user.notifications_tasks_id["instance123"]
+            )
             user_repository.save.assert_called_once_with(mock_user)

@@ -396,12 +396,14 @@ class TestStudentExamService:
                 "_get_active_attempt",
                 return_value=(mock_student_exam, mock_attempt),
             ),
-            patch("app.exam.student.schemas.QuestionWithOptions.model_validate")
-            as mock_qwo_validate,
+            patch(
+                "app.exam.student.schemas.QuestionWithOptions.model_validate"
+            ) as mock_qwo_validate,
             patch(
                 "app.exam.student.schemas.QuestionWithUserResponse"
             ) as mock_question_response_schema,
         ):
+
             def side_effect_qwo_validate(question_mock):
                 if question_mock.id == "q1":
                     validated_qwo = QuestionWithOptions(**mock_question1_data)
@@ -469,4 +471,3 @@ class TestStudentExamService:
         # Execute & Assert
         with pytest.raises(ForbiddenError, match="Exam has already ended"):
             StudentExamService._validate_exam_time(start_date, end_date)
-

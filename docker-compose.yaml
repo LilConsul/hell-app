@@ -117,7 +117,9 @@ services:
       - app-network
 
   nginx:
-    image: nginx:1.27.3-alpine-slim
+    build:
+      context: ./src/nginx
+      dockerfile: Dockerfile
     depends_on:
       - frontend
       - backend

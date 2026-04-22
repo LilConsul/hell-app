@@ -46,6 +46,7 @@ class UserResponse(UserBase):
     role: UserRole
     receive_notifications: bool
     profile_picture_url: Optional[str] = None
+    mfa_enabled: bool = False
 
     model_config = ConfigDict(
         from_attributes=True,
@@ -60,7 +61,39 @@ class EmailRequest(BaseModel):
     email: EmailStr
 
 
+class MFASetupResponse(BaseModel):
+    secret: str
+    qr_code_url: str
+    #Just render it — no decoding needed
+    #<img src={qrCodeUrl} alt="Scan with your authenticator app" />
+
+class MFASetupReturn(BaseReturn):
+    data: MFASetupResponse
+
+class MFAVerify(BaseModel):
+    code: str #don't ask why it's string when it's int, idk the totp.verify method accepts string :_
+
+
+class MFALoginVerify(BaseModel):
+    mfa_token: str
+    mfa_code: str
+
+
+class MFALoginChallenge(BaseModel):
+    mfa_required: bool = True
+    mfa_token: str
+
+
+class MobileLoginToken(BaseModel):
+    token: str
+    token_type: str = "bearer"
+    expires_in: int
+
+
+class MobileLoginReturn(BaseModel):
+    data: MobileLoginToken | MFALoginChallenge
+
 class AuthReturn(BaseReturn):
     """Schema for auth responses"""
 
-    data: UserResponse | None = None
+    data: UserResponse | MFALoginChallenge | None = None

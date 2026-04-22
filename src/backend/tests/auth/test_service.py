@@ -1,12 +1,18 @@
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import pyotp
 import pytest
 from fastapi import Response
 
 from app.auth.models import User
-from app.auth.schemas import UserCreate, UserLogin
+from app.auth.schemas import MFALoginChallenge, UserCreate, UserLogin
 from app.auth.security import get_password_hash
 from app.auth.service import AuthService
+from app.core.exceptions import (
+    AuthenticationError,
+    BadRequestError,
+    NotFoundError,
+)
 from app.core.exceptions import AuthenticationError, BadRequestError, NotFoundError
 from app.settings import settings
 
@@ -185,6 +191,79 @@ class TestAuthService:
 
         assert "Email not verified" in str(exc_info.value)
         mock_response.set_cookie.assert_not_called()
+
+    async def test_login_returns_mfa_challenge_for_mfa_enabled_user(
+        self, auth_service, mock_user_repository, test_user
+    ):
+        # Setup
+        test_user.mfa_enabled = True
+        test_user.mfa_secret = "JBSWY3DPEHPK3PXP"
+        mock_user_repository.get_by_email.return_value = test_user
+        login_data = UserLogin(email=test_user.email, password="password123")
+        mock_response = MagicMock(spec=Response)
+
+        # Execute
+        with patch("app.auth.service.verify_password", return_value=True):
+            with patch(
+                "app.auth.service.create_verification_token",
+                return_value="mfa-login-token",
+            ):
+                result = await auth_service.login(login_data, mock_response)
+
+        # Verify
+        assert isinstance(result, MFALoginChallenge)
+        assert result.mfa_required is True
+        assert result.mfa_token == "mfa-login-token"
+        mock_response.set_cookie.assert_not_called()
+
+    async def test_complete_mfa_login_success(
+        self, auth_service, mock_user_repository, test_user
+    ):
+        # Setup
+        test_user.mfa_enabled = True
+        test_user.mfa_secret = "JBSWY3DPEHPK3PXP"
+        assert test_user.mfa_secret is not None
+        mfa_code = pyotp.TOTP(test_user.mfa_secret).now()
+        mock_user_repository.get_by_id.return_value = test_user
+        mock_response = MagicMock(spec=Response)
+
+        # Execute
+        with patch(
+            "app.auth.service.decode_verification_token",
+            return_value={"user_id": test_user.id, "type": "mfa_login"},
+        ):
+            with patch("app.auth.service.delete_verification_token", return_value=True):
+                with patch(
+                    "app.auth.service.create_access_token", return_value="test_token"
+                ):
+                    result = await auth_service.complete_mfa_login(
+                        "mfa-login-token", mfa_code, mock_response
+                    )
+
+        # Verify
+        assert result.email == test_user.email
+        mock_response.set_cookie.assert_called_once()
+
+    async def test_complete_mfa_login_invalid_code(
+        self, auth_service, mock_user_repository, test_user
+    ):
+        # Setup
+        test_user.mfa_enabled = True
+        test_user.mfa_secret = "JBSWY3DPEHPK3PXP"
+        mock_user_repository.get_by_id.return_value = test_user
+        mock_response = MagicMock(spec=Response)
+
+        # Execute and verify exception
+        with patch(
+            "app.auth.service.decode_verification_token",
+            return_value={"user_id": test_user.id, "type": "mfa_login"},
+        ):
+            with pytest.raises(AuthenticationError) as exc_info:
+                await auth_service.complete_mfa_login(
+                    "mfa-login-token", "000000", mock_response
+                )
+
+        assert "Invalid MFA code" in str(exc_info.value)
 
     # Logout test
     async def test_logout(self, auth_service):
@@ -386,3 +465,63 @@ class TestAuthService:
                 await auth_service.reset_password(token, new_password)
 
         assert "User not found" in str(exc_info.value)
+
+    async def test_send_disable_mfa_recovery_token_success(
+        self, auth_service, mock_user_repository, test_user
+    ):
+        test_user.mfa_enabled = True
+        mock_user_repository.get_by_email.return_value = test_user
+
+        with patch(
+            "app.auth.service.create_verification_token", return_value="recovery_token"
+        ):
+            with patch(
+                "app.auth.service.user_mfa_disable_recovery_mail"
+            ) as mock_mail_task:
+                mock_mail_task.delay = MagicMock()
+                await auth_service.send_disable_mfa_recovery_token(test_user.email)
+
+        mock_user_repository.get_by_email.assert_called_once_with(test_user.email)
+        mock_mail_task.delay.assert_called_once()
+
+    async def test_send_disable_mfa_recovery_token_mfa_not_enabled(
+        self, auth_service, mock_user_repository, test_user
+    ):
+        test_user.mfa_enabled = False
+        mock_user_repository.get_by_email.return_value = test_user
+
+        with pytest.raises(BadRequestError) as exc_info:
+            await auth_service.send_disable_mfa_recovery_token(test_user.email)
+
+        assert "MFA is not enabled" in str(exc_info.value)
+
+    async def test_disable_mfa_with_recovery_token_success(
+        self, auth_service, mock_user_repository, test_user
+    ):
+        test_user.mfa_enabled = True
+        test_user.mfa_secret = "JBSWY3DPEHPK3PXP"
+        mock_user_repository.get_by_id.return_value = test_user
+
+        with patch(
+            "app.auth.service.decode_verification_token",
+            return_value={"user_id": test_user.id, "type": "mfa_disable_recovery"},
+        ):
+            with patch("app.auth.service.delete_verification_token", return_value=True):
+                await auth_service.disable_mfa_with_recovery_token("recovery_token")
+
+        assert test_user.mfa_enabled is False
+        assert test_user.mfa_secret is None
+        mock_user_repository.save.assert_called_with(test_user)
+
+    async def test_disable_mfa_with_recovery_token_invalid_type(
+        self, auth_service
+    ):
+        with patch(
+            "app.auth.service.decode_verification_token",
+            return_value={"user_id": "id", "type": "password_reset"},
+        ):
+            with pytest.raises(AuthenticationError) as exc_info:
+                await auth_service.disable_mfa_with_recovery_token("recovery_token")
+
+        assert "Invalid token type" in str(exc_info.value)
+

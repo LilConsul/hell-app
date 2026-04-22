@@ -18,6 +18,7 @@ class User(Document, TimestampMixin):
     role: UserRole = UserRole.STUDENT
     receive_notifications: bool = True
     notifications_tasks_id: Dict[str, List[str]] = Field(default_factory=dict)
+    profile_picture_id: Optional[str] = None
 
     @before_event(Delete)
     async def before_delete(self):

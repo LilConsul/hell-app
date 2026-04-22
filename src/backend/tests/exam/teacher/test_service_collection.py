@@ -1,28 +1,26 @@
 import uuid
 from datetime import datetime, timezone
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from beanie import DeleteRules
-
 from app.core.exceptions import (
-    BadRequestError,
     ForbiddenError,
     NotFoundError,
     UnprocessableEntityError,
 )
 from app.exam.models import ExamStatus, QuestionType
-from app.exam.repository import CollectionRepository, QuestionRepository
+from app.exam.repository import (
+    CollectionRepository,
+    ExamInstanceRepository,
+    QuestionRepository,
+)
 from app.exam.teacher.schemas import (
-    CollectionQuestionCount,
     CreateCollection,
-    GetCollection,
-    QuestionOrderSchema,
     QuestionSchema,
     UpdateCollection,
-    UpdateQuestionSchema,
 )
 from app.exam.teacher.services.collection_service import CollectionService
+from beanie import DeleteRules
 
 
 class TestCollectionService:
@@ -39,9 +37,18 @@ class TestCollectionService:
         return AsyncMock(spec=QuestionRepository)
 
     @pytest.fixture
-    def service(self, collection_repository, question_repository):
+    def exam_instance_repository(self):
+        """Mock exam instance repository"""
+        return AsyncMock(spec=ExamInstanceRepository)
+
+    @pytest.fixture
+    def service(
+        self, collection_repository, question_repository, exam_instance_repository
+    ):
         """Initialize service with mock repositories"""
-        return CollectionService(collection_repository, question_repository)
+        return CollectionService(
+            collection_repository, question_repository, exam_instance_repository
+        )
 
     @pytest.fixture
     def user_id(self):
@@ -215,17 +222,28 @@ class TestCollectionService:
             )
 
     async def test_delete_collection(
-        self, service, collection_repository, mock_collection, user_id
+        self,
+        service,
+        collection_repository,
+        exam_instance_repository,
+        mock_collection,
+        user_id,
     ):
         """Test deleting a collection"""
         # Setup
         collection_repository.get_by_id.return_value = mock_collection
+        exam_instance_repository.get_by_field.return_value = (
+            None  # No active exam instances
+        )
 
         # Execute
         await service.delete_collection(mock_collection.id, user_id)
 
         # Verify
         collection_repository.delete.assert_called_once_with(mock_collection.id)
+        exam_instance_repository.get_by_field.assert_called_once_with(
+            "collection_id.$id", mock_collection.id
+        )
 
     async def test_delete_collection_not_owner(
         self, service, collection_repository, mock_collection

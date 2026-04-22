@@ -56,3 +56,9 @@ app.add_middleware(TimezoneMiddleware)
 app.add_middleware(LanguageMiddleware)
 
 app.include_router(router)
+
+
+@app.get("/")
+async def root():
+    """Health check endpoint"""
+    return {"status": "ok", "message": "HellApp API is running"}

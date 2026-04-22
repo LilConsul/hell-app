@@ -8,7 +8,9 @@ from fastapi import Response
 
 from app.auth.repository import UserRepository
 from app.auth.schemas import (
+    MFALoginChallenge,
     MFASetupResponse,
+    MobileLoginToken,
     UserCreate,
     UserLogin,
     UserResponse,
@@ -63,8 +65,8 @@ class AuthService:
         link = f"{settings.VERIFY_MAIL_URL}/{verification_token}"
         user_verify_mail_event.delay(user_data.email, link, make_username(user))
 
-    async def _authenticate_user(self, login_data: UserLogin) -> tuple:
-        """Common authentication logic for both web and mobile login"""
+    async def _authenticate_user_credentials(self, login_data: UserLogin):
+        """Validate email/password and return the authenticated user."""
         user = await self.user_repository.get_by_email(str(login_data.email))
         if not user:
             raise AuthenticationError(_("Invalid username or password"))
@@ -77,22 +79,28 @@ class AuthService:
                 _("Email not verified. Please verify your email first.")
             )
 
-        if user.mfa_enabled:
-            if not login_data.mfa_code:
-                raise AuthenticationError(_("MFA code required"))
-            totp = pyotp.TOTP(user.mfa_secret)
-            if not totp.verify(login_data.mfa_code):
-                raise AuthenticationError(_("Invalid MFA code"))
+        return user
 
+    def _create_user_access_token(self, user) -> str:
         access_token_expires = timedelta(seconds=settings.ACCESS_TOKEN_EXPIRE_SECONDS)
-        access_token = create_access_token(
+        return create_access_token(
             subject=user.id, role=user.role, expires_delta=access_token_expires
         )
 
-        return user, access_token
+    async def login(
+        self, login_data: UserLogin, response: Response
+    ) -> UserResponse | MFALoginChallenge:
+        user = await self._authenticate_user_credentials(login_data)
 
-    async def login(self, login_data: UserLogin, response: Response) -> UserResponse:
-        user, access_token = await self._authenticate_user(login_data)
+        if user.mfa_enabled:
+            mfa_token = await create_verification_token(
+                user_id=user.id,
+                token_type=TokenType.MFA_LOGIN,
+                max_age=300,
+            )
+            return MFALoginChallenge.model_validate({"mfa_token": mfa_token})
+
+        access_token = self._create_user_access_token(user)
 
         response.set_cookie(
             key="access_token",
@@ -114,15 +122,101 @@ class AuthService:
             domain=settings.COOKIE_DOMAIN,
         )
 
-    async def mobile_login(self, login_data: UserLogin) -> dict:
+    async def mobile_login(self, login_data: UserLogin) -> MobileLoginToken | MFALoginChallenge:
         """Login method for mobile applications that returns the token directly"""
-        _, access_token = await self._authenticate_user(login_data)
+        user = await self._authenticate_user_credentials(login_data)
 
-        return {
+        if user.mfa_enabled:
+            mfa_token = await create_verification_token(
+                user_id=user.id,
+                token_type=TokenType.MFA_LOGIN,
+                max_age=300,
+            )
+            return MFALoginChallenge.model_validate({"mfa_token": mfa_token})
+
+        access_token = self._create_user_access_token(user)
+
+        return MobileLoginToken.model_validate({
             "token": access_token,
             "token_type": "bearer",
             "expires_in": settings.ACCESS_TOKEN_EXPIRE_SECONDS,
-        }
+        })
+
+    async def complete_mobile_mfa_login(
+        self, mfa_token: str, mfa_code: str
+    ) -> MobileLoginToken:
+        token_data = await decode_verification_token(mfa_token, max_age=300)
+        if not token_data:
+            raise AuthenticationError(_("Invalid or expired MFA token"))
+
+        if token_data.get("type") != TokenType.MFA_LOGIN.value:
+            raise AuthenticationError(_("Invalid token type"))
+
+        user_id = token_data.get("user_id")
+        if not isinstance(user_id, str):
+            raise AuthenticationError(_("Invalid or expired MFA token"))
+
+        user = await self.user_repository.get_by_id(user_id)
+        if not user:
+            raise NotFoundError(_("User not found"))
+
+        if not user.mfa_enabled or not user.mfa_secret:
+            raise BadRequestError(_("MFA is not enabled"))
+
+        totp = pyotp.TOTP(user.mfa_secret)
+        if not totp.verify(mfa_code):
+            raise AuthenticationError(_("Invalid MFA code"))
+
+        await delete_verification_token(mfa_token)
+
+        access_token = self._create_user_access_token(user)
+        return MobileLoginToken.model_validate(
+            {
+                "token": access_token,
+                "token_type": "bearer",
+                "expires_in": settings.ACCESS_TOKEN_EXPIRE_SECONDS,
+            }
+        )
+
+    async def complete_mfa_login(
+        self, mfa_token: str, mfa_code: str, response: Response
+    ) -> UserResponse:
+        token_data = await decode_verification_token(mfa_token, max_age=300)
+        if not token_data:
+            raise AuthenticationError(_("Invalid or expired MFA token"))
+
+        if token_data.get("type") != TokenType.MFA_LOGIN.value:
+            raise AuthenticationError(_("Invalid token type"))
+
+        user_id = token_data.get("user_id")
+        if not isinstance(user_id, str):
+            raise AuthenticationError(_("Invalid or expired MFA token"))
+
+        user = await self.user_repository.get_by_id(user_id)
+        if not user:
+            raise NotFoundError(_("User not found"))
+
+        if not user.mfa_enabled or not user.mfa_secret:
+            raise BadRequestError(_("MFA is not enabled"))
+
+        totp = pyotp.TOTP(user.mfa_secret)
+        if not totp.verify(mfa_code):
+            raise AuthenticationError(_("Invalid MFA code"))
+
+        await delete_verification_token(mfa_token)
+
+        access_token = self._create_user_access_token(user)
+        response.set_cookie(
+            key="access_token",
+            value=access_token,
+            httponly=True,
+            secure=settings.COOKIE_SECURE,
+            samesite="lax",
+            max_age=settings.ACCESS_TOKEN_EXPIRE_SECONDS,
+            domain=settings.DOMAIN,
+        )
+
+        return UserResponse.model_validate(user)
 
     async def verify_token(self, token: str) -> None:
         token_data = await decode_verification_token(token, use_redis=False)
@@ -130,6 +224,8 @@ class AuthService:
             raise AuthenticationError(_("Invalid or expired verification token"))
 
         user_id = token_data.get("user_id")
+        if not isinstance(user_id, str):
+            raise AuthenticationError(_("Invalid or expired verification token"))
         token_type = token_data.get("type")
 
         if token_type != TokenType.VERIFICATION.value:
@@ -174,6 +270,8 @@ class AuthService:
             raise AuthenticationError(_("Invalid or expired password reset token"))
 
         user_id = token_data.get("user_id")
+        if not isinstance(user_id, str):
+            raise AuthenticationError(_("Invalid or expired password reset token"))
         token_type = token_data.get("type")
 
         if token_type != TokenType.PASSWORD_RESET.value:
@@ -204,7 +302,7 @@ class AuthService:
 
         totp = pyotp.TOTP(secret)
         provisioning_uri = totp.provisioning_uri(
-            name=user.email, issuer_name="Hell App"
+            name=str(user.email), issuer_name="Hell App"
         )
 
         qr = qrcode.QRCode(
@@ -217,7 +315,6 @@ class AuthService:
         qr.make(fit=True)
         img = qr.make_image(fill_color="black", back_color="white")
 
-        # TODO fix this with minio
         buffered = BytesIO()
         img.save(buffered, format="PNG")
         img_str = base64.b64encode(buffered.getvalue()).decode("utf-8")
@@ -251,6 +348,9 @@ class AuthService:
             raise NotFoundError(_("User not found"))
 
         if not user.mfa_enabled:
+            raise BadRequestError(_("MFA is not enabled"))
+
+        if not user.mfa_secret:
             raise BadRequestError(_("MFA is not enabled"))
 
         totp = pyotp.TOTP(user.mfa_secret)

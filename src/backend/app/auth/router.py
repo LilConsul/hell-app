@@ -7,8 +7,11 @@ from app.auth.dependencies import (
 from app.auth.schemas import (
     AuthReturn,
     EmailRequest,
+    MFALoginChallenge,
+    MFALoginVerify,
     MFASetupReturn,
     MFAVerify,
+    MobileLoginReturn,
     Token,
     UserCreate,
     UserLogin,
@@ -38,7 +41,27 @@ async def login(
     auth_service: AuthService = Depends(get_auth_service),
 ):
     """Login and get access token"""
-    user = await auth_service.login(login_data, response)
+    login_result = await auth_service.login(login_data, response)
+
+    if isinstance(login_result, MFALoginChallenge):
+        return {
+            "message": _("MFA verification required"),
+            "data": login_result,
+        }
+
+    return {"message": _("Login successful"), "data": login_result}
+
+
+@router.post("/login/mfa", response_model=AuthReturn, response_model_exclude_none=True)
+async def login_mfa(
+    response: Response,
+    mfa_data: MFALoginVerify,
+    auth_service: AuthService = Depends(get_auth_service),
+):
+    """Complete login by verifying MFA code using the MFA challenge token."""
+    user = await auth_service.complete_mfa_login(
+        mfa_data.mfa_token, mfa_data.mfa_code, response
+    )
     return {"message": _("Login successful"), "data": user}
 
 
@@ -94,14 +117,33 @@ async def reset_password(
     return {"message": _("Password reset successfully")}
 
 
-@router.post("/mobile/login", response_model=Token, response_model_exclude_none=True)
+@router.post(
+    "/mobile/login", response_model=MobileLoginReturn, response_model_exclude_none=True
+)
 async def mobile_login(
     login_data: UserLogin,
     auth_service: AuthService = Depends(get_auth_service),
 ):
     """Login for mobile clients and get access token directly in response body instead of a cookie"""
-    token_data = await auth_service.mobile_login(login_data)
-    return token_data
+    login_result = await auth_service.mobile_login(login_data)
+    return {"data": login_result}
+
+
+@router.post(
+    "/mobile/login/mfa",
+    response_model=MobileLoginReturn,
+    response_model_exclude_none=True,
+)
+async def mobile_login_mfa(
+    mfa_data: MFALoginVerify,
+    auth_service: AuthService = Depends(get_auth_service),
+):
+    """Complete mobile login by verifying MFA code and returning token payload."""
+    token_data = await auth_service.complete_mobile_mfa_login(
+        mfa_data.mfa_token,
+        mfa_data.mfa_code,
+    )
+    return {"data": token_data}
 
 
 @router.post("/mfa/setup", response_model=MFASetupReturn)

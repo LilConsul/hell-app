@@ -29,13 +29,11 @@ class UserResetPassword(BaseModel):
 
 class UserLogin(UserBase):
     password: str
-    mfa_code: Optional[str] = None
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
                 "email": "user@example.com",
                 "password": "stringst",
-                "mfa_code": "123456",
             }
         },
     )
@@ -74,7 +72,27 @@ class MFASetupReturn(BaseReturn):
 class MFAVerify(BaseModel):
     code: str #don't ask why it's string when it's int, idk the totp.verify method accepts string :_
 
+
+class MFALoginVerify(BaseModel):
+    mfa_token: str
+    mfa_code: str
+
+
+class MFALoginChallenge(BaseModel):
+    mfa_required: bool = True
+    mfa_token: str
+
+
+class MobileLoginToken(BaseModel):
+    token: str
+    token_type: str = "bearer"
+    expires_in: int
+
+
+class MobileLoginReturn(BaseModel):
+    data: MobileLoginToken | MFALoginChallenge
+
 class AuthReturn(BaseReturn):
     """Schema for auth responses"""
 
-    data: UserResponse | None = None
+    data: UserResponse | MFALoginChallenge | None = None

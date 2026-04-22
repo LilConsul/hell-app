@@ -7,6 +7,7 @@ x-minio-common: &minio-common
   environment:
     MINIO_ROOT_USER: ${MINIO_ROOT_USER}
     MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    MINIO_BROWSER_REDIRECT_URL: https://${DOMAIN}/dev/minio
   networks:
     - app-network
 

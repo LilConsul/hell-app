@@ -26,6 +26,7 @@ from app.auth.security import (
     verify_password,
 )
 from app.celery.tasks.email_tasks.tasks import (
+    user_mfa_disable_recovery_mail,
     user_password_reset_mail,
     user_verify_mail_event,
     user_welcome_mail_event,
@@ -360,6 +361,50 @@ class AuthService:
         user.mfa_enabled = False
         user.mfa_secret = None
         await self.user_repository.save(user)
+
+    async def send_disable_mfa_recovery_token(self, email: str) -> None:
+        user = await self.user_repository.get_by_email(email)
+        if not user:
+            raise BadRequestError(
+                _("No user found with email {email}").format(email=email)
+            )
+
+        if not user.mfa_enabled:
+            raise BadRequestError(_("MFA is not enabled"))
+
+        recovery_token = await create_verification_token(
+            user_id=user.id,
+            token_type=TokenType.MFA_DISABLE_RECOVERY,
+        )
+        link = settings.MFA_DISABLE_RECOVERY_URL.format(token=recovery_token)
+        user_mfa_disable_recovery_mail.delay(
+            recipient=user.email,
+            link=link,
+            username=make_username(user),
+        )
+
+    async def disable_mfa_with_recovery_token(self, token: str) -> None:
+        token_data = await decode_verification_token(token)
+        if not token_data:
+            raise AuthenticationError(_("Invalid or expired token"))
+
+        user_id = token_data.get("user_id")
+        token_type = token_data.get("type")
+
+        if not isinstance(user_id, str):
+            raise AuthenticationError(_("Invalid or expired token"))
+
+        if token_type != TokenType.MFA_DISABLE_RECOVERY.value:
+            raise AuthenticationError(_("Invalid token type"))
+
+        user = await self.user_repository.get_by_id(user_id)
+        if not user:
+            raise NotFoundError(_("User not found"))
+
+        user.mfa_enabled = False
+        user.mfa_secret = None
+        await self.user_repository.save(user)
+        await delete_verification_token(token)
 
     async def initialize_user(
         self,

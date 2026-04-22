@@ -94,6 +94,12 @@ class Settings(BaseSettings):
     def DELETE_ACCOUNT_URL(self) -> str:
         return f"https://{self.DOMAIN}{self.DELETE_ACCOUNT_PATH}"
 
+    MFA_DISABLE_RECOVERY_PATH: str
+
+    @property
+    def MFA_DISABLE_RECOVERY_URL(self) -> str:
+        return f"https://{self.DOMAIN}{self.MFA_DISABLE_RECOVERY_PATH}"
+
     DASHBOARD_PATH: str
 
     @property

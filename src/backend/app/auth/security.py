@@ -22,6 +22,7 @@ class TokenType(str, Enum):
     PASSWORD_RESET = "password_reset"
     USER_DELETION = "user_deletion"
     MFA_LOGIN = "mfa_login"
+    MFA_DISABLE_RECOVERY = "mfa_disable_recovery"
 
 
 def get_password_hash(password: str) -> str:

@@ -177,3 +177,32 @@ async def disable_mfa(
     """Disable MFA for the current user"""
     await auth_service.disable_mfa(user_id, mfa_verify.code)
     return {"message": _("MFA disabled successfully")}
+
+
+@router.post(
+    "/mfa/disable/recovery/request",
+    response_model=AuthReturn,
+    response_model_exclude_none=True,
+)
+async def request_disable_mfa_recovery(
+    email_request: EmailRequest,
+    auth_service: AuthService = Depends(get_auth_service),
+):
+    """Send email token to disable MFA when user has lost the authenticator device."""
+    await auth_service.send_disable_mfa_recovery_token(email_request.email)
+    return {"message": _("MFA disable recovery email sent. Please check your inbox.")}
+
+
+@router.post(
+    "/mfa/disable/recovery/confirm",
+    response_model=AuthReturn,
+    response_model_exclude_none=True,
+)
+async def confirm_disable_mfa_recovery(
+    token: Token,
+    auth_service: AuthService = Depends(get_auth_service),
+):
+    """Disable MFA using a valid recovery token sent via email."""
+    await auth_service.disable_mfa_with_recovery_token(token.token)
+    return {"message": _("MFA disabled successfully")}
+

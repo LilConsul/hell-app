@@ -4,9 +4,11 @@ from io import BytesIO
 
 import pyotp
 import qrcode
+from fastapi import Response
 
 from app.auth.repository import UserRepository
 from app.auth.schemas import (
+    MFASetupResponse,
     UserCreate,
     UserLogin,
     UserResponse,
@@ -30,7 +32,6 @@ from app.core.exceptions import AuthenticationError, BadRequestError, NotFoundEr
 from app.core.utils import make_username
 from app.i18n import _
 from app.settings import settings
-from fastapi import Response
 
 
 class AuthService:
@@ -189,7 +190,11 @@ class AuthService:
 
         await delete_verification_token(token)
 
-    async def setup_mfa(self, user) -> dict:
+    async def setup_mfa(self, user_id: str) -> MFASetupResponse:
+        user = await self.user_repository.get_by_id(user_id)
+        if not user:
+            raise NotFoundError(_("User not found"))
+
         if user.mfa_enabled:
             raise BadRequestError(_("MFA is already enabled"))
 
@@ -212,14 +217,21 @@ class AuthService:
         qr.make(fit=True)
         img = qr.make_image(fill_color="black", back_color="white")
 
+        # TODO fix this with minio
         buffered = BytesIO()
         img.save(buffered, format="PNG")
         img_str = base64.b64encode(buffered.getvalue()).decode("utf-8")
         qr_code_url = f"data:image/png;base64,{img_str}"
 
-        return {"secret": secret, "qr_code_url": qr_code_url}
+        return MFASetupResponse.model_validate(
+            {"secret": secret, "qr_code_url": qr_code_url}
+        )
 
-    async def verify_mfa_setup(self, user, code: str) -> None:
+    async def verify_mfa_setup(self, user_id: str, code: str) -> None:
+        user = await self.user_repository.get_by_id(user_id)
+        if not user:
+            raise NotFoundError(_("User not found"))
+
         if user.mfa_enabled:
             raise BadRequestError(_("MFA is already enabled"))
 
@@ -233,7 +245,11 @@ class AuthService:
         user.mfa_enabled = True
         await self.user_repository.save(user)
 
-    async def disable_mfa(self, user, code: str) -> None:
+    async def disable_mfa(self, user_id: str, code: str) -> None:
+        user = await self.user_repository.get_by_id(user_id)
+        if not user:
+            raise NotFoundError(_("User not found"))
+
         if not user.mfa_enabled:
             raise BadRequestError(_("MFA is not enabled"))
 

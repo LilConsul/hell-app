@@ -65,11 +65,14 @@ class EmailRequest(BaseModel):
 class MFASetupResponse(BaseModel):
     secret: str
     qr_code_url: str
+    #Just render it — no decoding needed
+    #<img src={qrCodeUrl} alt="Scan with your authenticator app" />
 
+class MFASetupReturn(BaseReturn):
+    data: MFASetupResponse
 
 class MFAVerify(BaseModel):
-    code: str
-
+    code: str #don't ask why it's string when it's int, idk the totp.verify method accepts string :_
 
 class AuthReturn(BaseReturn):
     """Schema for auth responses"""

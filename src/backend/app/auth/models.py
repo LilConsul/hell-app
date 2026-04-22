@@ -41,6 +41,8 @@ class User(Document, TimestampMixin):
                 "last_name": "Doe",
                 "is_verified": True,
                 "role": "student",
+                "mfa_enabled": True,
+                "mfa_secret": "secret",
                 "created_at": "2023-01-01T00:00:00.000Z",
                 "updated_at": "2023-01-01T00:00:00.000Z",
             }

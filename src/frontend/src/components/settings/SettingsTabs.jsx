@@ -2,11 +2,12 @@ import { memo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Pencil, Save, User, Lock, Globe, Trash2 } from "lucide-react";
+import { Pencil, Save, User, Lock, Globe, Trash2, Upload } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const EditableField = memo(function EditableField({
@@ -63,8 +64,12 @@ const AccountTab = memo(function AccountTab({
   setEditField,
   setFirstName,
   setLastName,
-  handleSaveName
+  handleSaveName,
+  handleFileUpload,
+  handleDeletePicture,
+  isPictureUpdating
 }) {
+  const initials = `${user?.first_name?.[0] || user?.firstName?.[0] || ""}${user?.last_name?.[0] || user?.lastName?.[0] || ""}`.trim() || "U";
 
   return (
     <Card>
@@ -109,6 +114,45 @@ const AccountTab = memo(function AccountTab({
           onChange={setLastName}
           onSave={() => handleSaveName("lastName")}
         />
+
+        <div className="rounded-lg border p-4 space-y-4">
+          <div>
+            <h3 className="text-sm font-medium">Avatar</h3>
+            <p className="text-sm text-muted-foreground">
+              Upload a profile picture to personalize your account.
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+            <Avatar className="h-16 w-16 ring-1 ring-border">
+              <AvatarImage src={user?.profile_picture_url || ""} alt="Profile picture" />
+              <AvatarFallback>{initials.toUpperCase()}</AvatarFallback>
+            </Avatar>
+
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Input
+                id="profile-picture-upload"
+                type="file"
+                accept="image/*"
+                onChange={handleFileUpload}
+                disabled={isPictureUpdating}
+                className="max-w-xs"
+              />
+              <Button
+                variant="outline"
+                onClick={handleDeletePicture}
+                disabled={isPictureUpdating || !user?.profile_picture_url}
+              >
+                {isPictureUpdating ? (
+                  <span className="animate-spin">⟳</span>
+                ) : (
+                  <Trash2 className="h-4 w-4 mr-2" />
+                )}
+                Remove Picture
+              </Button>
+            </div>
+          </div>
+        </div>
       </CardContent>
     </Card>
   );
@@ -213,6 +257,9 @@ export const SettingsTabs = memo(function SettingsTabs({
   setFirstName,
   setLastName,
   handleSaveName,
+  handleFileUpload,
+  handleDeletePicture,
+  isPictureUpdating,
   handleChangeLanguage,
   handleToggleNotifications,
   handleOpenCurrentPasswordModal,
@@ -255,6 +302,9 @@ export const SettingsTabs = memo(function SettingsTabs({
             setFirstName={setFirstName}
             setLastName={setLastName}
             handleSaveName={handleSaveName}
+            handleFileUpload={handleFileUpload}
+            handleDeletePicture={handleDeletePicture}
+            isPictureUpdating={isPictureUpdating}
           />
         </TabsContent>
 

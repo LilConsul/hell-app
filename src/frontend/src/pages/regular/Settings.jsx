@@ -19,6 +19,7 @@ export default function SettingsPage() {
   const [lastName, setLastName] = useState('');
   const [editField, setEditField] = useState(null);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isPictureUpdating, setIsPictureUpdating] = useState(false);
 
   
   const [firstNameError, setFirstNameError] = useState('');
@@ -359,6 +360,84 @@ export default function SettingsPage() {
     }
   }, [deleteConfirmText]);
 
+  const extractProfilePictureUrl = useCallback((payload) => {
+    return payload?.data?.profile_picture_url
+      || payload?.profile_picture_url
+      || payload?.data?.user?.profile_picture_url
+      || payload?.user?.profile_picture_url
+      || null;
+  }, []);
+
+  const handleFileUpload = useCallback(async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    if (!file.type.startsWith('image/')) {
+      setErrorMessage('Please upload a valid image file.');
+      event.target.value = '';
+      return;
+    }
+
+    setIsPictureUpdating(true);
+    setErrorMessage('');
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await fetch('/api/v1/users/me/profile-picture', {
+        method: 'POST',
+        body: formData,
+        credentials: 'include',
+        headers: {
+          'X-Timezone': Intl.DateTimeFormat().resolvedOptions().timeZone,
+        },
+      });
+
+      const payload = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(payload?.detail || payload?.message || 'Failed to upload profile picture.');
+      }
+
+      const nextUrl = extractProfilePictureUrl(payload);
+      if (nextUrl) {
+        updateUser({ profile_picture_url: nextUrl });
+      } else {
+        await refreshUser();
+      }
+
+      setSuccessMessage('Profile picture uploaded successfully.');
+    } catch (error) {
+      setErrorMessage(error.message || 'Failed to upload profile picture.');
+    } finally {
+      setIsPictureUpdating(false);
+      event.target.value = '';
+    }
+  }, [extractProfilePictureUrl, refreshUser, updateUser]);
+
+  const handleDeletePicture = useCallback(async () => {
+    setIsPictureUpdating(true);
+    setErrorMessage('');
+
+    try {
+      const payload = await apiRequest('/api/v1/users/me/profile-picture', {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+
+      const nextUrl = extractProfilePictureUrl(payload);
+      updateUser({ profile_picture_url: nextUrl || null });
+      setSuccessMessage('Profile picture removed successfully.');
+    } catch (error) {
+      setErrorMessage(error.message || 'Failed to remove profile picture.');
+    } finally {
+      setIsPictureUpdating(false);
+    }
+  }, [extractProfilePictureUrl, updateUser]);
+
   if (!user) {
     return (
       <div className="flex flex-col min-h-screen">
@@ -406,6 +485,9 @@ export default function SettingsPage() {
             setFirstName={setFirstName}
             setLastName={setLastName}
             handleSaveName={handleSaveName}
+            handleFileUpload={handleFileUpload}
+            handleDeletePicture={handleDeletePicture}
+            isPictureUpdating={isPictureUpdating}
             handleChangeLanguage={handleChangeLanguage}
             handleToggleNotifications={handleToggleNotifications}
             handleOpenCurrentPasswordModal={handleOpenCurrentPasswordModal}

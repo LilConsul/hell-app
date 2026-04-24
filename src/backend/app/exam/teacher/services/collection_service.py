@@ -458,20 +458,13 @@ class CollectionService:
         self, user_id: str, category: str | None = None
     ) -> List[CollectionQuestionCount] | []:
         """Get all collections created by a specific teacher, optionally filtered by category."""
-        query = {"created_by._id": user_id}
+        query = {"created_by.$id": user_id}
         
         collections = await self.collection_repository.get_all(
             query, fetch_links=True
         )
-        
-        # Filter by category in Python if provided
-        if category:
-            collections = [
-                col for col in collections
-                if any(cat.name == category for cat in col.categories)
-            ]
 
-        return await self._process_collections(collections)
+        return await self._process_collections(collections, category)
 
     async def get_public_collections(self, category: str | None = None) -> List[CollectionQuestionCount] | []:
         """Get all published collections that are publicly available, optionally filtered by category."""
@@ -482,27 +475,50 @@ class CollectionService:
             fetch_links=True
         )
         
-        # Filter by category in Python if provided
-        if category:
-            collections = [
-                col for col in collections
-                if any(cat.name == category for cat in col.categories)
-            ]
-        
-        return await self._process_collections(collections)
+        return await self._process_collections(collections, category)
 
     @staticmethod
-    async def _process_collections(collections) -> List[CollectionQuestionCount] | []:
+    async def _process_collections(collections, category: str | None = None) -> List[CollectionQuestionCount] | []:
         """Process collection data and add question count."""
-        return [
-            CollectionQuestionCount.model_validate(
-                {
-                    **collection.model_dump(),
-                    "question_count": len(getattr(collection, "questions", []) or []),
-                }
-            )
-            for collection in collections
-        ]
+        from app.auth.models import User
+        from app.exam.models import Category
+        
+        result = []
+        for collection in collections:
+            # Fetch created_by user
+            created_by_user = await User.get(collection.created_by.ref.id)
+            if not created_by_user:
+                continue
+            
+            # Fetch all categories
+            categories_list = []
+            for cat_link in collection.categories:
+                cat = await Category.get(cat_link.ref.id)
+                if cat:
+                    categories_list.append({"name": cat.name})
+            
+            # Filter by category if provided
+            if category:
+                if not any(cat["name"] == category for cat in categories_list):
+                    continue
+            
+            # Build the collection data
+            collection_data = {
+                "id": collection.id,
+                "title": collection.title,
+                "description": collection.description,
+                "status": collection.status,
+                "created_at": collection.created_at,
+                "updated_at": collection.updated_at,
+                "created_by": created_by_user.model_dump(),
+                "categories": categories_list,
+                "questions": [],  # Required by schema but excluded from serialization
+                "question_count": len(getattr(collection, "questions", []) or []),
+            }
+            
+            result.append(CollectionQuestionCount.model_validate(collection_data))
+        
+        return result
 
     async def delete_question(self, question_id: str, user_id: str) -> None:
         """Delete an existing question by its ID."""

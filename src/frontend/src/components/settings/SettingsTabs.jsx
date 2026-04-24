@@ -296,6 +296,12 @@ const SecurityTab = memo(function SecurityTab({
                       id="mfa-setup-code"
                       value={mfaSetupCode}
                       onChange={(e) => setMfaSetupCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && mfaSetupCode.length === 6 && !isMfaVerifying) {
+                          e.preventDefault();
+                          handleVerifyMfa();
+                        }
+                      }}
                       inputMode="numeric"
                       autoComplete="one-time-code"
                       placeholder="123456"
@@ -345,6 +351,12 @@ const SecurityTab = memo(function SecurityTab({
                     id="mfa-disable-code"
                     value={mfaDisableCode}
                     onChange={(e) => setMfaDisableCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && mfaDisableCode.length === 6 && !isMfaDisabling) {
+                        e.preventDefault();
+                        handleDisableMfa();
+                      }
+                    }}
                     inputMode="numeric"
                     autoComplete="one-time-code"
                     placeholder="123456"

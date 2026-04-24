@@ -121,6 +121,9 @@ const AccountTab = memo(function AccountTab({
             <p className="text-sm text-muted-foreground">
               Upload a profile picture to personalize your account.
             </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Max file size: 2 MB.
+            </p>
           </div>
 
           <div className="flex flex-col sm:flex-row sm:items-center gap-4">

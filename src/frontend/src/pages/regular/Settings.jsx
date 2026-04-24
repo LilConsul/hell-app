@@ -8,6 +8,8 @@ import { Footer } from '@/components/footer';
 import { apiRequest } from '@/lib/utils';
 import { usePasswordValidation } from '@/components/password/password-validation';
 
+const MAX_PROFILE_PICTURE_SIZE_BYTES = 2 * 1024 * 1024;
+
 export default function SettingsPage() {
   const { user, refreshUser, updateUser, logout } = useAuth();
 
@@ -376,6 +378,12 @@ export default function SettingsPage() {
 
     if (!file.type.startsWith('image/')) {
       setErrorMessage('Please upload a valid image file.');
+      event.target.value = '';
+      return;
+    }
+
+    if (file.size > MAX_PROFILE_PICTURE_SIZE_BYTES) {
+      setErrorMessage('Profile picture must be 2 MB or smaller.');
       event.target.value = '';
       return;
     }

@@ -41,11 +41,12 @@ async def create_collection(
 
 @router.get("/", response_model=BaseReturn[List[CollectionQuestionCount]])
 async def get_teacher_collections(
+    category: str | None = None,
     teacher_id: str = Depends(get_current_teacher_id),
     collection_service: CollectionService = Depends(get_collection_service),
 ):
-    """Get all collections created by the current teacher"""
-    collections = await collection_service.get_teacher_collections(teacher_id)
+    """Get all collections created by the current teacher, optionally filtered by category"""
+    collections = await collection_service.get_teacher_collections(teacher_id, category)
     return BaseReturn(
         message=_("Collections retrieved successfully"),
         data=collections,
@@ -54,10 +55,11 @@ async def get_teacher_collections(
 
 @router.get("/public", response_model=BaseReturn[List[CollectionQuestionCount]])
 async def get_public_collections(
+    category: str | None = None,
     collection_service: CollectionService = Depends(get_collection_service),
 ):
-    """Get all published collections that are publicly available"""
-    collections = await collection_service.get_public_collections()
+    """Get all published collections that are publicly available, optionally filtered by category"""
+    collections = await collection_service.get_public_collections(category)
     return BaseReturn(
         message=_("Public collections retrieved successfully"),
         data=collections,

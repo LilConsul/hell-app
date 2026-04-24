@@ -3,6 +3,7 @@ from typing import Dict, List
 
 from app.core.repository.base_repository import BaseRepository
 from app.exam.models import (
+    Category,
     Collection,
     ExamInstance,
     ExamStatus,
@@ -12,6 +13,40 @@ from app.exam.models import (
     StudentExamStatus,
     StudentResponse,
 )
+
+
+class CategoryRepository(BaseRepository[Category]):
+    """Repository for Category model operations"""
+    
+    async def get_all(self) -> List[Category]:
+        """Get all categories"""
+        return await self.model_class.find_all().to_list()
+    
+    async def get_or_create(self, name: str) -> Category:
+        """Get existing or create new category"""
+        category = await self.model_class.find_one(
+            self.model_class.name == name
+        )
+        if not category:
+            category = Category(name=name)
+            await category.insert()
+        return category
+    
+    async def delete_orphaned_categories(self) -> int:
+        """Delete categories without collections (for background tasks)"""
+        all_categories = await self.get_all()
+        deleted_count = 0
+        
+        for category in all_categories:
+            count = await Collection.find(
+                {"categories.$id": category.name}
+            ).count()
+            
+            if count == 0:
+                await category.delete()
+                deleted_count += 1
+        
+        return deleted_count
 
 
 class CollectionRepository(BaseRepository[Collection]):

@@ -10,6 +10,7 @@ from app.core.exceptions import (
 )
 from app.exam.models import ExamStatus, QuestionType
 from app.exam.repository import (
+    CategoryRepository,
     CollectionRepository,
     ExamInstanceRepository,
     QuestionRepository,
@@ -37,17 +38,29 @@ class TestCollectionService:
         return AsyncMock(spec=QuestionRepository)
 
     @pytest.fixture
+    def category_repository(self):
+        """Mock category repository"""
+        return AsyncMock(spec=CategoryRepository)
+
+    @pytest.fixture
     def exam_instance_repository(self):
         """Mock exam instance repository"""
         return AsyncMock(spec=ExamInstanceRepository)
 
     @pytest.fixture
     def service(
-        self, collection_repository, question_repository, exam_instance_repository
+        self,
+        collection_repository,
+        question_repository,
+        category_repository,
+        exam_instance_repository,
     ):
         """Initialize service with mock repositories"""
         return CollectionService(
-            collection_repository, question_repository, exam_instance_repository
+            collection_repository,
+            question_repository,
+            category_repository,
+            exam_instance_repository,
         )
 
     @pytest.fixture
@@ -138,9 +151,14 @@ class TestCollectionService:
 
         # Verify
         collection_repository.get_by_id.assert_called_once_with(
-            mock_collection.id, fetch_fields={"questions": 1, "created_by": 1}
+            mock_collection.id,
+            fetch_fields={"questions": 1, "created_by": 1, "categories": 1},
         )
-        assert result == {"id": mock_collection.id, "title": "Test Collection"}
+        assert result == {
+            "id": mock_collection.id,
+            "title": "Test Collection",
+            "category_ids": [],
+        }
 
     async def test_get_collection_public(
         self, service, collection_repository, mock_collection, user_id
@@ -164,7 +182,11 @@ class TestCollectionService:
         result = await service.get_collection(different_user_id, mock_collection.id)
 
         # Verify
-        assert result == {"id": mock_collection.id, "title": "Public Collection"}
+        assert result == {
+            "id": mock_collection.id,
+            "title": "Public Collection",
+            "category_ids": [],
+        }
 
     async def test_get_collection_forbidden(
         self, service, collection_repository, mock_collection
@@ -202,9 +224,8 @@ class TestCollectionService:
         await service.update_collection(mock_collection.id, user_id, update_data)
 
         # Verify
-        collection_repository.update.assert_called_once_with(
-            mock_collection.id, {"title": "Updated Collection"}
-        )
+        collection_repository.save.assert_called_once_with(mock_collection)
+        assert mock_collection.title == "Updated Collection"
 
     async def test_update_collection_not_owner(
         self, service, collection_repository, mock_collection
@@ -382,7 +403,7 @@ class TestCollectionService:
                 created_by=AsyncMock(id=user_id), questions=[AsyncMock(), AsyncMock()]
             ),
         ]
-        collection_repository.get_all.return_value = mock_collections
+        collection_repository.get_teacher_collections.return_value = mock_collections
 
         # Setup model_dump as MagicMock for each collection
         mock_collections[0].model_dump = MagicMock(
@@ -419,4 +440,6 @@ class TestCollectionService:
         # Execute
         result = await service.get_teacher_collections(user_id)
 
-        # Add assertions for result
+        # Assert
+        collection_repository.get_teacher_collections.assert_called_once_with(user_id, None)
+        assert len(result) == 2

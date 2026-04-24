@@ -3,6 +3,7 @@ from typing import Dict, List
 
 from app.core.repository.base_repository import BaseRepository
 from app.exam.models import (
+    Category,
     Collection,
     ExamInstance,
     ExamStatus,
@@ -16,6 +17,34 @@ from app.exam.models import (
 
 class CollectionRepository(BaseRepository[Collection]):
     """Repository for Collection model operations"""
+
+    @staticmethod
+    def _get_category_filter(category_ids: List[str] | None) -> Dict[str, object]:
+        if not category_ids:
+            return {}
+        if len(category_ids) == 1:
+            return {"categories.$id": category_ids[0]}
+        return {"categories.$id": {"$in": category_ids}}
+
+    async def get_teacher_collections(
+        self, user_id: str, category_ids: List[str] | None = None
+    ) -> List[Collection]:
+        filter_criteria: Dict[str, object] = {"created_by._id": user_id}
+        filter_criteria.update(self._get_category_filter(category_ids))
+        return await self.get_all(
+            filter_criteria,
+            fetch_fields={"created_by": 1, "categories": 1},
+        )
+
+    async def get_public_collections(
+        self, category_ids: List[str] | None = None
+    ) -> List[Collection]:
+        filter_criteria: Dict[str, object] = {"status": ExamStatus.PUBLISHED}
+        filter_criteria.update(self._get_category_filter(category_ids))
+        return await self.get_all(
+            filter_criteria,
+            fetch_fields={"created_by": 1, "categories": 1},
+        )
 
     async def get_published(self) -> List[Collection]:
         """Get all published collections"""
@@ -32,6 +61,12 @@ class CollectionRepository(BaseRepository[Collection]):
 
 class QuestionRepository(BaseRepository[Question]):
     """Repository for Question model operations"""
+
+    pass
+
+
+class CategoryRepository(BaseRepository[Category]):
+    """Repository for Category model operations"""
 
     pass
 

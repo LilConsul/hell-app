@@ -91,10 +91,33 @@ class UpdateQuestionSchema(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
+class CategoryBase(BaseModel):
+    name: str
+    description: str | None = None
+
+
+class CreateCategory(CategoryBase):
+    pass
+
+
+class UpdateCategory(BaseModel):
+    name: str | None = None
+    description: str | None = None
+
+
+class CategorySummary(CategoryBase, TimeStamp):
+    id: str
+
+
+class GetCategory(CategorySummary):
+    pass
+
+
 class CollectionBase(BaseModel):
     title: str
     description: str | None = None
     status: ExamStatus = ExamStatus.DRAFT
+    category_ids: List[str] = []
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
@@ -107,6 +130,7 @@ class UpdateCollection(BaseModel):
     title: str | None = None
     description: str | None = None
     status: ExamStatus | None = None
+    category_ids: List[str] | None = None
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
@@ -115,6 +139,7 @@ class GetCollection(CollectionBase, TimeStamp):
     id: str
     created_by: UserResponse
     questions: List[QuestionSchema]
+    categories: List[CategorySummary] = []
 
 
 class CollectionNoQuestions(GetCollection):

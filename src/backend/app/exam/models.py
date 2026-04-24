@@ -167,12 +167,16 @@ class Collection(Document, TimestampMixin):
     # List of question IDs - using Link for proper relationships
     questions: List[Link[Question]] = Field(default_factory=list)
 
+    # Optional categories linked to this collection
+    categories: List[Link["Category"]] = Field(default_factory=list)
+
     class Settings:
         name = "collections"
         use_state_management = True
         indexes = [
             "created_by",
             "status",
+            "categories.$id",
         ]
 
     @before_event(Delete)
@@ -199,6 +203,45 @@ class Collection(Document, TimestampMixin):
             }
         },
     )
+
+
+class Category(Document, TimestampMixin):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    description: Optional[str] = None
+    created_by: Link[User]
+
+    collections: List[BackLink[Collection]] = Field(
+        default_factory=list,
+        json_schema_extra={"original_field": "categories"},
+    )
+
+    class Settings:
+        name = "categories"
+        use_state_management = True
+        indexes = [
+            "created_by",
+            "name",
+        ]
+
+    @before_event(Delete)
+    async def before_delete(self):
+        """Remove this category from linked collections before deletion."""
+        collections = await Collection.find(
+            {"categories.$id": self.id},
+            nesting_depth=0,
+            nesting_depths_per_field={"categories": 1},
+        ).to_list()
+
+        for collection in collections:
+            collection.categories = [
+                category
+                for category in collection.categories
+                if category.ref.id != self.id
+            ]
+            await collection.save()
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
 class ExamInstance(Document, TimestampMixin):
@@ -423,6 +466,10 @@ async def cascade_delete_user(user_id: str, role: UserRole):
     """
     # Delete all questions created by the user (can be teacher or admin)
     if role == UserRole.TEACHER or role == UserRole.ADMIN:
+        categories = await Category.find(Category.created_by.id == user_id).to_list()
+        for category in categories:
+            await category.delete()
+
         # await Collection.find(Collection.created_by.id == user_id).delete()
         # to support the cascade delete of collections
         collections = await Collection.find(

@@ -1,5 +1,5 @@
 import uuid
-from unittest.mock import patch
+from unittest.mock import ANY, patch
 
 import jwt
 import pytest
@@ -135,6 +135,24 @@ class TestTeacherRouter:
         )
         assert response.status_code == 200
         assert response.json()["message"] == "Collections retrieved successfully"
+
+    @patch("app.exam.teacher.services.CollectionService.get_teacher_collections")
+    async def test_get_teacher_collections_with_category_filter(
+        self, mock_service, client, auth_headers
+    ):
+        mock_service.return_value = []
+
+        response = await client.get(
+            "/v1/exam/teacher/collections/?category_id=cat-1",
+            headers=auth_headers,
+        )
+
+        assert response.status_code == 200
+        mock_service.assert_called_once_with(
+            ANY,
+            category_id="cat-1",
+            category_ids=None,
+        )
 
     @patch("app.exam.teacher.services.CollectionService.get_collection")
     async def test_get_collection_by_id(

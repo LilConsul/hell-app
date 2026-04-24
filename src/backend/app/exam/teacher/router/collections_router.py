@@ -1,6 +1,6 @@
 from typing import List
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 
 from app.auth.dependencies import get_current_teacher_id
 from app.core.schemas import BaseReturn
@@ -41,11 +41,17 @@ async def create_collection(
 
 @router.get("/", response_model=BaseReturn[List[CollectionQuestionCount]])
 async def get_teacher_collections(
+    category_id: str | None = None,
+    category_ids: List[str] | None = Query(default=None),
     teacher_id: str = Depends(get_current_teacher_id),
     collection_service: CollectionService = Depends(get_collection_service),
 ):
     """Get all collections created by the current teacher"""
-    collections = await collection_service.get_teacher_collections(teacher_id)
+    collections = await collection_service.get_teacher_collections(
+        teacher_id,
+        category_id=category_id,
+        category_ids=category_ids,
+    )
     return BaseReturn(
         message=_("Collections retrieved successfully"),
         data=collections,
@@ -54,10 +60,15 @@ async def get_teacher_collections(
 
 @router.get("/public", response_model=BaseReturn[List[CollectionQuestionCount]])
 async def get_public_collections(
+    category_id: str | None = None,
+    category_ids: List[str] | None = Query(default=None),
     collection_service: CollectionService = Depends(get_collection_service),
 ):
     """Get all published collections that are publicly available"""
-    collections = await collection_service.get_public_collections()
+    collections = await collection_service.get_public_collections(
+        category_id=category_id,
+        category_ids=category_ids,
+    )
     return BaseReturn(
         message=_("Public collections retrieved successfully"),
         data=collections,

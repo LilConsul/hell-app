@@ -11,9 +11,10 @@ from app.core.exceptions import (
 )
 from app.exam.models import ExamStatus, QuestionType
 from app.exam.repository import (
+    CategoryRepository,
     CollectionRepository,
-    QuestionRepository,
     ExamInstanceRepository,
+    QuestionRepository,
 )
 from app.exam.teacher.schemas import (
     CollectionQuestionCount,
@@ -32,31 +33,98 @@ class CollectionService:
         self,
         collection_repository: CollectionRepository,
         question_repository: QuestionRepository,
+        category_repository: CategoryRepository,
         exam_instance_repository: ExamInstanceRepository,
     ):
         self.collection_repository = collection_repository
         self.question_repository = question_repository
+        self.category_repository = category_repository
         self.exam_instance_repository = exam_instance_repository
+
+    @staticmethod
+    def _extract_id(obj) -> str | None:
+        """Extract ID from Link refs, fetched documents, dict payloads, or raw strings."""
+        if obj is None:
+            return None
+        if hasattr(obj, "ref") and getattr(obj.ref, "id", None):
+            return obj.ref.id
+        if hasattr(obj, "id"):
+            return obj.id
+        if isinstance(obj, dict):
+            return obj.get("id") or obj.get("_id") or obj.get("$id")
+        if isinstance(obj, str):
+            return obj
+        return str(obj)
+
+    @staticmethod
+    def _normalize_category_ids(
+        category_id: str | None = None,
+        category_ids: List[str] | None = None,
+    ) -> List[str] | None:
+        normalized = []
+        if category_id:
+            normalized.append(category_id)
+        if category_ids:
+            normalized.extend(category_ids)
+        if not normalized:
+            return None
+        return list(dict.fromkeys(normalized))
+
+    async def _resolve_categories_for_user(
+        self,
+        user_id: str,
+        category_ids: List[str] | None,
+    ):
+        if not category_ids:
+            return []
+
+        categories = []
+        for category_id in category_ids:
+            category = await self.category_repository.get_by_id(
+                category_id,
+                fetch_fields={"created_by": 1},
+            )
+            if not category:
+                raise NotFoundError(
+                    _("Category with ID {category_id} not found").format(
+                        category_id=category_id
+                    )
+                )
+            if self._extract_id(category.created_by) != user_id:
+                raise ForbiddenError(
+                    _("You do not have access to category {category_id}").format(
+                        category_id=category_id
+                    )
+                )
+            categories.append(category)
+
+        return categories
 
     async def create_collection(
         self, collection_data: CreateCollection, user_id: str
     ) -> str:
         """Create a new collection, returning the collection ID."""
-        collection_data = collection_data.model_dump()
-        collection_data["created_by"] = user_id
+        payload = collection_data.model_dump()
+        category_ids = payload.pop("category_ids", [])
+        payload["created_by"] = user_id
+        payload["categories"] = await self._resolve_categories_for_user(
+            user_id,
+            category_ids,
+        )
 
-        collection = await self.collection_repository.create(collection_data)
+        collection = await self.collection_repository.create(payload)
         return collection.id
 
     async def get_collection(self, user_id: str, collection_id: str) -> GetCollection:
         """Get a collection by its ID."""
         collection = await self.collection_repository.get_by_id(
-            collection_id, fetch_fields={"questions": 1, "created_by": 1}
+            collection_id,
+            fetch_fields={"questions": 1, "created_by": 1, "categories": 1},
         )
         if not collection:
             raise NotFoundError(_("Collection not found"))
 
-        is_owner = user_id and collection.created_by.id == user_id
+        is_owner = user_id and self._extract_id(collection.created_by) == user_id
         is_public = collection.status == ExamStatus.PUBLISHED
 
         if not (is_owner or is_public):
@@ -67,7 +135,13 @@ class CollectionService:
                 key=lambda q: getattr(q, "position", float("inf"))
             )
 
-        return collection.model_dump()
+        payload = collection.model_dump()
+        payload["category_ids"] = [
+            self._extract_id(category)
+            for category in getattr(collection, "categories", [])
+            if self._extract_id(category)
+        ]
+        return payload
 
     async def update_collection(
         self, collection_id: str, user_id: str, collection_data: UpdateCollection
@@ -76,18 +150,30 @@ class CollectionService:
         collection = await self.collection_repository.get_by_id(collection_id)
         if not collection:
             raise NotFoundError(_("Collection not found"))
-        if collection.created_by.ref.id != user_id:
+        if self._extract_id(collection.created_by) != user_id:
             raise ForbiddenError(_("You do not own this collection"))
 
         update_data = collection_data.model_dump(exclude_unset=True)
-        await self.collection_repository.update(collection_id, update_data)
+        if "category_ids" in update_data:
+            category_ids = update_data.pop("category_ids")
+            update_data["categories"] = await self._resolve_categories_for_user(
+                user_id,
+                category_ids,
+            )
+        if not update_data:
+            return
+
+        for field_name, value in update_data.items():
+            setattr(collection, field_name, value)
+
+        await self.collection_repository.save(collection)
 
     async def delete_collection(self, collection_id: str, user_id: str) -> None:
         """Delete a collection by its ID."""
         collection = await self.collection_repository.get_by_id(collection_id)
         if not collection:
             raise NotFoundError(_("Collection not found"))
-        if collection.created_by.ref.id != user_id:
+        if self._extract_id(collection.created_by) != user_id:
             raise ForbiddenError(_("You do not own this collection"))
         if await self.exam_instance_repository.get_by_field(
             "collection_id.$id", collection_id
@@ -373,20 +459,29 @@ class CollectionService:
         await self.collection_repository.save(collection)
 
     async def get_teacher_collections(
-        self, user_id: str
+        self,
+        user_id: str,
+        category_id: str | None = None,
+        category_ids: List[str] | None = None,
     ) -> List[CollectionQuestionCount] | []:
         """Get all collections created by a specific teacher."""
-        collections = await self.collection_repository.get_all(
-            {"created_by._id": user_id}, fetch_fields={"created_by": 1}
+        normalized_category_ids = self._normalize_category_ids(category_id, category_ids)
+        collections = await self.collection_repository.get_teacher_collections(
+            user_id,
+            normalized_category_ids,
         )
 
         return await self._process_collections(collections)
 
-    async def get_public_collections(self) -> List[CollectionQuestionCount] | []:
+    async def get_public_collections(
+        self,
+        category_id: str | None = None,
+        category_ids: List[str] | None = None,
+    ) -> List[CollectionQuestionCount] | []:
         """Get all published collections that are publicly available."""
-        collections = await self.collection_repository.get_all(
-            {"status": ExamStatus.PUBLISHED},
-            fetch_fields={"created_by": 1},
+        normalized_category_ids = self._normalize_category_ids(category_id, category_ids)
+        collections = await self.collection_repository.get_public_collections(
+            normalized_category_ids
         )
         return await self._process_collections(collections)
 
@@ -397,6 +492,11 @@ class CollectionService:
             CollectionQuestionCount.model_validate(
                 {
                     **collection.model_dump(),
+                    "category_ids": [
+                        CollectionService._extract_id(category)
+                        for category in getattr(collection, "categories", [])
+                        if CollectionService._extract_id(category)
+                    ],
                     "question_count": len(getattr(collection, "questions", []) or []),
                 }
             )

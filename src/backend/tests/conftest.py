@@ -6,6 +6,7 @@ from mongomock_motor import AsyncMongoMockClient
 
 from app.auth.models import User
 from app.exam.models import (
+    Category,
     Collection,
     ExamInstance,
     Question,
@@ -35,6 +36,7 @@ async def my_fixture():
     await init_beanie(
         document_models=[
             User,
+            Category,
             Collection,
             Question,
             ExamInstance,

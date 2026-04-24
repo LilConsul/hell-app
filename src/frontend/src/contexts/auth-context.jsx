@@ -76,6 +76,26 @@ export function AuthProvider({ children }) {
     }
   };
 
+  const verifyMFA = async (mfaToken, mfaCode) => {
+    try {
+      const result = await apiRequest('/api/v1/auth/login/mfa', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mfa_token: mfaToken,
+          mfa_code: mfaCode
+        }),
+        credentials: 'include'
+      });
+      lastFetchRef.current = 0;
+      await fetchUser();
+      navigate("/dashboard");
+      return true;
+    } catch (error) {
+      throw error;
+    }
+  };
+
   const logout = async () => {
     try {
       await apiRequest("/api/v1/auth/logout", { method: "POST", credentials: "include" });
@@ -102,9 +122,10 @@ export function AuthProvider({ children }) {
       login, 
       logout, 
       refreshUser: fetchUser,
-      updateUser
+      updateUser,
+      verifyMFA
     }),
-    [user, loading, login, logout, fetchUser]
+    [user, loading, login, logout, fetchUser, verifyMFA]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

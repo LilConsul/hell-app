@@ -2,6 +2,7 @@ import { memo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { InputOTP, InputOTPGroup, InputOTPSlot, REGEXP_ONLY_DIGITS } from "@/components/ui/input-otp";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -181,6 +182,8 @@ const SecurityTab = memo(function SecurityTab({
   const isMfaEnabled = Boolean(user?.mfa_enabled);
   const [copiedSecret, setCopiedSecret] = useState(false);
   const [copiedDisableSecret, setCopiedDisableSecret] = useState(false);
+  const [isSetupOtpInputUnlocked, setIsSetupOtpInputUnlocked] = useState(false);
+  const [isDisableOtpInputUnlocked, setIsDisableOtpInputUnlocked] = useState(false);
 
   const handleCopySecret = (secret) => {
     navigator.clipboard.writeText(secret).then(() => {
@@ -292,10 +295,17 @@ const SecurityTab = memo(function SecurityTab({
 
                   <div className="space-y-3">
                     <Label htmlFor="mfa-setup-code">Verification code</Label>
-                    <Input
+                    <InputOTP
                       id="mfa-setup-code"
+                      name="mfa-setup-code"
+                      maxLength={6}
                       value={mfaSetupCode}
-                      onChange={(e) => setMfaSetupCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                      pattern={REGEXP_ONLY_DIGITS}
+                      onChange={(value) => setMfaSetupCode(value.replace(/\D/g, "").slice(0, 6))}
+                      onComplete={(value) => setMfaSetupCode(value.replace(/\D/g, "").slice(0, 6))}
+                      onMouseDown={() => setIsSetupOtpInputUnlocked(true)}
+                      onTouchStart={() => setIsSetupOtpInputUnlocked(true)}
+                      onFocus={() => setIsSetupOtpInputUnlocked(true)}
                       onKeyDown={(e) => {
                         if (e.key === "Enter" && mfaSetupCode.length === 6 && !isMfaVerifying) {
                           e.preventDefault();
@@ -303,11 +313,25 @@ const SecurityTab = memo(function SecurityTab({
                         }
                       }}
                       inputMode="numeric"
-                      autoComplete="one-time-code"
-                      placeholder="123456"
-                      maxLength={6}
-                      className="max-w-xs tracking-[0.3em]"
-                    />
+                      autoComplete="off"
+                      autoCorrect="off"
+                      autoCapitalize="none"
+                      spellCheck={false}
+                      pushPasswordManagerStrategy="none"
+                      data-lpignore="true"
+                      data-1p-ignore="true"
+                      readOnly={!isSetupOtpInputUnlocked}
+                      disabled={isMfaVerifying}
+                    >
+                      <InputOTPGroup>
+                        <InputOTPSlot index={0} />
+                        <InputOTPSlot index={1} />
+                        <InputOTPSlot index={2} />
+                        <InputOTPSlot index={3} />
+                        <InputOTPSlot index={4} />
+                        <InputOTPSlot index={5} />
+                      </InputOTPGroup>
+                    </InputOTP>
                     <div className="flex flex-wrap items-center gap-2">
                       <Button
                         onClick={handleVerifyMfa}
@@ -347,10 +371,17 @@ const SecurityTab = memo(function SecurityTab({
               {showMfaDisablePrompt ? (
                 <div className="space-y-3 rounded-lg border bg-muted/20 p-4">
                   <Label htmlFor="mfa-disable-code">Authenticator code</Label>
-                  <Input
+                  <InputOTP
                     id="mfa-disable-code"
+                    name="mfa-disable-code"
+                    maxLength={6}
                     value={mfaDisableCode}
-                    onChange={(e) => setMfaDisableCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                    pattern={REGEXP_ONLY_DIGITS}
+                    onChange={(value) => setMfaDisableCode(value.replace(/\D/g, "").slice(0, 6))}
+                    onComplete={(value) => setMfaDisableCode(value.replace(/\D/g, "").slice(0, 6))}
+                    onMouseDown={() => setIsDisableOtpInputUnlocked(true)}
+                    onTouchStart={() => setIsDisableOtpInputUnlocked(true)}
+                    onFocus={() => setIsDisableOtpInputUnlocked(true)}
                     onKeyDown={(e) => {
                       if (e.key === "Enter" && mfaDisableCode.length === 6 && !isMfaDisabling) {
                         e.preventDefault();
@@ -358,11 +389,25 @@ const SecurityTab = memo(function SecurityTab({
                       }
                     }}
                     inputMode="numeric"
-                    autoComplete="one-time-code"
-                    placeholder="123456"
-                    maxLength={6}
-                    className="max-w-xs tracking-[0.3em]"
-                  />
+                    autoComplete="off"
+                    autoCorrect="off"
+                    autoCapitalize="none"
+                    spellCheck={false}
+                    pushPasswordManagerStrategy="none"
+                    data-lpignore="true"
+                    data-1p-ignore="true"
+                    readOnly={!isDisableOtpInputUnlocked}
+                    disabled={isMfaDisabling}
+                  >
+                    <InputOTPGroup>
+                      <InputOTPSlot index={0} />
+                      <InputOTPSlot index={1} />
+                      <InputOTPSlot index={2} />
+                      <InputOTPSlot index={3} />
+                      <InputOTPSlot index={4} />
+                      <InputOTPSlot index={5} />
+                    </InputOTPGroup>
+                  </InputOTP>
                   <div className="flex flex-wrap items-center gap-2">
                     <Button
                       variant="destructive"

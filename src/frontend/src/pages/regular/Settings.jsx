@@ -49,6 +49,13 @@ export default function SettingsPage() {
 
   const [language, setLanguage] = useState('en'); 
   const [notifications, setNotifications] = useState({ email: true }); 
+  const [mfaSetupData, setMfaSetupData] = useState(null);
+  const [mfaSetupCode, setMfaSetupCode] = useState('');
+  const [mfaDisableCode, setMfaDisableCode] = useState('');
+  const [isMfaSettingUp, setIsMfaSettingUp] = useState(false);
+  const [isMfaVerifying, setIsMfaVerifying] = useState(false);
+  const [isMfaDisabling, setIsMfaDisabling] = useState(false);
+  const [showMfaDisablePrompt, setShowMfaDisablePrompt] = useState(false);
 
 
   const validateName = useCallback((name) => {
@@ -65,6 +72,18 @@ export default function SettingsPage() {
  
   const isFirstNameValid = firstName.trim() === '' || validateName(firstName) === '';
   const isLastNameValid = lastName.trim() === '' || validateName(lastName) === '';
+
+  useEffect(() => {
+    if (user?.mfa_enabled) {
+      setMfaSetupData(null);
+      setMfaSetupCode('');
+      setShowMfaDisablePrompt(false);
+      setMfaDisableCode('');
+    } else {
+      setShowMfaDisablePrompt(false);
+      setMfaDisableCode('');
+    }
+  }, [user?.mfa_enabled]);
 
   useEffect(() => {
     if (user) {
@@ -238,6 +257,110 @@ export default function SettingsPage() {
       setLanguage(oldLanguage);
     }
   }, [language]);
+
+  const extractMfaSetupData = useCallback((payload) => {
+    const data = payload?.data || payload || {};
+
+    return {
+      secret: data.secret || data.mfa_secret || '',
+      qr_code_url: data.qr_code_url || data.qrcode_url || ''
+    };
+  }, []);
+
+  const handleEnableMfa = useCallback(async () => {
+    setErrorMessage('');
+    setIsMfaSettingUp(true);
+
+    try {
+      const payload = await apiRequest('/api/v1/auth/mfa/setup', {
+        method: 'POST',
+        credentials: 'include'
+      });
+
+      const setupData = extractMfaSetupData(payload);
+      if (!setupData.qrCodeValue && !setupData.secret) {
+        throw new Error('Failed to start MFA setup.');
+      }
+
+      setMfaSetupData(setupData);
+      setMfaSetupCode('');
+      setShowMfaDisablePrompt(false);
+      setMfaDisableCode('');
+      setSuccessMessage('MFA setup started. Scan the QR code and verify the 6-digit code.');
+    } catch (error) {
+      setErrorMessage(error.message || 'Failed to start MFA setup.');
+    } finally {
+      setIsMfaSettingUp(false);
+    }
+  }, [extractMfaSetupData]);
+
+  const handleVerifyMfa = useCallback(async () => {
+    const code = mfaSetupCode.trim();
+
+    if (!/^\d{6}$/.test(code)) {
+      setErrorMessage('Enter the 6-digit code from your authenticator app.');
+      return;
+    }
+
+    setErrorMessage('');
+    setIsMfaVerifying(true);
+
+    try {
+      await apiRequest('/api/v1/auth/mfa/verify', {
+        method: 'POST',
+        body: JSON.stringify({ code }),
+        credentials: 'include'
+      });
+
+      updateUser({ mfa_enabled: true });
+      setMfaSetupData(null);
+      setMfaSetupCode('');
+      setShowMfaDisablePrompt(false);
+      setMfaDisableCode('');
+      setSuccessMessage('Two-factor authentication has been enabled.');
+    } catch (error) {
+      setErrorMessage(error.message || 'Failed to verify MFA code.');
+    } finally {
+      setIsMfaVerifying(false);
+    }
+  }, [mfaSetupCode, updateUser]);
+
+  const handleStartDisableMfa = useCallback(() => {
+    setErrorMessage('');
+    setShowMfaDisablePrompt(true);
+    setMfaDisableCode('');
+  }, []);
+
+  const handleDisableMfa = useCallback(async () => {
+    const code = mfaDisableCode.trim();
+
+    if (!/^\d{6}$/.test(code)) {
+      setErrorMessage('Enter the 6-digit code from your authenticator app.');
+      return;
+    }
+
+    setErrorMessage('');
+    setIsMfaDisabling(true);
+
+    try {
+      await apiRequest('/api/v1/auth/mfa/disable', {
+        method: 'POST',
+        body: JSON.stringify({ code }),
+        credentials: 'include'
+      });
+
+      updateUser({ mfa_enabled: false });
+      setShowMfaDisablePrompt(false);
+      setMfaDisableCode('');
+      setMfaSetupData(null);
+      setMfaSetupCode('');
+      setSuccessMessage('Two-factor authentication has been disabled.');
+    } catch (error) {
+      setErrorMessage(error.message || 'Failed to disable MFA.');
+    } finally {
+      setIsMfaDisabling(false);
+    }
+  }, [mfaDisableCode, updateUser]);
 
   const handleOpenCurrentPasswordModal = useCallback(() => {
     setCurrentPassword('');
@@ -510,6 +633,20 @@ export default function SettingsPage() {
             handleOpenCurrentPasswordModal={handleOpenCurrentPasswordModal}
             setShowDeleteModal={setShowDeleteModal}
             handleNameKeyDown={handleNameKeyDown}
+            mfaSetupData={mfaSetupData}
+            mfaSetupCode={mfaSetupCode}
+            setMfaSetupCode={setMfaSetupCode}
+            isMfaSettingUp={isMfaSettingUp}
+            isMfaVerifying={isMfaVerifying}
+            handleEnableMfa={handleEnableMfa}
+            handleVerifyMfa={handleVerifyMfa}
+            showMfaDisablePrompt={showMfaDisablePrompt}
+            setShowMfaDisablePrompt={setShowMfaDisablePrompt}
+            mfaDisableCode={mfaDisableCode}
+            setMfaDisableCode={setMfaDisableCode}
+            isMfaDisabling={isMfaDisabling}
+            handleStartDisableMfa={handleStartDisableMfa}
+            handleDisableMfa={handleDisableMfa}
             
             firstNameError={firstNameError}
             lastNameError={lastNameError}

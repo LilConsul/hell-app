@@ -18,6 +18,22 @@ class TimeStamp(BaseModel):
     updated_at: datetime
 
 
+class CategorySchema(BaseModel):
+    """Schema for Category"""
+    name: str
+    
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {"name": "Mathematics"}
+        }
+    )
+
+
+class CategoryResponse(CategorySchema, TimeStamp):
+    """Schema for Category with metadata"""
+    collection_count: int = 0
+
+
 class QuestionOptionSchema(BaseModel):
     id: str | None = None
     text: str
@@ -100,13 +116,14 @@ class CollectionBase(BaseModel):
 
 
 class CreateCollection(CollectionBase):
-    pass
+    categories: List[str] = []  # List of category names
 
 
 class UpdateCollection(BaseModel):
     title: str | None = None
     description: str | None = None
     status: ExamStatus | None = None
+    categories: List[str] | None = None  # List of category names
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
@@ -115,6 +132,7 @@ class GetCollection(CollectionBase, TimeStamp):
     id: str
     created_by: UserResponse
     questions: List[QuestionSchema]
+    categories: List[CategorySchema] = []  # List of categories
 
 
 class CollectionNoQuestions(GetCollection):

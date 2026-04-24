@@ -3,6 +3,7 @@ from fastapi import Depends
 from app.auth.dependencies import get_user_repository
 from app.auth.repository import UserRepository
 from app.exam.dependencies import (
+    get_category_repository,
     get_collection_repository,
     get_exam_instance_repository,
     get_question_repository,
@@ -10,6 +11,7 @@ from app.exam.dependencies import (
     get_student_exam_repository,
 )
 from app.exam.repository import (
+    CategoryRepository,
     CollectionRepository,
     ExamInstanceRepository,
     QuestionRepository,
@@ -29,9 +31,10 @@ def get_collection_service(
     exam_instance_repository: ExamInstanceRepository = Depends(
         get_exam_instance_repository
     ),
+    category_repository: CategoryRepository = Depends(get_category_repository),
 ) -> CollectionService:
     return CollectionService(
-        collection_repository, question_repository, exam_instance_repository
+        collection_repository, question_repository, exam_instance_repository, category_repository
     )
 
 

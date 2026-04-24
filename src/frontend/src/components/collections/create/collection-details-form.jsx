@@ -1,3 +1,4 @@
+import { useMemo, useState } from "react"
 import { Link } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -13,8 +14,23 @@ export function CollectionDetailsForm({
   onContinue,
   isArchived = false,
   canEdit = true,
-  createdBy = null
+  createdBy = null,
+  availableCategories = [],
+  onCategoryChange,
 }) {
+  const selectedCategory = collectionData.categories?.[0] || "";
+  const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
+
+  const filteredCategories = useMemo(() => {
+    const query = selectedCategory.trim().toLowerCase();
+    const categories = availableCategories
+      .map((category) => category?.name)
+      .filter(Boolean);
+
+    if (!query) return categories;
+    return categories.filter((name) => name.toLowerCase().includes(query));
+  }, [availableCategories, selectedCategory]);
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
@@ -54,6 +70,47 @@ export function CollectionDetailsForm({
               readOnly={!canEdit || isArchived}
               className={(!canEdit || isArchived) ? "opacity-70 cursor-not-allowed" : ""}
             />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="category">Category</Label>
+            <div className="relative">
+              <Input
+                id="category"
+                value={selectedCategory}
+                onFocus={() => setIsCategoryDropdownOpen(true)}
+                onBlur={() => {
+                  setTimeout(() => setIsCategoryDropdownOpen(false), 120);
+                }}
+                onChange={(e) => {
+                  onCategoryChange(e.target.value);
+                  setIsCategoryDropdownOpen(true);
+                }}
+                placeholder="Type a new category or pick an existing one"
+                readOnly={!canEdit || isArchived}
+                className={(!canEdit || isArchived) ? "opacity-70 cursor-not-allowed" : ""}
+              />
+
+              {canEdit && !isArchived && isCategoryDropdownOpen && filteredCategories.length > 0 && (
+                <div className="absolute z-20 mt-1 w-full rounded-md border bg-popover p-1 text-popover-foreground shadow-md">
+                  <div className="max-h-56 overflow-y-auto">
+                    {filteredCategories.map((name) => (
+                      <button
+                        key={name}
+                        type="button"
+                        className="w-full rounded-sm px-2 py-1.5 text-left text-sm hover:bg-accent hover:text-accent-foreground"
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          onCategoryChange(name);
+                          setIsCategoryDropdownOpen(false);
+                        }}
+                      >
+                        {name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </CardContent>

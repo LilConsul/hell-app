@@ -33,7 +33,9 @@ function CreateCollection() {
     title: "",
     description: "",
     status: "draft",
+    categories: [],
   });
+  const [availableCategories, setAvailableCategories] = useState([]);
   const [createdBy, setCreatedBy] = useState(null);
   const [canEdit, setCanEdit] = useState(true);
   const [questions, setQuestions] = useState([]);
@@ -101,6 +103,19 @@ function CreateCollection() {
     }
   }, [collectionId, location.pathname]);
 
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const categories = await CollectionAPI.fetchCategories();
+        setAvailableCategories(Array.isArray(categories) ? categories : []);
+      } catch {
+        setAvailableCategories([]);
+      }
+    };
+
+    loadCategories();
+  }, []);
+
   const fetchCollectionData = async (id) => {
     setIsLoading(true);
     try {
@@ -112,6 +127,9 @@ function CreateCollection() {
         title: data.title || "",
         description: data.description || "",
         status: data.status || "draft",
+        categories: Array.isArray(data.categories)
+          ? data.categories.map((category) => category?.name).filter(Boolean)
+          : [],
       });
 
       if (data.created_by) {
@@ -182,6 +200,14 @@ function CreateCollection() {
 
   const handleInputChange = (e) => {
     setCollectionData({ ...collectionData, [e.target.name]: e.target.value });
+  };
+
+  const handleCategoryChange = (value) => {
+    const normalizedValue = value.trim();
+    setCollectionData((prev) => ({
+      ...prev,
+      categories: normalizedValue ? [normalizedValue] : [],
+    }));
   };
 
   const transitionToToast = {
@@ -683,10 +709,12 @@ function CreateCollection() {
                 collectionData={collectionData}
                 collectionId={collectionId}
                 onInputChange={handleInputChange}
+                onCategoryChange={handleCategoryChange}
                 onContinue={() => setActiveTab("questions")}
                 isArchived={isArchived}
                 canEdit={canEdit}
                 createdBy={createdBy}
+                availableCategories={availableCategories}
               />
             </TabsContent>
 

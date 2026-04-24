@@ -33,6 +33,7 @@ export function CollectionFilters({
   activeFilter,
   setActiveFilter,
   filters = {
+    category: "all",
     dateRange: "all",
     questionCount: [0, 100],
     createdBy: "all",
@@ -44,6 +45,7 @@ export function CollectionFilters({
   sortOption,
   setSortOption,
   allCollections = [],
+  availableCategories = [],
 }) {
   const { user } = useAuth();
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -102,6 +104,7 @@ export function CollectionFilters({
   
   const handleClearFilters = () => {
     const clearedFilters = {
+      category: "all",
       dateRange: "all",
       questionCount: [0, 100],
       createdBy: "all",
@@ -147,6 +150,7 @@ export function CollectionFilters({
   };
 
   const hasActiveFilters =
+    filters.category !== "all" ||
     filters.dateRange !== "all" ||
     filters.questionCount[0] > 0 ||
     filters.questionCount[1] < 100 ||
@@ -155,6 +159,7 @@ export function CollectionFilters({
     filters.lastUpdated !== "all";
     
   const hasUnappliedChanges = 
+    tempFilters.category !== filters.category ||
     tempFilters.dateRange !== filters.dateRange ||
     tempFilters.questionCount[0] !== filters.questionCount[0] ||
     tempFilters.questionCount[1] !== filters.questionCount[1] ||
@@ -165,6 +170,7 @@ export function CollectionFilters({
   const getActiveFiltersCount = () => {
     let count = 0;
     
+    if (filters.category !== "all") count++;
     if (filters.dateRange !== "all") count++;
     if (filters.lastUpdated !== "all") count++;
     if (filters.questionCount[0] > 0 || filters.questionCount[1] < 100) count++;
@@ -217,6 +223,26 @@ export function CollectionFilters({
                   <X className="mr-2 h-3.5 w-3.5" />
                   Clear
                 </Button>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Category</Label>
+                <Select
+                  value={tempFilters.category}
+                  onValueChange={(value) => setTempFilters({ ...tempFilters, category: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="All categories" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All categories</SelectItem>
+                    {availableCategories.map((category) => (
+                      <SelectItem key={category.name} value={category.name}>
+                        {category.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-2">

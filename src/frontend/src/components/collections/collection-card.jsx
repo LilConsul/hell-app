@@ -42,6 +42,9 @@ export function CollectionCard({ collection, onStatusChange, onDelete, onDuplica
   };
 
   const isArchived = collection.status === "archived";
+  const collectionCategories = Array.isArray(collection.categories)
+    ? collection.categories.map((category) => category?.name).filter(Boolean)
+    : [];
 
   const renderStatusIcon = () => {
     switch (collection.status) {
@@ -118,6 +121,18 @@ export function CollectionCard({ collection, onStatusChange, onDelete, onDuplica
         </CardHeader>
         <CardContent className="pb-3">
           <p className="text-sm text-muted-foreground mb-4">{collection.description}</p>
+          {collectionCategories.length > 0 && (
+            <div className="mb-4 flex flex-wrap gap-2">
+              {collectionCategories.slice(0, 3).map((categoryName) => (
+                <Badge key={categoryName} variant="secondary">
+                  {categoryName}
+                </Badge>
+              ))}
+              {collectionCategories.length > 3 && (
+                <Badge variant="outline">+{collectionCategories.length - 3}</Badge>
+              )}
+            </div>
+          )}
           <div className="flex flex-wrap gap-3">
             <div className="flex items-center">
               <Library className="mr-2 h-4 w-4 text-muted-foreground" />

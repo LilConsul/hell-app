@@ -7,6 +7,7 @@ from app.settings import settings
 async def init_db():
     from app.auth.models import User
     from app.exam.models import (
+        Category,
         Collection,
         ExamInstance,
         Question,
@@ -22,6 +23,7 @@ async def init_db():
         document_models=[
             User,
             # Exam databases
+            Category,
             Collection,
             Question,
             ExamInstance,

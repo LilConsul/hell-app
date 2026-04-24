@@ -370,6 +370,15 @@ export default function SettingsPage() {
       || null;
   }, []);
 
+  const withCacheBuster = useCallback((url) => {
+    if (!url) {
+      return null;
+    }
+
+    const separator = url.includes('?') ? '&' : '?';
+    return `${url}${separator}t=${Date.now()}`;
+  }, []);
+
   const handleFileUpload = useCallback(async (event) => {
     const file = event.target.files?.[0];
     if (!file) {
@@ -412,7 +421,7 @@ export default function SettingsPage() {
 
       const nextUrl = extractProfilePictureUrl(payload);
       if (nextUrl) {
-        updateUser({ profile_picture_url: nextUrl });
+        updateUser({ profile_picture_url: withCacheBuster(nextUrl) });
       } else {
         await refreshUser();
       }
@@ -424,7 +433,7 @@ export default function SettingsPage() {
       setIsPictureUpdating(false);
       event.target.value = '';
     }
-  }, [extractProfilePictureUrl, refreshUser, updateUser]);
+  }, [extractProfilePictureUrl, refreshUser, updateUser, withCacheBuster]);
 
   const handleDeletePicture = useCallback(async () => {
     setIsPictureUpdating(true);

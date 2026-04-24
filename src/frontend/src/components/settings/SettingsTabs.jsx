@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Pencil, Save, User, Lock, Globe, Trash2, Upload } from "lucide-react";
+import { Pencil, Save, User, Lock, Globe, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const EditableField = memo(function EditableField({

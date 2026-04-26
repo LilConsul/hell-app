@@ -114,6 +114,34 @@ export function AuthProvider({ children }) {
     sessionStorage.setItem('user', JSON.stringify(updatedUser));
   };
 
+  const requestMFARecovery = async (email) => {
+    try {
+      const result = await apiRequest('/api/v1/auth/mfa/disable/recovery/request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+        credentials: 'include'
+      });
+      return result;
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const confirmMFARecovery = async (token) => {
+    try {
+      const result = await apiRequest('/api/v1/auth/mfa/disable/recovery/confirm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token }),
+        credentials: 'include'
+      });
+      return result;
+    } catch (error) {
+      throw error;
+    }
+  };
+
   const value = useMemo(
     () => ({ 
       user, 
@@ -123,7 +151,9 @@ export function AuthProvider({ children }) {
       logout, 
       refreshUser: fetchUser,
       updateUser,
-      verifyMFA
+      verifyMFA,
+      requestMFARecovery,
+      confirmMFARecovery
     }),
     [user, loading, login, logout, fetchUser, verifyMFA]
   );

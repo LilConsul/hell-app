@@ -37,7 +37,12 @@ export function LoginModal({ isOpen, onClose, onRegisterClick, onForgotPasswordC
   const [mfaCode, setMfaCode] = useState("")
   const [isMfaInputUnlocked, setIsMfaInputUnlocked] = useState(false)
   const [mfaSubmitting, setMfaSubmitting] = useState(false)
-  const { verifyMFA, refreshUser } = useAuth()
+  const [showRecoveryModal, setShowRecoveryModal] = useState(false)
+  const [recoveryLoading, setRecoveryLoading] = useState(false)
+  const [recoveryError, setRecoveryError] = useState(null)
+  const [recoverySuccess, setRecoverySuccess] = useState(false)
+  const [userEmail, setUserEmail] = useState("")
+  const { verifyMFA, refreshUser, requestMFARecovery } = useAuth()
   const navigate = useNavigate()
   
   const form = useForm({
@@ -75,6 +80,9 @@ export function LoginModal({ isOpen, onClose, onRegisterClick, onForgotPasswordC
       setIsMFAView(false)
       setMfaToken(null)
       setIsMfaInputUnlocked(false)
+      setShowRecoveryModal(false)
+      setRecoveryError(null)
+      setRecoverySuccess(false)
     } else {
       form.reset()
       setMfaCode("")
@@ -82,6 +90,10 @@ export function LoginModal({ isOpen, onClose, onRegisterClick, onForgotPasswordC
       setIsMFAView(false)
       setMfaToken(null)
       setIsMfaInputUnlocked(false)
+      setShowRecoveryModal(false)
+      setRecoveryError(null)
+      setRecoverySuccess(false)
+      setUserEmail("")
     }
   }, [isOpen, form])
 
@@ -89,6 +101,7 @@ export function LoginModal({ isOpen, onClose, onRegisterClick, onForgotPasswordC
 
   const onSubmit = async (data) => {
     setServerError(null)
+    setUserEmail(data.email)
     
     try {
       const response = await fetch('/api/v1/auth/login', {
@@ -159,6 +172,30 @@ export function LoginModal({ isOpen, onClose, onRegisterClick, onForgotPasswordC
     setMfaCode("")
     setIsMfaInputUnlocked(false)
     setServerError(null)
+  }
+
+  const handleRecoveryRequest = async () => {
+    setRecoveryError(null)
+    setRecoverySuccess(false)
+    setRecoveryLoading(true)
+
+    try {
+      await requestMFARecovery(userEmail)
+      setRecoverySuccess(true)
+    } catch (error) {
+      setRecoveryError(error.message || "Failed to send recovery email. Please try again.")
+    } finally {
+      setRecoveryLoading(false)
+    }
+  }
+
+  const handleRecoveryModalClose = () => {
+    setShowRecoveryModal(false)
+    setRecoveryError(null)
+    setRecoverySuccess(false)
+    if (!recoverySuccess) {
+      setMfaCode("")
+    }
   }
 
   const handleForgotPassword = (e) => {
@@ -331,6 +368,16 @@ export function LoginModal({ isOpen, onClose, onRegisterClick, onForgotPasswordC
                     <Button 
                       variant="outline"
                       className="w-full"
+                      onClick={() => setShowRecoveryModal(true)}
+                      disabled={mfaSubmitting}
+                      type="button"
+                    >
+                      Can't access authenticator?
+                    </Button>
+
+                    <Button 
+                      variant="outline"
+                      className="w-full"
                       onClick={handleBackToLogin}
                       disabled={mfaSubmitting}
                       type="button"
@@ -344,7 +391,99 @@ export function LoginModal({ isOpen, onClose, onRegisterClick, onForgotPasswordC
           )}
         </div>
       </div>
+
+      {/* Recovery Modal Overlay */}
+      {showRecoveryModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="absolute inset-0" onClick={handleRecoveryModalClose} aria-hidden="true" />
+          <div className="relative bg-background rounded-lg shadow-lg w-full max-w-md p-6">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="absolute right-2 top-2" 
+              onClick={handleRecoveryModalClose}
+              disabled={recoveryLoading}
+            >
+              <X className="h-4 w-4" />
+              <span className="sr-only">Close</span>
+            </Button>
+
+            {!recoverySuccess ? (
+              <div className="space-y-4">
+                <div className="space-y-2 text-center">
+                  <h2 className="text-2xl font-bold">Recover Your Account</h2>
+                  <p className="text-sm text-muted-foreground">
+                    We'll send a recovery code to your email address to help you regain access.
+                  </p>
+                </div>
+
+                {recoveryError && (
+                  <div className="p-3 bg-destructive/10 border border-destructive rounded text-sm text-destructive">
+                    {recoveryError}
+                  </div>
+                )}
+
+                <div className="space-y-3">
+                  <p className="text-sm font-medium">
+                    Email: <span className="font-mono text-blue-600">{userEmail}</span>
+                  </p>
+                  
+                  <Button 
+                    onClick={handleRecoveryRequest}
+                    disabled={recoveryLoading}
+                    className="w-full"
+                  >
+                    {recoveryLoading ? "Sending..." : "Send Recovery Email"}
+                  </Button>
+
+                  <Button 
+                    variant="outline"
+                    onClick={handleRecoveryModalClose}
+                    disabled={recoveryLoading}
+                    className="w-full"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4 text-center">
+                <div className="space-y-2">
+                  <div className="flex justify-center">
+                    <div className="bg-green-100 p-3 rounded-full">
+                      <svg className="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                  </div>
+                  <h3 className="text-lg font-semibold">Check your email</h3>
+                  <p className="text-sm text-muted-foreground">
+                    We've sent a recovery link to <span className="font-mono text-blue-600">{userEmail}</span>
+                  </p>
+                </div>
+
+                <div className="space-y-2 bg-muted p-3 rounded text-sm">
+                  <p className="font-medium">Next steps:</p>
+                  <ol className="text-left space-y-1 text-xs">
+                    <li>1. Open the email we sent</li>
+                    <li>2. Click the recovery link</li>
+                    <li>3. Login again without 2FA</li>
+                  </ol>
+                </div>
+
+                <Button 
+                  onClick={handleRecoveryModalClose}
+                  className="w-full"
+                >
+                  Got it
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>,
     document.body,
   )
 }
+

@@ -203,10 +203,21 @@ function CreateCollection() {
   };
 
   const handleCategoryChange = (value) => {
-    const normalizedValue = value.trim();
+    const rawCategories = Array.isArray(value)
+      ? value
+      : String(value || "").split(",");
+
+    const normalizedCategories = Array.from(
+      new Set(
+        rawCategories
+          .map((category) => category.trim())
+          .filter(Boolean)
+      )
+    );
+
     setCollectionData((prev) => ({
       ...prev,
-      categories: normalizedValue ? [normalizedValue] : [],
+      categories: normalizedCategories,
     }));
   };
 

@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { User } from "lucide-react"
+import { User, X } from "lucide-react"
 
 export function CollectionDetailsForm({ 
   collectionData, 
@@ -18,18 +18,48 @@ export function CollectionDetailsForm({
   availableCategories = [],
   onCategoryChange,
 }) {
-  const selectedCategory = collectionData.categories?.[0] || "";
+  const selectedCategories = Array.isArray(collectionData.categories)
+    ? collectionData.categories
+    : [];
+  const [categoryInput, setCategoryInput] = useState("");
   const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
 
   const filteredCategories = useMemo(() => {
-    const query = selectedCategory.trim().toLowerCase();
+    const query = categoryInput.trim().toLowerCase();
     const categories = availableCategories
       .map((category) => category?.name)
-      .filter(Boolean);
+      .filter((name) => Boolean(name) && !selectedCategories.includes(name));
 
     if (!query) return categories;
     return categories.filter((name) => name.toLowerCase().includes(query));
-  }, [availableCategories, selectedCategory]);
+  }, [availableCategories, categoryInput, selectedCategories]);
+
+  const addCategory = (value) => {
+    const categoryName = value.trim();
+    if (!categoryName || selectedCategories.includes(categoryName)) {
+      return;
+    }
+
+    onCategoryChange([...selectedCategories, categoryName]);
+    setCategoryInput("");
+    setIsCategoryDropdownOpen(false);
+  };
+
+  const removeCategory = (categoryName) => {
+    onCategoryChange(selectedCategories.filter((name) => name !== categoryName));
+  };
+
+  const handleCategoryKeyDown = (e) => {
+    if (e.key === "Enter" || e.key === ",") {
+      e.preventDefault();
+      addCategory(categoryInput);
+      return;
+    }
+
+    if (e.key === "Backspace" && !categoryInput.trim() && selectedCategories.length > 0) {
+      removeCategory(selectedCategories[selectedCategories.length - 1]);
+    }
+  };
 
   return (
     <Card>
@@ -72,23 +102,54 @@ export function CollectionDetailsForm({
             />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="category">Category</Label>
+            <Label htmlFor="category">Categories</Label>
             <div className="relative">
-              <Input
-                id="category"
-                value={selectedCategory}
-                onFocus={() => setIsCategoryDropdownOpen(true)}
-                onBlur={() => {
-                  setTimeout(() => setIsCategoryDropdownOpen(false), 120);
-                }}
-                onChange={(e) => {
-                  onCategoryChange(e.target.value);
-                  setIsCategoryDropdownOpen(true);
-                }}
-                placeholder="Type a new category or pick an existing one"
-                readOnly={!canEdit || isArchived}
-                className={(!canEdit || isArchived) ? "opacity-70 cursor-not-allowed" : ""}
-              />
+              <div
+                className={`flex min-h-10 flex-wrap items-center gap-2 rounded-md border px-3 py-2 ${
+                  (!canEdit || isArchived)
+                    ? "opacity-70 cursor-not-allowed bg-muted"
+                    : ""
+                }`}
+              >
+                {selectedCategories.map((name) => (
+                  <span
+                    key={name}
+                    className="inline-flex items-center gap-1 rounded-full bg-secondary px-2 py-1 text-xs"
+                  >
+                    {name}
+                    {canEdit && !isArchived && (
+                      <button
+                        type="button"
+                        className="rounded-full hover:bg-muted"
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          removeCategory(name);
+                        }}
+                        aria-label={`Remove ${name}`}
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    )}
+                  </span>
+                ))}
+
+                <Input
+                  id="category"
+                  value={categoryInput}
+                  onFocus={() => setIsCategoryDropdownOpen(true)}
+                  onBlur={() => {
+                    setTimeout(() => setIsCategoryDropdownOpen(false), 120);
+                  }}
+                  onChange={(e) => {
+                    setCategoryInput(e.target.value);
+                    setIsCategoryDropdownOpen(true);
+                  }}
+                  onKeyDown={handleCategoryKeyDown}
+                  placeholder="Type category and press Enter"
+                  readOnly={!canEdit || isArchived}
+                  className="h-7 min-w-[180px] flex-1 border-0 p-0 shadow-none focus-visible:ring-0"
+                />
+              </div>
 
               {canEdit && !isArchived && isCategoryDropdownOpen && filteredCategories.length > 0 && (
                 <div className="absolute z-20 mt-1 w-full rounded-md border bg-popover p-1 text-popover-foreground shadow-md">
@@ -100,8 +161,7 @@ export function CollectionDetailsForm({
                         className="w-full rounded-sm px-2 py-1.5 text-left text-sm hover:bg-accent hover:text-accent-foreground"
                         onMouseDown={(e) => {
                           e.preventDefault();
-                          onCategoryChange(name);
-                          setIsCategoryDropdownOpen(false);
+                          addCategory(name);
                         }}
                       >
                         {name}

@@ -34,7 +34,7 @@ function Collections() {
   const [sortOption, setSortOption] = useState("updated-newest");
   const [availableCategories, setAvailableCategories] = useState([]);
   const [filters, setFilters] = useState({
-    category: "all",
+    categories: [],
     dateRange: "all",
     questionCount: [0, 100], // in fact 0 - 100+
     createdBy: "all",
@@ -139,11 +139,14 @@ function Collections() {
     let filteredCollections = allCollections.filter(collection => {
       if (activeFilter !== "all" && activeFilter !== collection.status) return false;
 
-      if (filters.category !== "all") {
+      if (Array.isArray(filters.categories) && filters.categories.length > 0) {
         const categoryNames = Array.isArray(collection.categories)
           ? collection.categories.map((category) => category?.name).filter(Boolean)
           : [];
-        if (!categoryNames.includes(filters.category)) return false;
+        const hasMatchingCategory = filters.categories.some((category) =>
+          categoryNames.includes(category)
+        );
+        if (!hasMatchingCategory) return false;
       }
       
       // Filter by search query

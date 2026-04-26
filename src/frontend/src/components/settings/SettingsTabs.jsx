@@ -70,6 +70,16 @@ const AccountTab = memo(function AccountTab({
   isPictureUpdating
 }) {
   const initials = `${user?.first_name?.[0] || user?.firstName?.[0] || ""}${user?.last_name?.[0] || user?.lastName?.[0] || ""}`.trim() || "U";
+  const profilePictureUrl = user?.profile_picture_url || "";
+  const normalizedProfilePictureUrl = String(profilePictureUrl).trim().toLowerCase();
+  const isSvgAvatar = Boolean(profilePictureUrl) && (
+    normalizedProfilePictureUrl.startsWith("data:image/svg+xml")
+    || normalizedProfilePictureUrl.includes("<svg")
+    || normalizedProfilePictureUrl.includes("image/svg+xml")
+    || /\.svg([?#].*)?$/.test(normalizedProfilePictureUrl)
+  );
+  const isDefaultAvatarProvider = normalizedProfilePictureUrl.includes("ui-avatars.com/api/");
+  const hasProfilePicture = Boolean(profilePictureUrl) && !isSvgAvatar && !isDefaultAvatarProvider;
 
   return (
     <Card>
@@ -80,6 +90,50 @@ const AccountTab = memo(function AccountTab({
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        <div className="rounded-xl border border-primary/30 bg-gradient-to-br from-primary/10 via-background to-background p-5 shadow-sm space-y-4">
+          <div>
+            <h3 className="text-base font-semibold">Profile Picture</h3>
+            <p className="text-sm text-muted-foreground">
+              Upload a profile picture to personalize your account.
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Max file size: 2 MB.
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+            <Avatar className="h-20 w-20 ring-2 ring-primary/40 shadow-sm">
+              <AvatarImage src={profilePictureUrl} alt="Profile picture" />
+              <AvatarFallback className="text-lg font-semibold">{initials.toUpperCase()}</AvatarFallback>
+            </Avatar>
+
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Input
+                id="profile-picture-upload"
+                type="file"
+                accept="image/*"
+                onChange={handleFileUpload}
+                disabled={isPictureUpdating}
+                className="max-w-xs hover:cursor-pointer"
+              />
+              {hasProfilePicture ? (
+                <Button
+                  variant="outline"
+                  onClick={handleDeletePicture}
+                  disabled={isPictureUpdating}
+                >
+                  {isPictureUpdating ? (
+                    <span className="animate-spin">⟳</span>
+                  ) : (
+                    <Trash2 className="h-4 w-4 mr-2" />
+                  )}
+                  Remove Picture
+                </Button>
+              ) : null}
+            </div>
+          </div>
+        </div>
+
         <div className="space-y-2">
           <Label htmlFor="email">Email</Label>
           <Input
@@ -114,48 +168,6 @@ const AccountTab = memo(function AccountTab({
           onChange={setLastName}
           onSave={() => handleSaveName("lastName")}
         />
-
-        <div className="rounded-lg border p-4 space-y-4">
-          <div>
-            <h3 className="text-sm font-medium">Avatar</h3>
-            <p className="text-sm text-muted-foreground">
-              Upload a profile picture to personalize your account.
-            </p>
-            <p className="text-xs text-muted-foreground mt-1">
-              Max file size: 2 MB.
-            </p>
-          </div>
-
-          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-            <Avatar className="h-16 w-16 ring-1 ring-border">
-              <AvatarImage src={user?.profile_picture_url || ""} alt="Profile picture" />
-              <AvatarFallback>{initials.toUpperCase()}</AvatarFallback>
-            </Avatar>
-
-            <div className="flex flex-col sm:flex-row gap-2">
-              <Input
-                id="profile-picture-upload"
-                type="file"
-                accept="image/*"
-                onChange={handleFileUpload}
-                disabled={isPictureUpdating}
-                className="max-w-xs"
-              />
-              <Button
-                variant="outline"
-                onClick={handleDeletePicture}
-                disabled={isPictureUpdating || !user?.profile_picture_url}
-              >
-                {isPictureUpdating ? (
-                  <span className="animate-spin">⟳</span>
-                ) : (
-                  <Trash2 className="h-4 w-4 mr-2" />
-                )}
-                Remove Picture
-              </Button>
-            </div>
-          </div>
-        </div>
       </CardContent>
     </Card>
   );

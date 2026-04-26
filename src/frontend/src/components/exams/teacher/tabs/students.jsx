@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { 
   Users, 
   X,
@@ -182,9 +183,12 @@ export function StudentsTab({
               {selectedStudents.map(student => (
                 <Badge key={student.id} variant="secondary" className="pr-1">
                   <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center cursor-default">
-                      {student.first_name?.[0]?.toUpperCase()}{student.last_name?.[0]?.toUpperCase()}
-                    </div>
+                    <Avatar className="w-6 h-6">
+                      <AvatarImage src={student.profile_picture_url || ""} alt={`${student.first_name} ${student.last_name}`} />
+                      <AvatarFallback className="text-[10px]">
+                        {student.first_name?.[0]?.toUpperCase()}{student.last_name?.[0]?.toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
                     <span>{student.first_name} {student.last_name}</span>
                     <Button
                       variant="ghost"
@@ -235,6 +239,12 @@ export function StudentsTab({
                   onClick={e => e.stopPropagation()}
                   className="cursor-pointer"
                 />
+                <Avatar className="h-9 w-9">
+                  <AvatarImage src={student.profile_picture_url || ""} alt={`${student.first_name} ${student.last_name}`} />
+                  <AvatarFallback>
+                    {student.first_name?.[0]?.toUpperCase()}{student.last_name?.[0]?.toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
                 <div className="flex-1">
                   <div className="font-medium">{student.first_name} {student.last_name}</div>
                   <div className="text-sm text-muted-foreground">{student.email}</div>

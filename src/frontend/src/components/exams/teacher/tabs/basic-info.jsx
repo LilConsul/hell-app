@@ -19,6 +19,15 @@ export function BasicInfoTab({
 }) {
   const navigate = useNavigate();
 
+  const selectedCollectionData = collections?.find(
+    (collection) => collection.id?.toString() === basicInfo.selectedCollection
+  );
+
+  const getCategoryNames = (collection) => {
+    if (!Array.isArray(collection?.categories)) return [];
+    return collection.categories.map((category) => category?.name).filter(Boolean);
+  };
+
   const handleChange = (field, value) => {
     setBasicInfo(prev => ({
       ...prev,
@@ -84,30 +93,70 @@ export function BasicInfoTab({
                 </Alert>
               </div>
             ) : (
-              <Select 
-                value={basicInfo.selectedCollection} 
-                onValueChange={(value) => handleChange('selectedCollection', value)} 
-                required
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder={collectionsLoading ? "Loading collections..." : "Select a question collection"} />
-                </SelectTrigger>
-                <SelectContent>
-                  {collections.map(collection => (
-                    <SelectItem 
-                      key={collection.id} 
-                      value={collection.id.toString()}
-                    >
-                      <div className="flex items-center justify-between w-full">
-                        <span>{collection.title}</span>
-                        <Badge variant="secondary" className="ml-2">
-                          {collection.question_count} questions
-                        </Badge>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <>
+                <Select 
+                  value={basicInfo.selectedCollection} 
+                  onValueChange={(value) => handleChange('selectedCollection', value)} 
+                  required
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder={collectionsLoading ? "Loading collections..." : "Select a question collection"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {collections.map((collection) => {
+                      const categoryNames = getCategoryNames(collection);
+                      const titleLength = (collection.title || "").length;
+                      const titlePenalty = Math.floor(Math.max(0, titleLength - 20) / 10);
+                      const maxVisibleCategories = Math.max(3, 7 - titlePenalty);
+                      const visibleCategories = categoryNames.slice(0, maxVisibleCategories);
+                      const hasMoreCategories = categoryNames.length > maxVisibleCategories;
+                      const hiddenCategoryCount = Math.max(0, categoryNames.length - maxVisibleCategories);
+
+                      return (
+                        <SelectItem 
+                          key={collection.id} 
+                          value={collection.id.toString()}
+                        >
+                          <div className="flex w-full min-w-0 items-center justify-between gap-2 py-1">
+                            <span className="min-w-0 truncate">{collection.title}</span>
+                            <div className="flex min-w-0 flex-1 justify-end items-center gap-1 overflow-hidden whitespace-nowrap">
+                              <Badge variant="secondary" className="shrink-0">
+                                {collection.question_count} questions
+                              </Badge>
+                              {visibleCategories.map((categoryName) => (
+                                <Badge
+                                  key={`${collection.id}-${categoryName}`}
+                                  variant="outline"
+                                  className="max-w-[180px] truncate text-[10px]"
+                                >
+                                  {categoryName}
+                                </Badge>
+                              ))}
+                              {hasMoreCategories && (
+                                <Badge variant="secondary" className="shrink-0 text-[10px]">
+                                  +{hiddenCategoryCount} more
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+
+                {selectedCollectionData && (
+                  <div className="rounded-md border bg-muted/40 px-3 py-2 text-sm">
+                    <p className="font-medium">Selected: {selectedCollectionData.title}</p>
+                    <p className="text-muted-foreground">
+                      Categories: {getCategoryNames(selectedCollectionData).length > 0
+                        ? getCategoryNames(selectedCollectionData).join(", ")
+                        : "No categories"
+                      }
+                    </p>
+                  </div>
+                )}
+              </>
             )}
           </div>
 

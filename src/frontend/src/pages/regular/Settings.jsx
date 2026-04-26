@@ -8,6 +8,8 @@ import { Footer } from '@/components/footer';
 import { apiRequest } from '@/lib/utils';
 import { usePasswordValidation } from '@/components/password/password-validation';
 
+const MAX_PROFILE_PICTURE_SIZE_BYTES = 2 * 1024 * 1024;
+
 export default function SettingsPage() {
   const { user, refreshUser, updateUser, logout } = useAuth();
 
@@ -19,6 +21,7 @@ export default function SettingsPage() {
   const [lastName, setLastName] = useState('');
   const [editField, setEditField] = useState(null);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isPictureUpdating, setIsPictureUpdating] = useState(false);
 
   
   const [firstNameError, setFirstNameError] = useState('');
@@ -46,6 +49,13 @@ export default function SettingsPage() {
 
   const [language, setLanguage] = useState('en'); 
   const [notifications, setNotifications] = useState({ email: true }); 
+  const [mfaSetupData, setMfaSetupData] = useState(null);
+  const [mfaSetupCode, setMfaSetupCode] = useState('');
+  const [mfaDisableCode, setMfaDisableCode] = useState('');
+  const [isMfaSettingUp, setIsMfaSettingUp] = useState(false);
+  const [isMfaVerifying, setIsMfaVerifying] = useState(false);
+  const [isMfaDisabling, setIsMfaDisabling] = useState(false);
+  const [showMfaDisablePrompt, setShowMfaDisablePrompt] = useState(false);
 
 
   const validateName = useCallback((name) => {
@@ -62,6 +72,18 @@ export default function SettingsPage() {
  
   const isFirstNameValid = firstName.trim() === '' || validateName(firstName) === '';
   const isLastNameValid = lastName.trim() === '' || validateName(lastName) === '';
+
+  useEffect(() => {
+    if (user?.mfa_enabled) {
+      setMfaSetupData(null);
+      setMfaSetupCode('');
+      setShowMfaDisablePrompt(false);
+      setMfaDisableCode('');
+    } else {
+      setShowMfaDisablePrompt(false);
+      setMfaDisableCode('');
+    }
+  }, [user?.mfa_enabled]);
 
   useEffect(() => {
     if (user) {
@@ -236,6 +258,110 @@ export default function SettingsPage() {
     }
   }, [language]);
 
+  const extractMfaSetupData = useCallback((payload) => {
+    const data = payload?.data || payload || {};
+
+    return {
+      secret: data.secret || data.mfa_secret || '',
+      qr_code_url: data.qr_code_url || data.qrcode_url || ''
+    };
+  }, []);
+
+  const handleEnableMfa = useCallback(async () => {
+    setErrorMessage('');
+    setIsMfaSettingUp(true);
+
+    try {
+      const payload = await apiRequest('/api/v1/auth/mfa/setup', {
+        method: 'POST',
+        credentials: 'include'
+      });
+
+      const setupData = extractMfaSetupData(payload);
+      if (!setupData.qrCodeValue && !setupData.secret) {
+        throw new Error('Failed to start MFA setup.');
+      }
+
+      setMfaSetupData(setupData);
+      setMfaSetupCode('');
+      setShowMfaDisablePrompt(false);
+      setMfaDisableCode('');
+      setSuccessMessage('MFA setup started. Scan the QR code and verify the 6-digit code.');
+    } catch (error) {
+      setErrorMessage(error.message || 'Failed to start MFA setup.');
+    } finally {
+      setIsMfaSettingUp(false);
+    }
+  }, [extractMfaSetupData]);
+
+  const handleVerifyMfa = useCallback(async () => {
+    const code = mfaSetupCode.trim();
+
+    if (!/^\d{6}$/.test(code)) {
+      setErrorMessage('Enter the 6-digit code from your authenticator app.');
+      return;
+    }
+
+    setErrorMessage('');
+    setIsMfaVerifying(true);
+
+    try {
+      await apiRequest('/api/v1/auth/mfa/verify', {
+        method: 'POST',
+        body: JSON.stringify({ code }),
+        credentials: 'include'
+      });
+
+      updateUser({ mfa_enabled: true });
+      setMfaSetupData(null);
+      setMfaSetupCode('');
+      setShowMfaDisablePrompt(false);
+      setMfaDisableCode('');
+      setSuccessMessage('Two-factor authentication has been enabled.');
+    } catch (error) {
+      setErrorMessage(error.message || 'Failed to verify MFA code.');
+    } finally {
+      setIsMfaVerifying(false);
+    }
+  }, [mfaSetupCode, updateUser]);
+
+  const handleStartDisableMfa = useCallback(() => {
+    setErrorMessage('');
+    setShowMfaDisablePrompt(true);
+    setMfaDisableCode('');
+  }, []);
+
+  const handleDisableMfa = useCallback(async () => {
+    const code = mfaDisableCode.trim();
+
+    if (!/^\d{6}$/.test(code)) {
+      setErrorMessage('Enter the 6-digit code from your authenticator app.');
+      return;
+    }
+
+    setErrorMessage('');
+    setIsMfaDisabling(true);
+
+    try {
+      await apiRequest('/api/v1/auth/mfa/disable', {
+        method: 'POST',
+        body: JSON.stringify({ code }),
+        credentials: 'include'
+      });
+
+      updateUser({ mfa_enabled: false });
+      setShowMfaDisablePrompt(false);
+      setMfaDisableCode('');
+      setMfaSetupData(null);
+      setMfaSetupCode('');
+      setSuccessMessage('Two-factor authentication has been disabled.');
+    } catch (error) {
+      setErrorMessage(error.message || 'Failed to disable MFA.');
+    } finally {
+      setIsMfaDisabling(false);
+    }
+  }, [mfaDisableCode, updateUser]);
+
   const handleOpenCurrentPasswordModal = useCallback(() => {
     setCurrentPassword('');
     setNewPassword('');
@@ -359,6 +485,99 @@ export default function SettingsPage() {
     }
   }, [deleteConfirmText]);
 
+  const extractProfilePictureUrl = useCallback((payload) => {
+    return payload?.data?.profile_picture_url
+      || payload?.profile_picture_url
+      || payload?.data?.user?.profile_picture_url
+      || payload?.user?.profile_picture_url
+      || null;
+  }, []);
+
+  const withCacheBuster = useCallback((url) => {
+    if (!url) {
+      return null;
+    }
+
+    const separator = url.includes('?') ? '&' : '?';
+    return `${url}${separator}t=${Date.now()}`;
+  }, []);
+
+  const handleFileUpload = useCallback(async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    if (!file.type.startsWith('image/')) {
+      setErrorMessage('Please upload a valid image file.');
+      event.target.value = '';
+      return;
+    }
+
+    if (file.size > MAX_PROFILE_PICTURE_SIZE_BYTES) {
+      setErrorMessage('Profile picture must be 2 MB or smaller.');
+      event.target.value = '';
+      return;
+    }
+
+    setIsPictureUpdating(true);
+    setErrorMessage('');
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await fetch('/api/v1/users/me/profile-picture', {
+        method: 'POST',
+        body: formData,
+        credentials: 'include',
+        headers: {
+          'X-Timezone': Intl.DateTimeFormat().resolvedOptions().timeZone,
+        },
+      });
+
+      const payload = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(payload?.detail || payload?.message || 'Failed to upload profile picture.');
+      }
+
+      const nextUrl = extractProfilePictureUrl(payload);
+      if (nextUrl) {
+        updateUser({ profile_picture_url: withCacheBuster(nextUrl) });
+      } else {
+        await refreshUser();
+      }
+
+      setSuccessMessage('Profile picture uploaded successfully.');
+    } catch (error) {
+      setErrorMessage(error.message || 'Failed to upload profile picture.');
+    } finally {
+      setIsPictureUpdating(false);
+      event.target.value = '';
+    }
+  }, [extractProfilePictureUrl, refreshUser, updateUser, withCacheBuster]);
+
+  const handleDeletePicture = useCallback(async () => {
+    setIsPictureUpdating(true);
+    setErrorMessage('');
+
+    try {
+      const payload = await apiRequest('/api/v1/users/me/profile-picture', {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+
+      const nextUrl = extractProfilePictureUrl(payload);
+      updateUser({ profile_picture_url: nextUrl || null });
+      setSuccessMessage('Profile picture removed successfully.');
+    } catch (error) {
+      setErrorMessage(error.message || 'Failed to remove profile picture.');
+    } finally {
+      setIsPictureUpdating(false);
+    }
+  }, [extractProfilePictureUrl, updateUser]);
+
   if (!user) {
     return (
       <div className="flex flex-col min-h-screen">
@@ -406,11 +625,28 @@ export default function SettingsPage() {
             setFirstName={setFirstName}
             setLastName={setLastName}
             handleSaveName={handleSaveName}
+            handleFileUpload={handleFileUpload}
+            handleDeletePicture={handleDeletePicture}
+            isPictureUpdating={isPictureUpdating}
             handleChangeLanguage={handleChangeLanguage}
             handleToggleNotifications={handleToggleNotifications}
             handleOpenCurrentPasswordModal={handleOpenCurrentPasswordModal}
             setShowDeleteModal={setShowDeleteModal}
             handleNameKeyDown={handleNameKeyDown}
+            mfaSetupData={mfaSetupData}
+            mfaSetupCode={mfaSetupCode}
+            setMfaSetupCode={setMfaSetupCode}
+            isMfaSettingUp={isMfaSettingUp}
+            isMfaVerifying={isMfaVerifying}
+            handleEnableMfa={handleEnableMfa}
+            handleVerifyMfa={handleVerifyMfa}
+            showMfaDisablePrompt={showMfaDisablePrompt}
+            setShowMfaDisablePrompt={setShowMfaDisablePrompt}
+            mfaDisableCode={mfaDisableCode}
+            setMfaDisableCode={setMfaDisableCode}
+            isMfaDisabling={isMfaDisabling}
+            handleStartDisableMfa={handleStartDisableMfa}
+            handleDisableMfa={handleDisableMfa}
             
             firstNameError={firstNameError}
             lastNameError={lastNameError}

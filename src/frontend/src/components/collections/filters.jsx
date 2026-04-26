@@ -33,6 +33,7 @@ export function CollectionFilters({
   activeFilter,
   setActiveFilter,
   filters = {
+    categories: [],
     dateRange: "all",
     questionCount: [0, 100],
     createdBy: "all",
@@ -44,12 +45,15 @@ export function CollectionFilters({
   sortOption,
   setSortOption,
   allCollections = [],
+  availableCategories = [],
 }) {
   const { user } = useAuth();
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [tempFilters, setTempFilters] = useState(filters);
   const [userSearchQuery, setUserSearchQuery] = useState("");
   const [isUserSearchOpen, setIsUserSearchOpen] = useState(false);
+  const [categorySearchQuery, setCategorySearchQuery] = useState("");
+  const [isCategorySearchOpen, setIsCategorySearchOpen] = useState(false);
   
   // Extract unique users from collections
   const availableUsers = useMemo(() => {
@@ -92,6 +96,41 @@ export function CollectionFilters({
       user.name.toLowerCase().includes(userSearchQuery.toLowerCase())
     );
   }, [availableUsers, userSearchQuery]);
+
+  const filteredCategories = useMemo(() => {
+    const query = categorySearchQuery.trim().toLowerCase();
+    const selectedCategories = tempFilters.categories || [];
+
+    const allCategoryNames = availableCategories
+      .map((category) => category?.name)
+      .filter((name) => Boolean(name) && !selectedCategories.includes(name));
+
+    if (!query) return allCategoryNames;
+
+    return allCategoryNames.filter((name) =>
+      name.toLowerCase().includes(query)
+    );
+  }, [availableCategories, categorySearchQuery, tempFilters.categories]);
+
+  const handleAddCategory = (categoryName) => {
+    if (!categoryName || (tempFilters.categories || []).includes(categoryName)) {
+      return;
+    }
+
+    setTempFilters({
+      ...tempFilters,
+      categories: [...(tempFilters.categories || []), categoryName],
+    });
+    setCategorySearchQuery("");
+    setIsCategorySearchOpen(false);
+  };
+
+  const handleRemoveCategory = (categoryName) => {
+    setTempFilters({
+      ...tempFilters,
+      categories: (tempFilters.categories || []).filter((name) => name !== categoryName),
+    });
+  };
   
   const handlePopoverChange = (open) => {
     if (open) {
@@ -102,6 +141,7 @@ export function CollectionFilters({
   
   const handleClearFilters = () => {
     const clearedFilters = {
+      categories: [],
       dateRange: "all",
       questionCount: [0, 100],
       createdBy: "all",
@@ -112,6 +152,8 @@ export function CollectionFilters({
     setFilters(clearedFilters);
     applyFilters();
   };
+
+  const normalizeCategoryFilter = (categories = []) => [...categories].sort().join("|");
   
   const handleApplyFilters = () => {
     // Auto-select published status if filtering by Others
@@ -147,6 +189,7 @@ export function CollectionFilters({
   };
 
   const hasActiveFilters =
+    (filters.categories?.length || 0) > 0 ||
     filters.dateRange !== "all" ||
     filters.questionCount[0] > 0 ||
     filters.questionCount[1] < 100 ||
@@ -155,6 +198,7 @@ export function CollectionFilters({
     filters.lastUpdated !== "all";
     
   const hasUnappliedChanges = 
+    normalizeCategoryFilter(tempFilters.categories || []) !== normalizeCategoryFilter(filters.categories || []) ||
     tempFilters.dateRange !== filters.dateRange ||
     tempFilters.questionCount[0] !== filters.questionCount[0] ||
     tempFilters.questionCount[1] !== filters.questionCount[1] ||
@@ -165,6 +209,7 @@ export function CollectionFilters({
   const getActiveFiltersCount = () => {
     let count = 0;
     
+    if ((filters.categories?.length || 0) > 0) count++;
     if (filters.dateRange !== "all") count++;
     if (filters.lastUpdated !== "all") count++;
     if (filters.questionCount[0] > 0 || filters.questionCount[1] < 100) count++;
@@ -217,6 +262,56 @@ export function CollectionFilters({
                   <X className="mr-2 h-3.5 w-3.5" />
                   Clear
                 </Button>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Categories</Label>
+                <div className="flex flex-wrap gap-1">
+                  {(tempFilters.categories || []).map((categoryName) => (
+                    <Badge key={categoryName} variant="secondary" className="flex items-center gap-1 py-1">
+                      <span>{categoryName}</span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="ml-1 h-4 w-4 p-0 rounded-full hover:bg-muted-foreground/20"
+                        onClick={() => handleRemoveCategory(categoryName)}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </Badge>
+                  ))}
+
+                  <Popover open={isCategorySearchOpen} onOpenChange={setIsCategorySearchOpen}>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" size="sm" className="h-6 px-2">
+                        <Plus className="h-3 w-3 mr-1" />
+                        <span className="text-xs">Add Category</span>
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-64 p-0" align="start">
+                      <Command>
+                        <CommandInput
+                          placeholder="Search categories..."
+                          value={categorySearchQuery}
+                          onValueChange={setCategorySearchQuery}
+                        />
+                        <CommandList>
+                          <CommandEmpty>No categories found</CommandEmpty>
+                          <CommandGroup>
+                            {filteredCategories.map((categoryName) => (
+                              <CommandItem
+                                key={categoryName}
+                                onSelect={() => handleAddCategory(categoryName)}
+                              >
+                                <span>{categoryName}</span>
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                </div>
               </div>
 
               <div className="space-y-2">

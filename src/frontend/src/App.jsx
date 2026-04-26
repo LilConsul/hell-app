@@ -13,6 +13,7 @@ import NotFoundPage from './pages/regular/NotFoundPage';
 import DeleteAccount from './pages/regular/DeleteAccount';
 import PasswordReset from './pages/regular/PasswordReset';
 import EmailVerification from './pages/regular/EmailVerification';
+import MFARecovery from './pages/regular/MFARecovery';
 
 // Pages based on user role
 import Dashboard  from './pages/role-based/DashboardDecider';
@@ -54,6 +55,7 @@ export default function App() {
           <Route path="/login" element={<HomeWithLoginModal />} />
           <Route path="/verify/:token" element={<EmailVerification />} />
           <Route path="/password-reset/:token" element={<PasswordReset />} />
+          <Route path="/mfa/disable-recovery/:token" element={<MFARecovery />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/delete-account/:token" element={<DeleteAccount />} />
           <Route path="*" element={<NotFoundPage />} />

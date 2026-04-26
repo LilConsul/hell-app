@@ -1,6 +1,7 @@
 import { apiRequest } from "@/lib/utils";
 
 const COLLECTIONS_URL = "/api/v1/exam/teacher/collections";
+const CATEGORIES_URL = "/api/v1/exam/teacher/categories";
 
 
 async function fetchCollections() {
@@ -22,6 +23,16 @@ async function fetchCollections() {
     return Array.from(map.values());
   } catch (err) {
     console.error("Error fetching collections:", err);
+    throw err;
+  }
+}
+
+async function fetchCategories() {
+  try {
+    const response = await apiRequest(`${CATEGORIES_URL}/`);
+    return response.data || [];
+  } catch (err) {
+    console.error("Error fetching categories:", err);
     throw err;
   }
 }
@@ -85,9 +96,18 @@ async function duplicateCollection(collectionId, title, description) {
     const detailRes = await apiRequest(`${COLLECTIONS_URL}/${collectionId}`);
     const original = detailRes.data;
 
+    const originalCategories = Array.isArray(original.categories)
+      ? original.categories.map((category) => category?.name).filter(Boolean)
+      : [];
+
     const newRes = await apiRequest(`${COLLECTIONS_URL}/`, {
       method: 'POST',
-      body: JSON.stringify({ title, description, status: 'draft' }),
+      body: JSON.stringify({
+        title,
+        description,
+        status: 'draft',
+        categories: originalCategories,
+      }),
     });
     const newId = newRes.data.collection_id;
 
@@ -185,6 +205,7 @@ async function reorderQuestions(collectionId, questionOrders) {
 
 export default {
   fetchCollections,
+  fetchCategories,
   createCollection,
   getCollection,
   updateCollection,

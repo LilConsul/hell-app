@@ -5,6 +5,7 @@ import { LogOut, Moon, Settings, Sun } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/auth-context";
 import { useTheme } from "next-themes";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -55,6 +56,8 @@ export function Navbar() {
     if (!user) return [];
     return routes.filter(route => route.roles.includes(user.role));
   };
+
+  const userInitials = `${user?.first_name?.[0] || ""}${user?.last_name?.[0] || ""}`.toUpperCase() || "U";
 
   return (
     <header
@@ -107,16 +110,26 @@ export function Navbar() {
           {isAuthenticated ? (
             <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" className="gap-2 pr-3">
                   <span className="sr-only">Profile</span>
+                  <Avatar className="h-7 w-7">
+                    <AvatarImage src={user?.profile_picture_url || ""} alt="Profile picture" />
+                    <AvatarFallback>{userInitials}</AvatarFallback>
+                  </Avatar>
                   <span>{user.first_name} {user.last_name}</span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
-                <div className="px-2 py-1.5">
-                  <p className="text-sm font-medium">{user.first_name} {user.last_name}</p>
-                  <p className="text-xs text-muted-foreground">{user.email}</p>
-                  <p className="text-xs text-muted-foreground capitalize">Role: {user.role}</p>
+                <div className="px-2 py-1.5 flex items-center gap-2">
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src={user?.profile_picture_url || ""} alt="Profile picture" />
+                    <AvatarFallback>{userInitials}</AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <p className="text-sm font-medium">{user.first_name} {user.last_name}</p>
+                    <p className="text-xs text-muted-foreground">{user.email}</p>
+                    <p className="text-xs text-muted-foreground capitalize">Role: {user.role}</p>
+                  </div>
                 </div>
                 <DropdownMenuSeparator/>
                 <DropdownMenuItem asChild>

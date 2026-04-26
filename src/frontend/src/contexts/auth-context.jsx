@@ -76,6 +76,26 @@ export function AuthProvider({ children }) {
     }
   };
 
+  const verifyMFA = async (mfaToken, mfaCode) => {
+    try {
+      const result = await apiRequest('/api/v1/auth/login/mfa', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mfa_token: mfaToken,
+          mfa_code: mfaCode
+        }),
+        credentials: 'include'
+      });
+      lastFetchRef.current = 0;
+      await fetchUser();
+      navigate("/dashboard");
+      return true;
+    } catch (error) {
+      throw error;
+    }
+  };
+
   const logout = async () => {
     try {
       await apiRequest("/api/v1/auth/logout", { method: "POST", credentials: "include" });
@@ -94,6 +114,34 @@ export function AuthProvider({ children }) {
     sessionStorage.setItem('user', JSON.stringify(updatedUser));
   };
 
+  const requestMFARecovery = async (email) => {
+    try {
+      const result = await apiRequest('/api/v1/auth/mfa/disable/recovery/request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+        credentials: 'include'
+      });
+      return result;
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const confirmMFARecovery = async (token) => {
+    try {
+      const result = await apiRequest('/api/v1/auth/mfa/disable/recovery/confirm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token }),
+        credentials: 'include'
+      });
+      return result;
+    } catch (error) {
+      throw error;
+    }
+  };
+
   const value = useMemo(
     () => ({ 
       user, 
@@ -102,9 +150,12 @@ export function AuthProvider({ children }) {
       login, 
       logout, 
       refreshUser: fetchUser,
-      updateUser
+      updateUser,
+      verifyMFA,
+      requestMFARecovery,
+      confirmMFARecovery
     }),
-    [user, loading, login, logout, fetchUser]
+    [user, loading, login, logout, fetchUser, verifyMFA]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -90,7 +90,7 @@ const AccountTab = memo(function AccountTab({
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="rounded-xl border border-primary/30 bg-gradient-to-br from-primary/10 via-background to-background p-5 shadow-sm space-y-4">
+        <div className="rounded-lg border bg-card p-5 space-y-4">
           <div>
             <h3 className="text-base font-semibold">Profile Picture</h3>
             <p className="text-sm text-muted-foreground">
@@ -102,25 +102,27 @@ const AccountTab = memo(function AccountTab({
           </div>
 
           <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-            <Avatar className="h-20 w-20 ring-2 ring-primary/40 shadow-sm">
+            <Avatar className="h-20 w-20 border shadow-sm">
               <AvatarImage src={profilePictureUrl} alt="Profile picture" />
               <AvatarFallback className="text-lg font-semibold">{initials.toUpperCase()}</AvatarFallback>
             </Avatar>
 
-            <div className="flex flex-col sm:flex-row gap-2">
+            <div className="w-full max-w-sm space-y-2">
+              <Label htmlFor="profile-picture-upload">Choose image</Label>
               <Input
                 id="profile-picture-upload"
                 type="file"
                 accept="image/*"
                 onChange={handleFileUpload}
                 disabled={isPictureUpdating}
-                className="max-w-xs hover:cursor-pointer"
+                className="bg-background hover:cursor-pointer file:mr-3 file:rounded file:border file:border-input file:bg-muted/30 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-foreground hover:file:bg-muted"
               />
               {hasProfilePicture ? (
                 <Button
-                  variant="outline"
+                  variant="secondary"
                   onClick={handleDeletePicture}
                   disabled={isPictureUpdating}
+                  className="w-fit"
                 >
                   {isPictureUpdating ? (
                     <span className="animate-spin">⟳</span>

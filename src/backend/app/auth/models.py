@@ -18,6 +18,9 @@ class User(Document, TimestampMixin):
     role: UserRole = UserRole.STUDENT
     receive_notifications: bool = True
     notifications_tasks_id: Dict[str, List[str]] = Field(default_factory=dict)
+    mfa_secret: Optional[str] = None
+    mfa_enabled: bool = False
+    profile_picture_id: Optional[str] = None
 
     @before_event(Delete)
     async def before_delete(self):
@@ -39,6 +42,8 @@ class User(Document, TimestampMixin):
                 "last_name": "Doe",
                 "is_verified": True,
                 "role": "student",
+                "mfa_enabled": True,
+                "mfa_secret": "secret",
                 "created_at": "2023-01-01T00:00:00.000Z",
                 "updated_at": "2023-01-01T00:00:00.000Z",
             }

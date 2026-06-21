@@ -44,6 +44,23 @@ def user_password_reset_mail(recipient: str, link: str, username: str):
 
 
 @celery.task
+def user_mfa_disable_recovery_mail(recipient: str, link: str, username: str):
+    message = create_message(
+        recipients=[
+            recipient,
+        ],
+        subject=f"{settings.PROJECT_NAME} | Disable MFA Recovery",
+        body={
+            "recovery_link": link,
+            "username": username,
+            "datetime": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "year": datetime.now().year,
+        },
+    )
+    async_to_sync(mail.send_message)(message, "mfa_disable_recovery.html")
+
+
+@celery.task
 def user_welcome_mail_event(
     recipient: str,
     date_registered: str,

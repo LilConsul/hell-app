@@ -1,9 +1,21 @@
-from app.exam.models import (Collection, ExamInstance, Question,
-                             StudentAttempt, StudentExam, StudentResponse)
-from app.exam.repository import (CollectionRepository, ExamInstanceRepository,
-                                 QuestionRepository, StudentAttemptRepository,
-                                 StudentExamRepository,
-                                 StudentResponseRepository)
+from app.exam.models import (
+    Category,
+    Collection,
+    ExamInstance,
+    Question,
+    StudentAttempt,
+    StudentExam,
+    StudentResponse,
+)
+from app.exam.repository import (
+    CategoryRepository,
+    CollectionRepository,
+    ExamInstanceRepository,
+    QuestionRepository,
+    StudentAttemptRepository,
+    StudentExamRepository,
+    StudentResponseRepository,
+)
 
 
 def get_question_repository() -> QuestionRepository:
@@ -28,3 +40,7 @@ def get_student_attempt_repository() -> StudentAttemptRepository:
 
 def get_student_exam_repository() -> StudentExamRepository:
     return StudentExamRepository(StudentExam)
+
+
+def get_category_repository() -> CategoryRepository:
+    return CategoryRepository(Category)

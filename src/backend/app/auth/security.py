@@ -1,12 +1,13 @@
 from datetime import datetime, timedelta, timezone
 from enum import Enum
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 import bcrypt
 import jwt
+from itsdangerous import URLSafeTimedSerializer
+
 from app.database.redis import get_redis_client
 from app.settings import settings
-from itsdangerous import URLSafeTimedSerializer
 
 # Create serializer for URL-safe tokens (for email verification)
 serializer = URLSafeTimedSerializer(
@@ -20,6 +21,8 @@ class TokenType(str, Enum):
     VERIFICATION = "verification"
     PASSWORD_RESET = "password_reset"
     USER_DELETION = "user_deletion"
+    MFA_LOGIN = "mfa_login"
+    MFA_DISABLE_RECOVERY = "mfa_disable_recovery"
 
 
 def get_password_hash(password: str) -> str:
@@ -53,7 +56,7 @@ def create_access_token(
     return encoded_jwt
 
 
-def decode_token(token: str) -> Dict[str, Any]:
+def decode_token(token: str) -> dict[str, Any]:
     """Decode JWT authentication token"""
     try:
         payload = jwt.decode(
@@ -86,7 +89,7 @@ async def create_verification_token(
 
 async def decode_verification_token(
     token: str, max_age=86400, use_redis=True
-) -> Optional[Dict[str, Any]]:
+) -> Optional[dict[str, Any]]:
     """Decode and validate verification token with expiry check and Redis validation"""
     try:
         # First decode to get token type

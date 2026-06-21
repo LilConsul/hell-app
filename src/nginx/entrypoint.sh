@@ -1,5 +1,7 @@
 #!/bin/sh
 
+set -eu
+
 CERT_DIR="/etc/nginx/certs"
 CERT_PATH="$CERT_DIR/cert.crt"
 KEY_PATH="$CERT_DIR/cert.key"
@@ -7,13 +9,15 @@ KEY_PATH="$CERT_DIR/cert.key"
 # If we don't have a certificate, generate a self-signed one
 if [ ! -f "$CERT_PATH" ] || [ ! -f "$KEY_PATH" ]; then
     echo "No SSL certificates found, generating self-signed certificates..."
-    apk add --no-cache openssl
 
     mkdir -p "$CERT_DIR"
-    openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+    if ! openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
         -keyout "$KEY_PATH" \
         -out "$CERT_PATH" \
-        -subj "/C=PL/ST=Krakow/L=SENOM_VEX/O=SESBIAN_LEX/CN=hellApp" > /dev/null 2>&1
+        -subj "/C=PL/ST=Krakow/L=SENOM_VEX/O=SESBIAN_LEX/CN=hellApp" > /dev/null 2>&1; then
+        echo "Failed to generate self-signed certificates." >&2
+        exit 1
+    fi
 
 else
     echo "SSL certificates found."

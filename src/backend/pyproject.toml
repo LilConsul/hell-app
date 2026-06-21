@@ -14,8 +14,13 @@ dependencies = [
     "fastapi[standard]>=0.115.11",
     "flower>=2.0.1",
     "itsdangerous>=2.2.0",
+    "minio>=7.2.0",
     "pydantic-settings>=2.8.1",
     "pyjwt>=2.10.1",
+    "pyotp>=2.9.0",
+    "qrcode[pil]>=8.2",
+    "python-magic>=0.4.27",
+    "python-multipart>=0.0.9",
     "redis>=5.2.1",
     "reportlab>=4.4.0",
 ]
@@ -28,6 +33,30 @@ test = [
     "pytest>=8.3.5",
     "pytest-asyncio>=0.25.3",
 ]
+
+[tool.ruff]
+target-version = "py313"
+indent-width = 4
+line-length = 88
+
+[tool.ruff.lint]
+select = [
+    "E", # pycodestyle errors
+    "W", # pycodestyle warnings
+    "F", # pyflakes
+    "I", # isort
+    "C", # flake8-comprehensions
+    "B", # flake8-bugbear
+]
+ignore = [
+    "E501", # line too long, handled by black
+    "B008", # do not perform function calls in argument defaults
+    "C901", # complexity
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
 
 [tool.pytest.ini_options]
 pythonpath = ["."]

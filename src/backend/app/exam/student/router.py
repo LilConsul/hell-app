@@ -6,11 +6,16 @@ from app.auth.dependencies import get_current_student_id
 from app.core.schemas import BaseReturn
 from app.core.utils import get_timezone
 from app.exam.student.dependencies import get_student_exam_service
-from app.exam.student.schemas import (AnswerSubmission, QuestionIdentifier,
-                                      QuestionWithOptions,
-                                      QuestionWithUserResponse, ReviewAttempt,
-                                      StudentAttemptBasic, StudentExamBase,
-                                      StudentExamDetail)
+from app.exam.student.schemas import (
+    AnswerSubmission,
+    QuestionIdentifier,
+    QuestionWithOptions,
+    QuestionWithUserResponse,
+    ReviewAttempt,
+    StudentAttemptBasic,
+    StudentExamBase,
+    StudentExamDetail,
+)
 from app.exam.student.services import StudentExamService
 from app.i18n import _
 

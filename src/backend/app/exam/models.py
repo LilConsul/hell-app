@@ -11,6 +11,49 @@ from app.auth.schemas import UserRole
 from app.database.mixins import TimestampMixin
 
 
+class Category(Document, TimestampMixin):
+    """Category model for organizing collections"""
+    name: str = Field(primary_field=True)  # Unique name as primary key
+    
+    # BackLink to collections using this category
+    collections: List[BackLink["Collection"]] = Field(
+        default_factory=list,
+        json_schema_extra={"original_field": "categories"}
+    )
+    
+    class Settings:
+        name = "categories"
+        use_state_management = True
+        indexes = ["name"]
+    
+    @before_event(Delete)
+    async def before_delete(self):
+        """Remove references to this category from all collections"""
+        collections = await Collection.find(
+            {"categories.$id": self.name},
+            nesting_depth=0,
+            nesting_depths_per_field={"categories": 1}
+        ).to_list()
+        
+        for collection in collections:
+            collection.categories = [
+                cat for cat in collection.categories 
+                if cat.ref.id != self.name
+            ]
+            await collection.save()
+    
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,
+        json_schema_extra={
+            "example": {
+                "name": "Mathematics",
+                "created_at": "2026-04-24T10:00:00.000Z",
+                "updated_at": "2026-04-24T10:00:00.000Z",
+            }
+        }
+    )
+
+
 class QuestionType(str, Enum):
     MCQ = "mcq"
     SINGLECHOICE = "singlechoice"
@@ -166,6 +209,9 @@ class Collection(Document, TimestampMixin):
 
     # List of question IDs - using Link for proper relationships
     questions: List[Link[Question]] = Field(default_factory=list)
+    
+    # List of categories - using Link for proper relationships
+    categories: List[Link[Category]] = Field(default_factory=list)
 
     class Settings:
         name = "collections"
@@ -177,12 +223,26 @@ class Collection(Document, TimestampMixin):
 
     @before_event(Delete)
     async def before_delete(self):
-        """Delete all questions linked to this collection when the collection is deleted"""
+        """Delete all questions linked to this collection and orphaned categories"""
+        # Delete questions
         question_ids = []
         for q in self.questions:
             question_ids.append(q.ref.id)
         if question_ids:
             await Question.find({"_id": {"$in": question_ids}}).delete()
+        
+        # Check and delete categories without collections
+        for category_link in self.categories:
+            category = await category_link.fetch()
+            if category:
+                # Count collections with this category
+                count = await Collection.find(
+                    {"categories.$id": category.name}
+                ).count()
+                
+                # If this is the last collection with this category - delete it
+                if count <= 1:
+                    await category.delete()
 
     model_config = ConfigDict(
         arbitrary_types_allowed=True,

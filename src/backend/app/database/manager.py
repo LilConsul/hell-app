@@ -6,8 +6,15 @@ from app.settings import settings
 
 async def init_db():
     from app.auth.models import User
-    from app.exam.models import (Collection, ExamInstance, Question,
-                                 StudentAttempt, StudentExam, StudentResponse)
+    from app.exam.models import (
+        Category,
+        Collection,
+        ExamInstance,
+        Question,
+        StudentAttempt,
+        StudentExam,
+        StudentResponse,
+    )
 
     client = AsyncIOMotorClient(settings.MONGODB_URL)
 
@@ -16,6 +23,7 @@ async def init_db():
         document_models=[
             User,
             # Exam databases
+            Category,
             Collection,
             Question,
             ExamInstance,

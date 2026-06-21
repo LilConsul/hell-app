@@ -1,6 +1,6 @@
 from typing import List
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, File, UploadFile
 
 from app.auth.dependencies import get_current_teacher_id, get_current_user_id
 from app.auth.schemas import Token, UserResponse
@@ -92,6 +92,50 @@ async def change_password(
     )
     return BaseReturn(
         message=_("Password changed successfully"),
+    )
+
+
+@router.post(
+    "/me/profile-picture",
+    response_model=BaseReturn[UserResponse],
+    response_model_exclude_none=True,
+)
+async def upload_profile_picture(
+    file: UploadFile = File(..., description="Profile picture image file"),
+    user_id: str = Depends(get_current_user_id),
+    user_service=Depends(get_user_service),
+):
+    """
+    Upload or update user profile picture.
+
+    - **file**: Image file (jpg, jpeg, png, webp)
+    - Maximum size: 2MB
+    """
+    data = await user_service.upload_profile_picture(user_id, file)
+    return BaseReturn(
+        message=_("Profile picture uploaded successfully"),
+        data=data,
+    )
+
+
+@router.delete(
+    "/me/profile-picture",
+    response_model=BaseReturn[UserResponse],
+    response_model_exclude_none=True,
+)
+async def delete_profile_picture(
+    user_id: str = Depends(get_current_user_id),
+    user_service=Depends(get_user_service),
+):
+    """
+    Delete user profile picture.
+
+    Returns user data with default avatar URL.
+    """
+    data = await user_service.delete_profile_picture(user_id)
+    return BaseReturn(
+        message=_("Profile picture deleted successfully"),
+        data=data,
     )
 
 

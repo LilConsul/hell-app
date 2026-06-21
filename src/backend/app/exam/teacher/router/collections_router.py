@@ -5,10 +5,15 @@ from fastapi import APIRouter, Depends, status
 from app.auth.dependencies import get_current_teacher_id
 from app.core.schemas import BaseReturn
 from app.exam.teacher.dependencies import get_collection_service
-from app.exam.teacher.schemas import (CollectionQuestionCount,
-                                      CreateCollection, GetCollection,
-                                      QuestionOrderSchema, QuestionSchema,
-                                      UpdateCollection, UpdateQuestionSchema)
+from app.exam.teacher.schemas import (
+    CollectionQuestionCount,
+    CreateCollection,
+    GetCollection,
+    QuestionOrderSchema,
+    QuestionSchema,
+    UpdateCollection,
+    UpdateQuestionSchema,
+)
 from app.exam.teacher.services import CollectionService
 from app.i18n import _
 
@@ -36,11 +41,12 @@ async def create_collection(
 
 @router.get("/", response_model=BaseReturn[List[CollectionQuestionCount]])
 async def get_teacher_collections(
+    category: str | None = None,
     teacher_id: str = Depends(get_current_teacher_id),
     collection_service: CollectionService = Depends(get_collection_service),
 ):
-    """Get all collections created by the current teacher"""
-    collections = await collection_service.get_teacher_collections(teacher_id)
+    """Get all collections created by the current teacher, optionally filtered by category"""
+    collections = await collection_service.get_teacher_collections(teacher_id, category)
     return BaseReturn(
         message=_("Collections retrieved successfully"),
         data=collections,
@@ -49,10 +55,11 @@ async def get_teacher_collections(
 
 @router.get("/public", response_model=BaseReturn[List[CollectionQuestionCount]])
 async def get_public_collections(
+    category: str | None = None,
     collection_service: CollectionService = Depends(get_collection_service),
 ):
-    """Get all published collections that are publicly available"""
-    collections = await collection_service.get_public_collections()
+    """Get all published collections that are publicly available, optionally filtered by category"""
+    collections = await collection_service.get_public_collections(category)
     return BaseReturn(
         message=_("Public collections retrieved successfully"),
         data=collections,
@@ -117,6 +124,7 @@ async def add_question_to_collection(
         message=_("Question added successfully"),
         data={"question_id": question_id},
     )
+
 
 @router.post("/{collection_id}/questions/bulk")
 async def add_bulk_questions_to_collection(

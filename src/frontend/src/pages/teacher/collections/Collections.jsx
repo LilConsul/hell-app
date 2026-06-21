@@ -32,7 +32,9 @@ function Collections() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [sortOption, setSortOption] = useState("updated-newest");
+  const [availableCategories, setAvailableCategories] = useState([]);
   const [filters, setFilters] = useState({
+    categories: [],
     dateRange: "all",
     questionCount: [0, 100], // in fact 0 - 100+
     createdBy: "all",
@@ -52,8 +54,12 @@ function Collections() {
       try {
         setLoading(true);
         setError(null);
-        const data = await CollectionAPI.fetchCollections();
+        const [data, categories] = await Promise.all([
+          CollectionAPI.fetchCollections(),
+          CollectionAPI.fetchCategories(),
+        ]);
         setAllCollections(data);
+        setAvailableCategories(Array.isArray(categories) ? categories : []);
       } catch (err) {
         const errorMessage = err || "Failed to load collections. Please try again later.";
         setError(errorMessage);
@@ -132,6 +138,16 @@ function Collections() {
     
     let filteredCollections = allCollections.filter(collection => {
       if (activeFilter !== "all" && activeFilter !== collection.status) return false;
+
+      if (Array.isArray(filters.categories) && filters.categories.length > 0) {
+        const categoryNames = Array.isArray(collection.categories)
+          ? collection.categories.map((category) => category?.name).filter(Boolean)
+          : [];
+        const hasMatchingCategory = filters.categories.some((category) =>
+          categoryNames.includes(category)
+        );
+        if (!hasMatchingCategory) return false;
+      }
       
       // Filter by search query
       if (debouncedSearchQuery &&
@@ -306,6 +322,7 @@ function Collections() {
             sortOption={sortOption}
             setSortOption={setSortOption}
             allCollections={allCollections}
+            availableCategories={availableCategories}
           />
           {loading ? (
             <LoadingCollections />
@@ -313,9 +330,10 @@ function Collections() {
             <ErrorCollections error={error} retryAction={() => {
               setLoading(true);
               setError(null);
-              CollectionAPI.fetchCollections()
-                .then(data => {
+              Promise.all([CollectionAPI.fetchCollections(), CollectionAPI.fetchCategories()])
+                .then(([data, categories]) => {
                   setAllCollections(data);
+                  setAvailableCategories(Array.isArray(categories) ? categories : []);
                   setLoading(false);
                 })
                 .catch(error => {

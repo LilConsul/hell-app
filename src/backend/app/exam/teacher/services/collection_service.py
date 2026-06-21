@@ -11,6 +11,7 @@ from app.core.exceptions import (
 )
 from app.exam.models import ExamStatus, QuestionType
 from app.exam.repository import (
+    CategoryRepository,
     CollectionRepository,
     QuestionRepository,
     ExamInstanceRepository,
@@ -33,54 +34,135 @@ class CollectionService:
         collection_repository: CollectionRepository,
         question_repository: QuestionRepository,
         exam_instance_repository: ExamInstanceRepository,
+        category_repository: CategoryRepository,
     ):
         self.collection_repository = collection_repository
         self.question_repository = question_repository
         self.exam_instance_repository = exam_instance_repository
+        self.category_repository = category_repository
 
     async def create_collection(
         self, collection_data: CreateCollection, user_id: str
     ) -> str:
-        """Create a new collection, returning the collection ID."""
-        collection_data = collection_data.model_dump()
-        collection_data["created_by"] = user_id
+        """Create a new collection with categories, returning the collection ID."""
+        collection_dict = collection_data.model_dump()
+        category_names = collection_dict.pop("categories", [])
+        collection_dict["created_by"] = user_id
 
-        collection = await self.collection_repository.create(collection_data)
+        # Create or get categories
+        category_links = []
+        for category_name in category_names:
+            category = await self.category_repository.get_or_create(category_name)
+            category_links.append(category)
+        
+        collection_dict["categories"] = category_links
+        collection = await self.collection_repository.create(collection_dict)
         return collection.id
 
     async def get_collection(self, user_id: str, collection_id: str) -> GetCollection:
         """Get a collection by its ID."""
-        collection = await self.collection_repository.get_by_id(
-            collection_id, fetch_fields={"questions": 1, "created_by": 1}
-        )
+        from app.auth.models import User
+        from app.exam.models import Question, Category
+        
+        collection = await self.collection_repository.get_by_id(collection_id)
         if not collection:
             raise NotFoundError(_("Collection not found"))
-
-        is_owner = user_id and collection.created_by.id == user_id
+        
+        # Fetch created_by user
+        created_by_user = await User.get(collection.created_by.ref.id)
+        if not created_by_user:
+            raise NotFoundError(_("User not found"))
+        
+        # Check permissions
+        is_owner = user_id and created_by_user.id == user_id
         is_public = collection.status == ExamStatus.PUBLISHED
 
         if not (is_owner or is_public):
             raise ForbiddenError(_("You don't have access to this collection"))
 
-        if collection.questions:
-            collection.questions.sort(
-                key=lambda q: getattr(q, "position", float("inf"))
-            )
+        # Fetch all questions
+        questions_list = []
+        for q_link in collection.questions:
+            q = await Question.get(q_link.ref.id)
+            if q:
+                questions_list.append(q)
+        
+        questions_list.sort(key=lambda q: getattr(q, "position", float("inf")))
+        
+        # Fetch all categories
+        categories_list = []
+        for cat_link in collection.categories:
+            cat = await Category.get(cat_link.ref.id)
+            if cat:
+                categories_list.append({"name": cat.name})
 
-        return collection.model_dump()
+        # Manually construct response dict
+        result = {
+            "id": collection.id,
+            "title": collection.title,
+            "description": collection.description,
+            "status": collection.status,
+            "created_at": collection.created_at,
+            "updated_at": collection.updated_at,
+            "created_by": created_by_user.model_dump(),
+            "questions": [q.model_dump() for q in questions_list],
+            "categories": categories_list
+        }
+        
+        return result
 
     async def update_collection(
         self, collection_id: str, user_id: str, collection_data: UpdateCollection
     ) -> None:
-        """Update a collection by its ID."""
-        collection = await self.collection_repository.get_by_id(collection_id)
+        """Update a collection by its ID, including categories."""
+        collection = await self.collection_repository.get_by_id(
+            collection_id, fetch_links=True
+        )
         if not collection:
             raise NotFoundError(_("Collection not found"))
         if collection.created_by.ref.id != user_id:
             raise ForbiddenError(_("You do not own this collection"))
 
         update_data = collection_data.model_dump(exclude_unset=True)
-        await self.collection_repository.update(collection_id, update_data)
+        
+        # Handle categories update separately
+        if "categories" in update_data:
+            new_category_names = update_data.pop("categories")
+            await self._update_collection_categories(collection, new_category_names)
+        
+        if update_data:
+            await self.collection_repository.update(collection_id, update_data)
+    
+    async def _update_collection_categories(
+        self, collection, new_category_names: List[str]
+    ) -> None:
+        """Update categories for a collection and clean up orphaned categories."""
+        # Store old category names for cleanup
+        old_category_names = [cat.ref.id for cat in collection.categories]
+        
+        # Create or get new categories
+        new_category_links = []
+        for category_name in new_category_names:
+            category = await self.category_repository.get_or_create(category_name)
+            new_category_links.append(category)
+        
+        # Update collection categories
+        collection.categories = new_category_links
+        await self.collection_repository.save(collection)
+        
+        # Check and delete old categories without collections
+        for old_cat_name in old_category_names:
+            if old_cat_name not in new_category_names:
+                from app.exam.models import Collection, Category
+                count = await Collection.find(
+                    {"categories.$id": old_cat_name}
+                ).count()
+                if count == 0:
+                    category = await Category.find_one(
+                        Category.name == old_cat_name
+                    )
+                    if category:
+                        await category.delete()
 
     async def delete_collection(self, collection_id: str, user_id: str) -> None:
         """Delete a collection by its ID."""
@@ -373,35 +455,70 @@ class CollectionService:
         await self.collection_repository.save(collection)
 
     async def get_teacher_collections(
-        self, user_id: str
+        self, user_id: str, category: str | None = None
     ) -> List[CollectionQuestionCount] | []:
-        """Get all collections created by a specific teacher."""
+        """Get all collections created by a specific teacher, optionally filtered by category."""
+        query = {"created_by.$id": user_id}
+        
         collections = await self.collection_repository.get_all(
-            {"created_by._id": user_id}, fetch_fields={"created_by": 1}
+            query, fetch_links=True
         )
 
-        return await self._process_collections(collections)
+        return await self._process_collections(collections, category)
 
-    async def get_public_collections(self) -> List[CollectionQuestionCount] | []:
-        """Get all published collections that are publicly available."""
+    async def get_public_collections(self, category: str | None = None) -> List[CollectionQuestionCount] | []:
+        """Get all published collections that are publicly available, optionally filtered by category."""
+        query = {"status": ExamStatus.PUBLISHED}
+        
         collections = await self.collection_repository.get_all(
-            {"status": ExamStatus.PUBLISHED},
-            fetch_fields={"created_by": 1},
+            query,
+            fetch_links=True
         )
-        return await self._process_collections(collections)
+        
+        return await self._process_collections(collections, category)
 
     @staticmethod
-    async def _process_collections(collections) -> List[CollectionQuestionCount] | []:
+    async def _process_collections(collections, category: str | None = None) -> List[CollectionQuestionCount] | []:
         """Process collection data and add question count."""
-        return [
-            CollectionQuestionCount.model_validate(
-                {
-                    **collection.model_dump(),
-                    "question_count": len(getattr(collection, "questions", []) or []),
-                }
-            )
-            for collection in collections
-        ]
+        from app.auth.models import User
+        from app.exam.models import Category
+        
+        result = []
+        for collection in collections:
+            # Fetch created_by user
+            created_by_user = await User.get(collection.created_by.ref.id)
+            if not created_by_user:
+                continue
+            
+            # Fetch all categories
+            categories_list = []
+            for cat_link in collection.categories:
+                cat = await Category.get(cat_link.ref.id)
+                if cat:
+                    categories_list.append({"name": cat.name})
+            
+            # Filter by category if provided
+            if category:
+                if not any(cat["name"] == category for cat in categories_list):
+                    continue
+            
+            # Build the collection data
+            collection_data = {
+                "id": collection.id,
+                "title": collection.title,
+                "description": collection.description,
+                "status": collection.status,
+                "created_at": collection.created_at,
+                "updated_at": collection.updated_at,
+                "created_by": created_by_user.model_dump(),
+                "categories": categories_list,
+                "questions": [],  # Required by schema but excluded from serialization
+                "question_count": len(getattr(collection, "questions", []) or []),
+            }
+            
+            result.append(CollectionQuestionCount.model_validate(collection_data))
+        
+        return result
 
     async def delete_question(self, question_id: str, user_id: str) -> None:
         """Delete an existing question by its ID."""
@@ -414,4 +531,6 @@ class CollectionService:
         if question.created_by.ref.id != user_id:
             raise ForbiddenError(_("You do not own this question"))
 
-        await self.question_repository.delete(question_id, link_rule = DeleteRules.DELETE_LINKS)
+        await self.question_repository.delete(
+            question_id, link_rule=DeleteRules.DELETE_LINKS
+        )
